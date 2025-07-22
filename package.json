@@ -2,17 +2,25 @@
   "name": "@ui-automation/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "type": "module",
+  "scripts": {
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
   "private": true,
-  "dependencies": {},
   "devDependencies": {
     "@nx/js": "21.3.2",
     "@swc-node/register": "~1.9.1",
     "@swc/core": "~1.5.7",
     "@swc/helpers": "~0.5.11",
+    "@typescript-eslint/eslint-plugin": "^8.38.0",
+    "@typescript-eslint/parser": "^8.38.0",
+    "eslint": "^9.31.0",
+    "eslint-config-prettier": "^10.1.8",
     "nx": "21.3.2",
     "prettier": "^2.6.2",
     "tslib": "^2.3.0",
-    "typescript": "~5.8.2"
+    "typescript": "~5.8.2",
+    "typescript-eslint": "^8.38.0"
   }
 }

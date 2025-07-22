@@ -54,7 +54,7 @@ This project adopts a Test-Driven Development (TDD) approach for all implementat
 
 #### Page Object Model (POM)
 
-- **`tests/`**: Contains test files (`*.spec.ts`). These files should describe user interactions and expected outcomes. They should *not* contain complex selectors or implementation details.
+- **`tests/`**: Contains test files (`*.spec.ts`). These files should describe user interactions and expected outcomes. They should _not_ contain complex selectors or implementation details.
 - **`src/pages/`**: Each file represents a page in the web application. It contains the locators (element selectors) and methods to interact with that page.
 - **`src/components/`**: Contains reusable UI components that appear on multiple pages (e.g., headers, navigation bars).
 
@@ -92,6 +92,7 @@ To maintain a clean, readable, and automated git history, this project adheres t
 All commit messages must follow the [Conventional Commits](https://www.conventionalcommits.org/) specification. This provides a clear structure that is both human- and machine-readable.
 
 **Format:**
+
 ```
 <type>(<scope>): <subject>
 <BLANK LINE>
@@ -107,6 +108,7 @@ All commit messages must follow the [Conventional Commits](https://www.conventio
 - **`<footer>` (optional)**: References to GitHub issues (e.g., `Closes #123`) and breaking change notifications.
 
 **Example:**
+
 ```
 feat(spotify-automation): add login page object
 
@@ -122,9 +124,9 @@ Each commit should be an "atomic" unit of work, representing a single, complete 
 - **One Change per Commit**: Avoid bundling unrelated changes (e.g., a feature and a typo fix) into one commit.
 - **Commit Early, Commit Often**: Commit frequently at logical points in your development process.
 - **Good Times to Commit**:
-    1.  After passing a new test (the "Green" in Red-Green-Refactor).
-    2.  After completing a refactoring of existing code.
-    3.  After a small, self-contained bug fix.
+  1.  After passing a new test (the "Green" in Red-Green-Refactor).
+  2.  After completing a refactoring of existing code.
+  3.  After a small, self-contained bug fix.
 - **Keep Commits Clean**: Ensure that every commit leaves the project in a working state. Do not commit broken or work-in-progress code to a feature branch that will be merged.
 
 ## 6. Development Logs
@@ -138,6 +140,7 @@ To maintain a record of development activities, a log file will be created for e
 ## 7. CI/CD Pipeline (`.github/workflows/ci.yml`)
 
 The CI pipeline is triggered on every push or pull request to the `main` branch and performs the following steps:
+
 1.  **Lint & Format Check**: Ensures code quality and consistency.
 2.  **Run Playwright Tests**: Executes the entire test suite.
 3.  **Upload Report**: Uploads the Playwright HTML report as a build artifact, allowing for easy review of test results.
