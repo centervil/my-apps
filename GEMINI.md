@@ -29,13 +29,15 @@ This repository combines two core development methodologies: Issue-Driven Develo
 
 ### 3.1. Issue-Driven Development (IDD)
 
-All work, including new features, bug fixes, and chores, is managed through GitHub Issues. This ensures traceability and clear context for every change. The workflow is as follows:
+All work, including new features, bug fixes, and chores, is managed through GitHub Issues. This ensures traceability and clear context for every change. For details on how to create and manage issues, see the **Issue Management Guidelines** (Section 4).
 
-1.  **Task Definition**: A task is defined as a GitHub Issue.
+The workflow is as follows:
+
+1.  **Task Definition**: A task is defined as a GitHub Issue using the provided templates.
 2.  **Initiate Work**: The AI agent (or developer) is given an Issue number to start work.
 3.  **Branch Creation**: A new branch is created from `main` using the naming convention: `[type]/[issue-number]-[short-description]` (e.g., `feat/123-add-login-page`, `bugfix/456-fix-button-alignment`).
 4.  **Implementation**: Development is done on the feature branch, following the TDD cycle described below.
-5.  **Commit Messages**: Commits are linked to the issue using keywords (e.g., `feat: Add login form. Closes #123`).
+5.  **Commit Messages**: Commits are linked to the issue using keywords (e.g., `feat: Add login form. Closes #123`). See **Commit Guidelines** (Section 5).
 6.  **Pull Request**: Once the work is complete, a Pull Request is created to merge the branch into `main`. The PR description should be filled out according to the `.github/pull_request_template.md`. Draft PRs can be used for work-in-progress reviews.
 7.  **CI & Review**: The CI pipeline runs automatically. The PR is then reviewed by a human.
 8.  **Merge**: After approval, the PR is merged into `main`, and the feature branch is deleted.
@@ -56,11 +58,36 @@ This project adopts a Test-Driven Development (TDD) approach for all implementat
 - **`src/pages/`**: Each file represents a page in the web application. It contains the locators (element selectors) and methods to interact with that page.
 - **`src/components/`**: Contains reusable UI components that appear on multiple pages (e.g., headers, navigation bars).
 
-## 4. Commit Guidelines
+## 4. Issue Management Guidelines
+
+To ensure clarity and consistency, all tasks are managed through GitHub Issues, following these guidelines.
+
+### 4.1. Issue Templates
+
+When creating a new issue, please use the templates provided. These are available via the "New Issue" button on GitHub and are located in the `.github/ISSUE_TEMPLATE` directory. The templates ensure that all necessary information, such as the goal and completion criteria, is included from the start.
+
+### 4.2. Issue Granularity
+
+The guiding principle is: **One Issue, One Pull Request.**
+
+- **Keep it Small**: An issue should represent a single, logical unit of work that can be completed by one developer in a reasonable amount of time (e.g., a few hours to a day).
+- **Define "Done"**: Every issue must have a clear, objective "Definition of Done" in the form of a checklist. This is crucial for knowing when the task is truly complete.
+- **Split Large Tasks**: If a task seems too large (e.g., "Implement the entire settings page"), break it down into smaller, more manageable user stories (e.g., "Implement password change UI", "Implement notification preferences").
+
+### 4.3. Handling New Discoveries
+
+If you discover a new task or bug while working on an existing issue, **do not expand the scope of your current work**.
+
+1.  **Create a New Issue**: Immediately create a new, separate issue for the newly discovered task.
+2.  **Stay Focused**: Return to your original task and complete it.
+
+This practice prevents scope creep and keeps Pull Requests clean and focused.
+
+## 5. Commit Guidelines
 
 To maintain a clean, readable, and automated git history, this project adheres to the following commit guidelines.
 
-### 4.1. Commit Message Format (Conventional Commits)
+### 5.1. Commit Message Format (Conventional Commits)
 
 All commit messages must follow the [Conventional Commits](https://www.conventionalcommits.org/) specification. This provides a clear structure that is both human- and machine-readable.
 
@@ -88,7 +115,7 @@ Implements the page object for the Spotify login screen, including locators for 
 Closes #12
 ```
 
-### 4.2. Commit Frequency (Atomic Commits)
+### 5.2. Commit Frequency (Atomic Commits)
 
 Each commit should be an "atomic" unit of work, representing a single, complete logical change.
 
@@ -100,7 +127,7 @@ Each commit should be an "atomic" unit of work, representing a single, complete 
     3.  After a small, self-contained bug fix.
 - **Keep Commits Clean**: Ensure that every commit leaves the project in a working state. Do not commit broken or work-in-progress code to a feature branch that will be merged.
 
-## 5. Development Logs
+## 6. Development Logs
 
 To maintain a record of development activities, a log file will be created for each development session.
 
@@ -108,14 +135,14 @@ To maintain a record of development activities, a log file will be created for e
 - **File Naming**: `YYYY-MM-DD-issue-[issue-number]-session-[session-number].md`
 - **Content**: The log will contain a summary of actions taken, decisions made, and any issues encountered during the session.
 
-## 6. CI/CD Pipeline (`.github/workflows/ci.yml`)
+## 7. CI/CD Pipeline (`.github/workflows/ci.yml`)
 
 The CI pipeline is triggered on every push or pull request to the `main` branch and performs the following steps:
 1.  **Lint & Format Check**: Ensures code quality and consistency.
 2.  **Run Playwright Tests**: Executes the entire test suite.
 3.  **Upload Report**: Uploads the Playwright HTML report as a build artifact, allowing for easy review of test results.
 
-## 7. Project Structure
+## 8. Project Structure
 
 ```
 /
@@ -125,6 +152,8 @@ The CI pipeline is triggered on every push or pull request to the `main` branch 
 │       └── tests/
 │
 ├── .github/
+│   ├── ISSUE_TEMPLATE/           # Issue Templates
+│   │   └── feature_request.md
 │   ├── workflows/
 │   │   ├── ci.yml
 │   │   └── codeql-analysis.yml
