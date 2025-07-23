@@ -1,5 +1,24 @@
 # Gemini Development Guide
 
+## Quick Reference
+
+- **Core Principles**: [Section 1](#1-core-principles)
+- **Technology Stack**: [Section 2](#2-technology-stack)
+- **Development Workflows**: [Section 3](#3-development-workflows)
+  - Issue-Driven Development (IDD): [Section 3.1](#31-issue-driven-development-idd)
+  - Test-Driven Development (TDD): [Section 3.2](#32-test-driven-development-tdd)
+- **Issue Management Guidelines**: [Section 4](#4-issue-management-guidelines)
+- **Commit Guidelines**: [Section 5](#5-commit-guidelines)
+- **Development Logs**: [Section 6](#6-development-logs)
+- **CI/CD Pipeline**: [Section 7](#7-ci-cd-pipeline-githubworkflows-ciyml)
+- **Project Structure**: [Section 8](#8-project-structure)
+- **Operational Guidelines**: [Section 9](#9-operational-guidelines)
+  - Git Management and `.gitignore`: [Section 9.1](#91-git-management-and-gitignore)
+  - Tooling and Version Management: [Section 9.2](#92-tooling-and-version-management)
+
+---
+
+
 This document outlines the core principles, technology stack, and development workflows for this repository.
 
 ## 1. Core Principles
@@ -38,7 +57,7 @@ The workflow is as follows:
 3.  **Branch Creation**: A new branch is created from `main` using the naming convention: `[type]/[issue-number]-[short-description]` (e.g., `feat/123-add-login-page`, `bugfix/456-fix-button-alignment`).
 4.  **Implementation**: Development is done on the feature branch, following the TDD cycle described below.
 5.  **Commit Messages**: Commits are linked to the issue using keywords (e.g., `feat: Add login form. Closes #123`). See **Commit Guidelines** (Section 5).
-6.  **Pull Request**: Once the work is complete, a Pull Request is created to merge the branch into `main`. The PR description should be filled out according to the `.github/pull_request_template.md`. Draft PRs can be used for work-in-progress reviews.
+6.  **Pull Request**: Once the work is complete, a Pull Request is created to merge the branch into `main`. The PR description should be filled out according to the `.github/pull_request_template.md`. It is crucial that PR descriptions are clear, concise, and actionable, especially when changes affect external GitHub settings (e.g., Actions, CodeQL, Dependabot, Secret Scanning, Issue Templates). Detailed verification steps should be provided. Draft PRs can be used for work-in-progress reviews.
 7.  **CI & Review**: The CI pipeline runs automatically. The PR is then reviewed by a human.
 8.  **Merge**: After approval, the PR is merged into `main`, and the feature branch is deleted.
 
@@ -135,7 +154,7 @@ To maintain a record of development activities, a log file will be created for e
 
 - **Location**: `development_logs/` (This directory is ignored by Git).
 - **File Naming**: `YYYY-MM-DD-issue-[issue-number]-session-[session-number].md`
-- **Content**: The log will contain a summary of actions taken, decisions made, and any issues encountered during the session.
+- **Content**: The log will contain a summary of actions taken, decisions made, and any issues encountered during the session. Crucially, it should explain *why* certain actions were taken, provide context for technical decisions, and briefly explain any specialized tools, libraries, or technical terms used, ensuring clarity for future reference and understanding.
 
 ## 7. CI/CD Pipeline (`.github/workflows/ci.yml`)
 
@@ -166,3 +185,23 @@ The CI pipeline is triggered on every push or pull request to the `main` branch 
 │
 └── GEMINI.md                     # This file
 ```
+
+## 9. Operational Guidelines
+
+This section outlines general best practices and considerations for development within this repository.
+
+### 9.1. Git Management and `.gitignore`
+
+- **Strict Git Management**: Always be mindful of what is being added to Git. Only commit files that are essential for the project and should be version-controlled.
+- **Proactive `.gitignore` Usage**: Immediately add entries to `.gitignore` for any new files or directories that are generated during development (e.g., build artifacts, temporary files, IDE-specific configurations, personal logs) and should not be tracked by Git.
+- **Precise Staging**: Avoid using `git add .` indiscriminately. Prefer `git add <specific_files>` or `git add -u` to stage only the intended changes, reducing the risk of accidentally committing unwanted files.
+
+### 9.2. Tooling and Version Management
+
+- **Version Dependency Awareness**: Be aware that tools and libraries can have breaking changes in major version updates. Always consult official documentation, migration guides, and changelogs before performing major version upgrades.
+- **Official Documentation First**: When encountering issues or seeking to understand tool behavior, prioritize consulting the official documentation. This is the most reliable source of information for correct usage and best practices.
+
+### 9.3. Quick Reference Maintenance
+
+- **Update on Change**: The "Quick Reference" section at the top of this `GEMINI.md` document must be updated whenever new top-level sections or significant subsections are added, removed, or renamed. This ensures the quick reference remains accurate and useful for navigation.
+- **Maintain Link Integrity**: Ensure that all links within the quick reference accurately point to the correct sections using Markdown anchor links (e.g., `[Section Name](#section-name)`).
