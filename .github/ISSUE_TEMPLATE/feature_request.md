@@ -1,5 +1,6 @@
 ---
 name: 🚀 Feature or Task Request
+about: Suggest a new feature or task for this project.
 description: Suggest a new feature or task to be implemented.
 labels: ['enhancement']
 ---
