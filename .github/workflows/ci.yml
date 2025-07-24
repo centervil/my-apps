@@ -24,7 +24,7 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --unsafe-perm
 
       - name: Lint and Format Check (Nx Affected)
         run: pnpm nx affected:lint
