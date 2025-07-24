@@ -15,6 +15,9 @@
 - **Operational Guidelines**: [Section 9](#9-operational-guidelines)
   - Git Management and `.gitignore`: [Section 9.1](#91-git-management-and-gitignore)
   - Tooling and Version Management: [Section 9.2](#92-tooling-and-version-management)
+  - Tool Usage Best Practices: [Section 9.3](#93-tool-usage-best-practices)
+  - Quick Reference Maintenance: [Section 9.4](#94-quick-reference-maintenance)
+  - Session Review and Continuous Improvement: [Section 9.5](#95-session-review-and-continuous-improvement)
 
 ---
 
