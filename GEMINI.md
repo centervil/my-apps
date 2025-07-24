@@ -153,7 +153,7 @@ Each commit should be an "atomic" unit of work, representing a single, complete 
 
 ## 6. Development Logs
 
-To maintain a record of development activities, a log file will be created for each development session.
+To maintain a record of development activities, a log file will be created for each development session. **Note: All development logs will be written in Japanese.**
 
 - **Location**: `development_logs/` (This directory is ignored by Git).
 - **File Naming**: `YYYY-MM-DD-issue-[issue-number]-session-[session-number].md`
