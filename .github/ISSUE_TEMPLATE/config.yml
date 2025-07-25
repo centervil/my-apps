@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
-  - name: "💬 質問はこちら"
-    url: https://github.com/your-org/your-repo/discussions/new?category=q-a
-    about: "このプロジェクトに関する質問やディスカッションはこちら"
+  - name: GitHub Community Support
+    url: https://github.com/orgs/community/discussions
+    about: Please ask and answer questions here.
