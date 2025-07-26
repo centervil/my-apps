@@ -56,8 +56,9 @@ All work, including new features, bug fixes, and chores, is managed through GitH
 The workflow is as follows:
 
 1.  **Task Definition**: A task is defined as a GitHub Issue using the provided templates.
-2.  **Initiate Work**: The AI agent (or developer) is given an Issue number to start work.
-3.  **Branch Creation**: A new branch is created from `main` using the naming convention: `[type]/[issue-number]-[short-description]` (e.g., `feat/123-add-login-page`, `bugfix/456-fix-button-alignment`).
+2.  **Branch Creation First**: Before any work begins, create a dedicated branch for the issue. This is the first step after deciding to work on an issue.
+3.  **Initiate Work**: The AI agent (or developer) is given an Issue number to start work.
+4.  **Branch Creation**: A new branch is created from `main` using the naming convention: `[type]/[issue-number]-[short-description]` (e.g., `feat/123-add-login-page`, `bugfix/456-fix-button-alignment`).
 4.  **Implementation**: Development is done on the feature branch, following the TDD cycle described below.
 5.  **Commit Messages**: Commits are linked to the issue using keywords (e.g., `feat: Add login form. Closes #123`). See **Commit Guidelines** (Section 5).
 6.  **Pull Request**: Once the work is complete, a Pull Request is created to merge the branch into `main`. The PR description should be filled out according to the `.github/pull_request_template.md`. It is crucial that PR descriptions are clear, concise, and actionable, especially when changes affect external GitHub settings (e.g., Actions, CodeQL, Dependabot, Secret Scanning, Issue Templates). Detailed verification steps should be provided. Draft PRs can be used for work-in-progress reviews.
@@ -95,6 +96,7 @@ The guiding principle is: **One Issue, One Pull Request.**
 - **Keep it Small**: An issue should represent a single, logical unit of work that can be completed by one developer in a reasonable amount of time (e.g., a few hours to a day).
 - **Define "Done"**: Every issue must have a clear, objective "Definition of Done" in the form of a checklist. This is crucial for knowing when the task is truly complete.
 - **Split Large Tasks**: If a task seems too large (e.g., "Implement the entire settings page"), break it down into smaller, more manageable user stories (e.g., "Implement password change UI", "Implement notification preferences").
+- **Proactive Decomposition**: Before starting work, analyze the feature or task. If it involves multiple distinct steps (e.g., navigation, data input, submission), break it down into separate, sequential issues from the outset. This prevents the creation of overly broad issues and ensures each PR remains focused.
 
 ### 4.3. Handling New Discoveries
 
