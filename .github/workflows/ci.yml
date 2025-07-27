@@ -27,7 +27,7 @@ jobs:
         run: pnpm install --unsafe-perm
 
       - name: Lint and Format Check (Nx Affected)
-        run: pnpm nx affected:lint
+        run: pnpm lint
 
       - name: Install Playwright Browsers
         run: pnpm -F spotify-podcast-automation exec playwright install --with-deps
