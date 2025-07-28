@@ -56,14 +56,14 @@ All work, including new features, bug fixes, and chores, is managed through GitH
 The workflow is as follows:
 
 1.  **Task Definition**: A task is defined as a GitHub Issue using the provided templates.
-2.  **Branch Creation First**: Before any work begins, create a dedicated branch for the issue. This is the first step after deciding to work on an issue.
-3.  **Initiate Work**: The AI agent (or developer) is given an Issue number to start work.
-4.  **Branch Creation**: A new branch is created from `main` using the naming convention: `[type]/[issue-number]-[short-description]` (e.g., `feat/123-add-login-page`, `bugfix/456-fix-button-alignment`).
-4.  **Implementation**: Development is done on the feature branch, following the TDD cycle described below.
-5.  **Commit Messages**: Commits are linked to the issue using keywords (e.g., `feat: Add login form. Closes #123`). See **Commit Guidelines** (Section 5).
-6.  **Pull Request**: Once the work is complete, a Pull Request is created to merge the branch into `main`. The PR description should be filled out according to the `.github/pull_request_template.md`. It is crucial that PR descriptions are clear, concise, and actionable, especially when changes affect external GitHub settings (e.g., Actions, CodeQL, Dependabot, Secret Scanning, Issue Templates). Detailed verification steps should be provided. Draft PRs can be used for work-in-progress reviews.
-7.  **CI & Review**: The CI pipeline runs automatically. The PR is then reviewed by a human.
-8.  **Merge**: After approval, the PR is merged into `main`, and the feature branch is deleted.
+2.  **Start from Main**: Before starting any work, ensure you are on the `main` branch and it is up-to-date (`git checkout main && git pull`).
+3.  **Branch Creation**: Create a dedicated branch for the issue from the updated `main` branch, using the naming convention: `[type]/[issue-number]-[short-description]` (e.g., `feat/123-add-login-page`, `bugfix/456-fix-button-alignment`).
+4.  **Initiate Work**: The AI agent (or developer) is given an Issue number to start work.
+5.  **Implementation**: Development is done on the feature branch, following the TDD cycle described below.
+6.  **Commit Messages**: Commits are linked to the issue using keywords (e.g., `feat: Add login form. Closes #123`). See **Commit Guidelines** (Section 5).
+7.  **Pull Request**: Once the work is complete, a Pull Request is created to merge the branch into `main`. The PR description should be filled out according to the `.github/pull_request_template.md`. It is crucial that PR descriptions are clear, concise, and actionable, especially when changes affect external GitHub settings (e.g., Actions, CodeQL, Dependabot, Secret Scanning, Issue Templates). Detailed verification steps should be provided. Draft PRs can be used for work-in-progress reviews.
+8.  **CI & Review**: The CI pipeline runs automatically. The PR is then reviewed by a human.
+9.  **Merge**: After approval, the PR is merged into `main`, and the feature branch is deleted.
 
 ### 3.2. Test-Driven Development (TDD)
 
@@ -155,7 +155,7 @@ Each commit should be an "atomic" unit of work, representing a single, complete 
 
 ## 6. Development Logs
 
-To maintain a record of development activities, a log file will be created for each development session. **Note: All development logs will be written in Japanese.**
+To maintain a record of development activities, a log file will be created for each development session. **注: すべての開発ログは日本語で記述されます。**
 
 - **Location**: `development_logs/` (This directory is ignored by Git).
 - **File Naming**: `YYYY-MM-DD-issue-[issue-number]-session-[session-number].md`
