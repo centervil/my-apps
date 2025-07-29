@@ -38,6 +38,8 @@ jobs:
         run: pnpm -F spotify-podcast-automation exec playwright install --with-deps
 
       - name: Run Playwright tests (Nx Affected)
+        env:
+          NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
         run: pnpm nx affected:test
 
       - name: Run pnpm audit for vulnerabilities
