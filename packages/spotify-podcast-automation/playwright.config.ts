@@ -1,4 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
+import dotenv from 'dotenv';
+
+dotenv.config({ path: 'packages/spotify-podcast-automation/.env' });
 
 // Use process.env.PORT by default and fallback to 3000
 const PORT = process.env.PORT || 3000;
@@ -12,7 +15,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
+  reporter: [['html', { open: 'never' }]],
   use: {
     baseURL,
     trace: 'on-first-retry',

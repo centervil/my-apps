@@ -17,7 +17,8 @@
   - Tooling and Version Management: [Section 9.2](#92-tooling-and-version-management)
   - Tool Usage Best Practices: [Section 9.3](#93-tool-usage-best-practices)
   - Quick Reference Maintenance: [Section 9.4](#94-quick-reference-maintenance)
-  - Session Review and Continuous Improvement: [Section 9.5](#95-session-review-and-continuous-improvement)
+  - **Session Review and Continuous Improvement**: [Section 9.5](#95-session-review-and-continuous-improvement)
+- **Playwright Browser Automation Tasks**: [Section 10](#10-playwright-browser-automation-tasks)
 
 ---
 
@@ -210,3 +211,40 @@ This section outlines general best practices and considerations for development 
 
 - **Update on Change**: The "Quick Reference" section at the top of this `GEMINI.md` document must be updated whenever new top-level sections or significant subsections are added, removed, or renamed. This ensures the quick reference remains accurate and useful for navigation.
 - **Maintain Link Integrity**: Ensure that all links within the quick reference accurately point to the correct sections using Markdown anchor links (e.g., `[Section Name](#section-name)`).
+
+## 10. Playwright Browser Automation Tasks
+
+This section describes specific guidelines and best practices for browser automation tasks using Playwright. It focuses on challenges commonly encountered when automating dynamic UIs and complex login flows, and their solutions.
+
+### 10.1. Debugging and UI Element Identification
+
+*   **Leveraging `page.pause()` and Playwright Inspector**: When automating complex UIs or dynamic screen transitions, inserting `await page.pause();` into your test and running it in `--headed` mode will launch the Playwright Inspector. This allows you to visually inspect the browser's state during test execution, accurately identify element selectors, and debug the flow step-by-step.
+    *   **Lesson Learned**: Instead of guessing selectors or flow corrections, verifying the actual UI state with the Inspector saves significant debugging time and improves accuracy. By adjusting the `page.pause()` position based on user feedback, you can pinpoint the exact location of issues.
+
+### 10.2. Locator Selection and Management
+
+*   **Dynamic Element Locator Acquisition Timing**: Defining locators for elements that are not present on the initial page load (e.g., a password input field that appears mid-login flow) in the Page Object's constructor can lead to errors.
+    *   **Lesson Learned**: Acquire locators dynamically using `page.locator()` at the step where the element is expected to appear. This results in more robust test code that doesn't depend on the element's initial presence.
+*   **Using Robust Selectors**: Playwright offers various built-in locators for identifying elements.
+    *   **Lesson Learned**: Whenever possible, prefer more semantic and UI-change-resilient locators like `getByTestId()`, `getByRole()`, or `getByPlaceholder()`. This makes tests less susceptible to minor HTML structure changes. Generic CSS selectors (`page.locator('#id')`) should be used as a last resort.
+
+### 10.3. Enhancing Test Stability
+
+*   **Strategic Delays (`waitForTimeout`)**: In web pages with dynamic UIs, elements may not be immediately interactive even after appearing. JavaScript-driven form rewrites or re-renders can also conflict with rapid test operations.
+    *   **Lesson Learned**: Strategically inserting small, fixed delays like `await page.waitForTimeout(500);` before critical interactions (e.g., clicks) can significantly improve test stability. While not always ideal for performance, it's an effective way to ensure test reliability.
+*   **Leveraging `waitFor`**: When waiting for specific elements to become available, use `locator.waitFor({ state: 'visible' })` or `page.waitForSelector()`. This pauses test execution until the element is ready, preventing timeout errors.
+
+### 10.4. Addressing Environment-Specific Issues
+
+*   **System-Level Dependencies**: Playwright tests can be affected by system-level dependencies of the execution environment (e.g., fonts). Specifically, if non-English languages like Japanese are required, missing fonts can lead to garbled text.
+    *   **Lesson Learned**: Use commands like `sudo pnpm exec playwright install-deps` or `sudo apt-get install -y fonts-noto-cjk` to install necessary system dependencies.
+*   **Local vs. Global Tool Installation Conflicts**: When using commands like `pnpm exec playwright`, conflicts can arise if an older, globally installed version of Playwright or its dependencies clashes with the project's local version.
+    *   **Lesson Learned**: Avoid these conflicts by explicitly calling the Playwright binary located in the project's `node_modules/.bin` directory using its absolute path. Example: `/path/to/your/project/packages/your-project/node_modules/.bin/playwright test ...`
+
+### 10.5. Scope Management and Issue Isolation
+
+*   **Security Challenges (reCAPTCHA, etc.)**: Bot countermeasures like reCAPTCHA are inherently difficult to automate and are typically considered out of scope for functional tests.
+    *   **Lesson Learned**: If the primary function (e.g., login) successfully authenticates and redirects to the intended page, reCAPTCHA bypass should be isolated as a separate concern. Adjusting test assertions to consider reaching the reCAPTCHA page as a successful outcome for the login test can be a pragmatic approach.
+*   **Close Collaboration with User**: When facing complex issues, instead of guessing solutions, asking the user for specific details (screen state, error messages) and collaboratively debugging using tools like Playwright Inspector is the most efficient and reliable path to resolution.
+
+---

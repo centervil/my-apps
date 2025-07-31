@@ -43,5 +43,8 @@ Thumbs.db
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
 
-# Development logs
+# Playwright specific
+packages/spotify-podcast-automation/.env
+packages/spotify-podcast-automation/playwright-report/
+packages/spotify-podcast-automation/test-results/
 
