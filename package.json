@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "serena:start": "uvx --from git+https://github.com/oraios/serena serena start-mcp-server"
   },
   "private": true,
   "devDependencies": {
