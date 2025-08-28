@@ -48,3 +48,4 @@ packages/spotify-podcast-automation/.env
 packages/spotify-podcast-automation/playwright-report/
 packages/spotify-podcast-automation/test-results/
 
+serena.log
