@@ -1,0 +1,9 @@
+{
+  "executors": {
+    "run": {
+      "implementation": "./executor",
+      "schema": "./schema.json",
+      "description": "Runs a Python script."
+    }
+  }
+}

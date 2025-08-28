@@ -1,0 +1,6 @@
+{
+  "name": "nx-python-executor",
+  "version": "0.0.1",
+  "main": "executor.js",
+  "executors": "./executors.json"
+}

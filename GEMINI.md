@@ -19,6 +19,7 @@
   - Quick Reference Maintenance: [Section 9.4](#94-quick-reference-maintenance)
   - **Session Review and Continuous Improvement**: [Section 9.5](#95-session-review-and-continuous-improvement)
 - **Playwright Browser Automation Tasks**: [Section 10](#10-playwright-browser-automation-tasks)
+- **Serena MCP**: [Section 11](#11-serena-mcp)
 
 ---
 
@@ -246,5 +247,19 @@ This section describes specific guidelines and best practices for browser automa
 *   **Security Challenges (reCAPTCHA, etc.)**: Bot countermeasures like reCAPTCHA are inherently difficult to automate and are typically considered out of scope for functional tests.
     *   **Lesson Learned**: If the primary function (e.g., login) successfully authenticates and redirects to the intended page, reCAPTCHA bypass should be isolated as a separate concern. Adjusting test assertions to consider reaching the reCAPTCHA page as a successful outcome for the login test can be a pragmatic approach.
 *   **Close Collaboration with User**: When facing complex issues, instead of guessing solutions, asking the user for specific details (screen state, error messages) and collaboratively debugging using tools like Playwright Inspector is the most efficient and reliable path to resolution.
+
+## 11. Serena MCP
+
+Serena MCP (Meta-Coding-Platform) is a toolkit that transforms LLMs into coding agents. It provides a server that allows the agent to interact with the local development environment.
+
+### 11.1. Usage
+
+The Serena MCP server can be started by running the following command at the root of the project:
+
+```bash
+pnpm serena:start
+```
+
+This command is defined in the `package.json` file and executes the Serena MCP server using `uvx`.
 
 ---

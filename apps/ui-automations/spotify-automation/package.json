@@ -1,5 +1,5 @@
 {
-  "name": "@ui-automation/spotify-podcast-automation",
+  "name": "@ui-automation/spotify-automation",
   "version": "1.0.0",
   "description": "Automates podcast distribution on Spotify for Creators.",
   "main": "index.js",

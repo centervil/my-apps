@@ -1,0 +1,11 @@
+{
+  "name": "cli-tools",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/cli-tools/src",
+  "projectType": "application",
+  "targets": {
+    "run": {
+      "executor": "./tools/executors/python:run"
+    }
+  }
+}
