@@ -5,7 +5,7 @@
 
 ## Summary
 
-This session focused on establishing a comprehensive, professional-grade development foundation for the UI-Automation monorepo. All decisions were documented in `GEMINI.md` to serve as a living guide for the project.
+This session focused on establishing a comprehensive, professional-grade development foundation for the my-apps monorepo. All decisions were documented in `GEMINI.md` to serve as a living guide for the project.
 
 ## Actions Taken
 

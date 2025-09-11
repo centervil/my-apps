@@ -35,7 +35,7 @@ jobs:
         run: pnpm lint
 
       - name: Install Playwright Browsers
-        run: pnpm -F @my-apps/spotify-automation exec playwright install --with-deps
+        run: pnpm -F @ui-automation/spotify-automation exec playwright install --with-deps
 
       - name: Run Playwright tests (Nx Affected)
         env:

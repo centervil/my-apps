@@ -1,7 +1,7 @@
 # 開発ログ: 2025-08-26 - Issue #24 - Session 1
 
 ## 担当Issue
-[Issue #24: Nxモノレポ構成を多言語・多プロジェクト対応へ拡張する](https://github.com/centervil/UI-Automation/issues/24)
+[Issue #24: Nxモノレポ構成を多言語・多プロジェクト対応へ拡張する](https://github.com/centervil/my-apps/issues/24)
 
 ## 作業概要
 本セッションでは、Issue #24のタスクの一環として、既存のNxモノレポのディレクトリ構成を拡張し、多言語・多プロジェクトに対応させるための初期リファクタリングを実施しました。また、構成変更に伴うCI/CDへの影響を確認し、設定ファイルを修正しました。
@@ -18,7 +18,7 @@
 
 3.  **設定ファイルの更新**:
     -   `pnpm-workspace.yaml`: ワークスペースのパスを新しい`apps/**`および`libs/*`構造を反映するように更新しました。
-    -   `apps/ui-automations/spotify-automation/package.json`: プロジェクト名を`@ui-automation/spotify-podcast-automation`から`@ui-automation/spotify-automation`に更新しました。
+    -   `apps/ui-automations/spotify-automation/package.json`: プロジェクト名を`@my-apps/spotify-podcast-automation`から`@my-apps/spotify-automation`に更新しました。
     -   `.github/workflows/ci.yml`: Playwrightのブラウザインストールコマンドの対象プロジェクト名（`-F`フラグ）と、テストレポートのアップロードパスを新しいディレクトリ構造に合わせて修正しました。
 
 4.  **Python/Nx連携のPoC**:
