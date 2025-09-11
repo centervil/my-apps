@@ -5,7 +5,8 @@
 - [2. Technology Stack](#2-technology-stack)
 - [3. Development Workflows](#3-development-workflows)
   - [3.1. Issue-Driven Development (IDD)](#31-issue-driven-development-idd)
-  - [3.2. Test-Driven Development (TDD)](#32-test-driven-development-tdd)
+  - [3.2. Specification Document Creation Process](#32-specification-document-creation-process)
+  - [3.3. Test-Driven Development (TDD)](#33-test-driven-development-tdd)
 - [4. Issue Management Guidelines](#4-issue-management-guidelines)
 - [5. Commit Guidelines](#5-commit-guidelines)
 - [6. Development Logs](#6-development-logs)
@@ -56,7 +57,21 @@ All work is managed through GitHub Issues.
 6.  **CI & Review**: The CI pipeline runs, followed by a human review.
 7.  **Merge**: After approval, the PR is merged.
 
-### 3.2. Test-Driven Development (TDD)
+### 3.2. Specification Document Creation Process
+
+To ensure high-quality software development, the following three specification documents are created for each Issue.
+
+-   **`requirements.md`**: Defines what the system should do.
+    -   Requirements are described in **user story format**.
+    -   Each user story clearly defines **acceptance criteria** that serve as the criteria for completion.
+-   **`design.md`**: Designs how to build the system.
+    -   Defines the system's **architecture**, **components**, **interfaces**, and **data models**.
+    -   Also describes **error handling** and **test strategies**.
+-   **`tasks.md`**: Creates a concrete plan for building the system.
+    -   Based on the design, implementation tasks are listed in **checklist format**.
+    -   Each task must be small and clearly defined.
+
+### 3.3. Test-Driven Development (TDD)
 
 This project adopts a Test-Driven Development (TDD) approach.
 
@@ -90,7 +105,7 @@ Commit messages must follow the [Conventional Commits](https://www.conventionalc
 
 All work sessions must be recorded in Markdown files. **注: すべての開発ログは日本語で記述されます。**
 
-- **Location**: `development_logs/` (Ignored by Git).
+- **Location**: `development_logs/`.
 - **File Naming**: `YYYY-MM-DD-issue-[issue-number]-session-[session-number].md`
 - **Content**: Summary of actions, decisions, and rationale.
 
