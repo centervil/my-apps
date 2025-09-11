@@ -1,0 +1,389 @@
+name: '🧪 Test Gemini Workflows'
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Type of test to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - 'all'
+          - 'review'
+          - 'triage'
+          - 'invoke'
+          - 'security'
+      test_pr_number:
+        description: 'PR number for review tests (optional)'
+        required: false
+        type: string
+      test_issue_number:
+        description: 'Issue number for triage tests (optional)'
+        required: false
+        type: string
+
+defaults:
+  run:
+    shell: 'bash'
+
+jobs:
+  validate-configuration:
+    runs-on: 'ubuntu-latest'
+    permissions:
+      contents: 'read'
+    steps:
+      - name: 'Checkout repository'
+        uses: 'actions/checkout@v4'
+
+      - name: 'Validate workflow files'
+        run: |
+          echo "Validating workflow YAML syntax..."
+          
+          # Check if workflow files exist
+          workflows=(
+            ".github/workflows/gemini-dispatch.yml"
+            ".github/workflows/gemini-review.yml"
+            ".github/workflows/gemini-triage.yml"
+            ".github/workflows/gemini-invoke.yml"
+          )
+          
+          for workflow in "${workflows[@]}"; do
+            if [[ ! -f "$workflow" ]]; then
+              echo "❌ Missing workflow file: $workflow"
+              exit 1
+            else
+              echo "✅ Found workflow file: $workflow"
+            fi
+          done
+
+      - name: 'Validate required secrets and variables'
+        env:
+          GEMINI_API_KEY: '${{ secrets.GEMINI_API_KEY }}'
+          GOOGLE_API_KEY: '${{ secrets.GOOGLE_API_KEY }}'
+          GOOGLE_CLOUD_PROJECT: '${{ vars.GOOGLE_CLOUD_PROJECT }}'
+        run: |
+          echo "Validating configuration..."
+          
+          # Check for at least one API key
+          if [[ -z "$GEMINI_API_KEY" && -z "$GOOGLE_API_KEY" ]]; then
+            echo "❌ Missing required API key (GEMINI_API_KEY or GOOGLE_API_KEY)"
+            exit 1
+          else
+            echo "✅ API key configuration found"
+          fi
+          
+          # Check for Google Cloud project
+          if [[ -z "$GOOGLE_CLOUD_PROJECT" ]]; then
+            echo "⚠️ Missing GOOGLE_CLOUD_PROJECT variable"
+          else
+            echo "✅ Google Cloud project configured: $GOOGLE_CLOUD_PROJECT"
+          fi
+
+  test-security-constraints:
+    runs-on: 'ubuntu-latest'
+    if: ${{ inputs.test_type == 'all' || inputs.test_type == 'security' }}
+    permissions:
+      contents: 'read'
+    steps:
+      - name: 'Checkout repository'
+        uses: 'actions/checkout@v4'
+
+      - name: 'Test fork protection logic'
+        run: |
+          echo "Testing fork protection logic..."
+          
+          # Extract the condition from dispatch workflow
+          condition=$(grep -A 5 "github.event.pull_request.head.repo.fork == false" .github/workflows/gemini-dispatch.yml || true)
+          
+          if [[ -n "$condition" ]]; then
+            echo "✅ Fork protection condition found in dispatch workflow"
+          else
+            echo "❌ Fork protection condition not found"
+            exit 1
+          fi
+
+      - name: 'Test permission requirements'
+        run: |
+          echo "Testing permission requirements..."
+          
+          # Check for author association checks
+          associations=("OWNER" "MEMBER" "COLLABORATOR")
+          
+          for assoc in "${associations[@]}"; do
+            if grep -q "$assoc" .github/workflows/gemini-dispatch.yml; then
+              echo "✅ Found $assoc permission check"
+            else
+              echo "❌ Missing $assoc permission check"
+              exit 1
+            fi
+          done
+
+  test-review-workflow:
+    runs-on: 'ubuntu-latest'
+    if: ${{ inputs.test_type == 'all' || inputs.test_type == 'review' }}
+    permissions:
+      contents: 'read'
+      pull-requests: 'read'
+    steps:
+      - name: 'Checkout repository'
+        uses: 'actions/checkout@v4'
+
+      - name: 'Validate review workflow structure'
+        run: |
+          echo "Validating review workflow..."
+          
+          # Check for required components
+          components=(
+            "workflow_call"
+            "run-gemini-cli"
+            "mcp__github__"
+            "create_pending_pull_request_review"
+            "submit_pending_pull_request_review"
+          )
+          
+          for component in "${components[@]}"; do
+            if grep -q "$component" .github/workflows/gemini-review.yml; then
+              echo "✅ Found component: $component"
+            else
+              echo "❌ Missing component: $component"
+              exit 1
+            fi
+          done
+
+      - name: 'Test review prompt structure'
+        run: |
+          echo "Testing review prompt structure..."
+          
+          # Check for key prompt sections
+          sections=(
+            "Role"
+            "Primary Directive"
+            "Review Criteria"
+            "Severity Levels"
+            "Execution Workflow"
+          )
+          
+          for section in "${sections[@]}"; do
+            if grep -q "## $section" .github/workflows/gemini-review.yml; then
+              echo "✅ Found prompt section: $section"
+            else
+              echo "❌ Missing prompt section: $section"
+              exit 1
+            fi
+          done
+
+  test-triage-workflow:
+    runs-on: 'ubuntu-latest'
+    if: ${{ inputs.test_type == 'all' || inputs.test_type == 'triage' }}
+    permissions:
+      contents: 'read'
+      issues: 'read'
+    steps:
+      - name: 'Checkout repository'
+        uses: 'actions/checkout@v4'
+
+      - name: 'Validate triage workflow structure'
+        run: |
+          echo "Validating triage workflow..."
+          
+          # Check for required components
+          components=(
+            "workflow_call"
+            "run-gemini-cli"
+            "add_labels_to_issue"
+            "create_issue_comment"
+            "list_repository_labels"
+          )
+          
+          for component in "${components[@]}"; do
+            if grep -q "$component" .github/workflows/gemini-triage.yml; then
+              echo "✅ Found component: $component"
+            else
+              echo "❌ Missing component: $component"
+              exit 1
+            fi
+          done
+
+      - name: 'Test triage prompt structure'
+        run: |
+          echo "Testing triage prompt structure..."
+          
+          # Check for key triage sections
+          sections=(
+            "Issue Classification"
+            "Priority Assessment"
+            "Label Application"
+            "Triage Comment"
+          )
+          
+          for section in "${sections[@]}"; do
+            if grep -q "$section" .github/workflows/gemini-triage.yml; then
+              echo "✅ Found triage section: $section"
+            else
+              echo "❌ Missing triage section: $section"
+              exit 1
+            fi
+          done
+
+  test-invoke-workflow:
+    runs-on: 'ubuntu-latest'
+    if: ${{ inputs.test_type == 'all' || inputs.test_type == 'invoke' }}
+    permissions:
+      contents: 'read'
+    steps:
+      - name: 'Checkout repository'
+        uses: 'actions/checkout@v4'
+
+      - name: 'Validate invoke workflow structure'
+        run: |
+          echo "Validating invoke workflow..."
+          
+          # Check for required components
+          components=(
+            "workflow_call"
+            "run-gemini-cli"
+            "get_file_contents"
+            "search_code"
+            "create_issue_comment"
+          )
+          
+          for component in "${components[@]}"; do
+            if grep -q "$component" .github/workflows/gemini-invoke.yml; then
+              echo "✅ Found component: $component"
+            else
+              echo "❌ Missing component: $component"
+              exit 1
+            fi
+          done
+
+  test-integration:
+    needs: [validate-configuration, test-security-constraints]
+    runs-on: 'ubuntu-latest'
+    if: ${{ inputs.test_type == 'all' }}
+    permissions:
+      contents: 'read'
+      issues: 'write'
+      pull-requests: 'write'
+    steps:
+      - name: 'Checkout repository'
+        uses: 'actions/checkout@v4'
+
+      - name: 'Test workflow integration'
+        run: |
+          echo "Testing workflow integration..."
+          
+          # Check that dispatch workflow references all sub-workflows
+          subworkflows=(
+            "gemini-review.yml"
+            "gemini-triage.yml"
+            "gemini-invoke.yml"
+          )
+          
+          for workflow in "${subworkflows[@]}"; do
+            if grep -q "$workflow" .github/workflows/gemini-dispatch.yml; then
+              echo "✅ Dispatch workflow references: $workflow"
+            else
+              echo "❌ Dispatch workflow missing reference to: $workflow"
+              exit 1
+            fi
+          done
+
+      - name: 'Test command routing logic'
+        run: |
+          echo "Testing command routing logic..."
+          
+          # Check for command routing in dispatch workflow
+          commands=("/review" "/triage" "@gemini-cli")
+          
+          for command in "${commands[@]}"; do
+            if grep -q "$command" .github/workflows/gemini-dispatch.yml; then
+              echo "✅ Found command routing for: $command"
+            else
+              echo "❌ Missing command routing for: $command"
+              exit 1
+            fi
+          done
+
+  test-error-handling:
+    runs-on: 'ubuntu-latest'
+    if: ${{ inputs.test_type == 'all' }}
+    permissions:
+      contents: 'read'
+    steps:
+      - name: 'Checkout repository'
+        uses: 'actions/checkout@v4'
+
+      - name: 'Test fallthrough job exists'
+        run: |
+          echo "Testing error handling..."
+          
+          if grep -q "fallthrough:" .github/workflows/gemini-dispatch.yml; then
+            echo "✅ Fallthrough job found"
+          else
+            echo "❌ Fallthrough job missing"
+            exit 1
+          fi
+          
+          if grep -q "failure()" .github/workflows/gemini-dispatch.yml; then
+            echo "✅ Failure condition handling found"
+          else
+            echo "❌ Failure condition handling missing"
+            exit 1
+          fi
+
+      - name: 'Test timeout configurations'
+        run: |
+          echo "Testing timeout configurations..."
+          
+          workflows=(
+            ".github/workflows/gemini-review.yml:7"
+            ".github/workflows/gemini-triage.yml:5"
+            ".github/workflows/gemini-invoke.yml:10"
+          )
+          
+          for workflow_timeout in "${workflows[@]}"; do
+            workflow="${workflow_timeout%:*}"
+            expected_timeout="${workflow_timeout#*:}"
+            
+            if grep -q "timeout-minutes: $expected_timeout" "$workflow"; then
+              echo "✅ Correct timeout found in $workflow"
+            else
+              echo "⚠️ Timeout configuration may need review in $workflow"
+            fi
+          done
+
+  summary:
+    needs: [validate-configuration, test-security-constraints, test-review-workflow, test-triage-workflow, test-invoke-workflow, test-integration, test-error-handling]
+    if: always()
+    runs-on: 'ubuntu-latest'
+    permissions:
+      contents: 'read'
+    steps:
+      - name: 'Test Summary'
+        run: |
+          echo "## 🧪 Gemini Workflows Test Summary"
+          echo ""
+          echo "Test Results:"
+          echo "- Configuration Validation: ${{ needs.validate-configuration.result }}"
+          echo "- Security Constraints: ${{ needs.test-security-constraints.result }}"
+          echo "- Review Workflow: ${{ needs.test-review-workflow.result }}"
+          echo "- Triage Workflow: ${{ needs.test-triage-workflow.result }}"
+          echo "- Invoke Workflow: ${{ needs.test-invoke-workflow.result }}"
+          echo "- Integration Tests: ${{ needs.test-integration.result }}"
+          echo "- Error Handling: ${{ needs.test-error-handling.result }}"
+          echo ""
+          
+          # Check if any tests failed
+          if [[ "${{ needs.validate-configuration.result }}" == "failure" ]] || \
+             [[ "${{ needs.test-security-constraints.result }}" == "failure" ]] || \
+             [[ "${{ needs.test-review-workflow.result }}" == "failure" ]] || \
+             [[ "${{ needs.test-triage-workflow.result }}" == "failure" ]] || \
+             [[ "${{ needs.test-invoke-workflow.result }}" == "failure" ]] || \
+             [[ "${{ needs.test-integration.result }}" == "failure" ]] || \
+             [[ "${{ needs.test-error-handling.result }}" == "failure" ]]; then
+            echo "❌ Some tests failed. Please review the logs above."
+            exit 1
+          else
+            echo "✅ All tests passed! Gemini workflows are ready for use."
+          fi
