@@ -99,8 +99,8 @@ jobs:
                 "run_shell_command(head)",
                 "run_shell_command(tail)"
               ]
-            }  
-        prompt: |-
+            }
+          prompt: |-
             ## Role
 
             You are an expert issue triage agent for GitHub repositories. Your task is to analyze new issues and automatically categorize, label, and prioritize them to help maintainers manage their project efficiently.

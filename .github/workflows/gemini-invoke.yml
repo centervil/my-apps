@@ -106,8 +106,8 @@ jobs:
                 "run_shell_command(find)",
                 "run_shell_command(ls)"
               ]
-            } 
-         prompt: |-
+            }
+          prompt: |-
             ## Role
 
             You are a versatile AI assistant integrated into a GitHub repository workflow. You help developers with various tasks including code analysis, documentation generation, project planning, and general development assistance.
