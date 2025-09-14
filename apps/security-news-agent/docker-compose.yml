@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  security-news-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: security-news-agent
+    environment:
+      # 環境変数（実際のAPIキーは.envファイルから読み込み）
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY}
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      - GEMINI_MODEL_NAME=${GEMINI_MODEL_NAME:-gemini-1.5-flash-latest}
+      - SLIDE_FORMAT=${SLIDE_FORMAT:-pdf}
+      - MARP_THEME=${MARP_THEME:-default}
+      - MARP_PAGINATE=${MARP_PAGINATE:-true}
+      - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2:-true}
+      - LANGCHAIN_PROJECT=${LANGCHAIN_PROJECT:-security-news-agent-docker}
+    volumes:
+      # 出力ファイルを永続化
+      - ./slides:/app/slides
+      - ./logs:/app/logs
+      # 設定ファイルをマウント
+      - ./.env:/app/.env:ro
+    working_dir: /app
+    command: ["poetry", "run", "python", "-m", "security_news_agent"]
+    restart: "no"
+
+  # テスト専用サービス
+  security-news-agent-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: security-news-agent-test
+    environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY}
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      - GEMINI_MODEL_NAME=${GEMINI_MODEL_NAME:-gemini-1.5-flash-latest}
+      - SLIDE_FORMAT=
+      - LANGCHAIN_PROJECT=security-news-agent-test
+    volumes:
+      - ./slides:/app/slides
+      - ./logs:/app/logs
+      - ./.env:/app/.env:ro
+    working_dir: /app
+    command: ["poetry", "run", "python", "-m", "security_news_agent", "--test-mode", "--log-level", "DEBUG"]
+    restart: "no"
+
+  # 単体テスト実行用サービス
+  security-news-agent-unittest:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: security-news-agent-unittest
+    volumes:
+      - ./logs:/app/logs
+    working_dir: /app
+    command: ["poetry", "run", "pytest", "tests/unit/", "-v", "--tb=short"]
+    restart: "no"
+
+  # 統合テスト実行用サービス
+  security-news-agent-integration:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: security-news-agent-integration
+    volumes:
+      - ./logs:/app/logs
+    working_dir: /app
+    command: ["poetry", "run", "pytest", "tests/integration/", "-v", "--tb=short"]
+    restart: "no"
+
+  # 設定検証用サービス
+  security-news-agent-validate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: security-news-agent-validate
+    environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY}
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+    volumes:
+      - ./.env:/app/.env:ro
+    working_dir: /app
+    command: ["poetry", "run", "python", "-m", "security_news_agent", "--validate-only"]
+    restart: "no"

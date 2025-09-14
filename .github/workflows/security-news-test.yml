@@ -1,0 +1,216 @@
+name: Security News Agent Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'apps/security-news-agent/**'
+      - '.github/workflows/security-news-*.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'apps/security-news-agent/**'
+      - '.github/workflows/security-news-*.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+
+    defaults:
+      run:
+        working-directory: ./apps/security-news-agent
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pypoetry
+            ./apps/security-news-agent/.venv
+          key: ${{ runner.os }}-py${{ matrix.python-version }}-poetry-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-py${{ matrix.python-version }}-poetry-
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Install dependencies
+        run: poetry install --no-interaction
+
+      - name: Run code formatting check
+        run: |
+          poetry run black --check src/ tests/
+          poetry run isort --check-only src/ tests/
+
+      - name: Run linting
+        run: |
+          poetry run flake8 src/ tests/ --max-line-length=88 --extend-ignore=E203,W503
+          poetry run mypy src/ --ignore-missing-imports
+
+      - name: Run unit tests
+        run: |
+          poetry run pytest tests/unit/ -v \
+            --tb=short \
+            --cov=src/security_news_agent \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            --cov-fail-under=80
+
+      - name: Run integration tests
+        run: |
+          poetry run pytest tests/integration/ -v --tb=short
+
+      - name: Upload coverage to Codecov
+        if: matrix.python-version == '3.11'
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./apps/security-news-agent/coverage.xml
+          flags: unittests
+          name: codecov-py${{ matrix.python-version }}
+          fail_ci_if_error: false
+
+  api-tests:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    needs: test
+
+    defaults:
+      run:
+        working-directory: ./apps/security-news-agent
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Install dependencies
+        run: poetry install --no-interaction
+
+      - name: Run API tests (quick)
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          LANGCHAIN_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+        run: |
+          if [ -n "$GOOGLE_API_KEY" ] && [ -n "$LANGCHAIN_API_KEY" ] && [ -n "$TAVILY_API_KEY" ]; then
+            echo "Running quick API tests..."
+            poetry run pytest tests/api/ -m "api and not slow" -v --tb=short --timeout=60
+          else
+            echo "⚠️ API keys not available, skipping API tests"
+            echo "This is expected for pull requests from forks"
+          fi
+
+  security-scan:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./apps/security-news-agent
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Install dependencies
+        run: poetry install --no-interaction
+
+      - name: Run security scan with bandit
+        run: |
+          poetry add --group dev bandit[toml]
+          poetry run bandit -r src/ -f json -o bandit-report.json || true
+          poetry run bandit -r src/ -f txt
+
+      - name: Run dependency vulnerability scan
+        run: |
+          poetry add --group dev safety
+          poetry run safety check --json --output safety-report.json || true
+          poetry run safety check
+
+      - name: Upload security scan results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-scan-results
+          path: |
+            ./apps/security-news-agent/bandit-report.json
+            ./apps/security-news-agent/safety-report.json
+          retention-days: 30
+
+  build-test:
+    runs-on: ubuntu-latest
+    needs: test
+
+    defaults:
+      run:
+        working-directory: ./apps/security-news-agent
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Build package
+        run: poetry build
+
+      - name: Test package installation
+        run: |
+          # Test installation from wheel
+          pip install dist/*.whl
+          
+          # Test basic import
+          python -c "import security_news_agent; print('✅ Package import successful')"
+          
+          # Test CLI help
+          python -m security_news_agent --help
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package
+          path: ./apps/security-news-agent/dist/
+          retention-days: 7
