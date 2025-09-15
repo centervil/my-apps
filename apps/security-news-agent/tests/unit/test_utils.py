@@ -441,9 +441,7 @@ class TestExtractUrlsFromText:
         text = "Visit https://example.com and http://test.org for more info"
         result = extract_urls_from_text(text)
         
-        assert "https://example.com" in result
-        assert "http://test.org" in result
-        assert len(result) == 2
+        assert set(result) == {"https://example.com", "http://test.org"}
     
     def test_extract_urls_none(self):
         """Test extracting URLs when none exist."""
