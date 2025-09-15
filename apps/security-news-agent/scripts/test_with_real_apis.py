@@ -26,10 +26,9 @@ def run_api_tests(test_type="minimal", verbose=False):
     # Check prerequisites
     missing_keys = check_api_keys()
     if missing_keys:
-        print("❌ Missing required API keys:")
-        for key in missing_keys:
-            print(f"   - {key}")
-        print("\nPlease set these environment variables before running API tests.")
+        print(f"❌ Missing {len(missing_keys)} required API key(s).")
+        print("Some required API keys are not set. Please check documentation for details.")
+        print("\nPlease set the required environment variables before running API tests.")
         return False
     
     print("✅ All required API keys found")
@@ -135,9 +134,8 @@ Set the following environment variables:
     if args.check_keys:
         missing_keys = check_api_keys()
         if missing_keys:
-            print("❌ Missing API keys:")
-            for key in missing_keys:
-                print(f"   - {key}")
+            print(f"❌ Missing {len(missing_keys)} required API key(s).")
+            print("Some required API keys are not set. Please check documentation for details.")
             return 1
         else:
             print("✅ All required API keys are configured")
