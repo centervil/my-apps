@@ -79,7 +79,6 @@ MANIFEST
 .env.*.local
 
 # Output directories
-output/
 slides/
 
 # Cache directories
