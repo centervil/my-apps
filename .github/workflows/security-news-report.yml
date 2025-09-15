@@ -1,4 +1,6 @@
 name: Generate Daily Security News Report
+permissions:
+  contents: read
 
 on:
   workflow_dispatch:
