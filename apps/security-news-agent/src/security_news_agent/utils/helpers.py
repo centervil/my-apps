@@ -77,9 +77,9 @@ def find_json(text: str) -> Optional[str]:
     text = re.sub(r"\s*```$", "", text)
     
     # Find JSON-like content
-    match = re.search(r"\{.*\}\s*$", text, flags=re.DOTALL)
+    match = re.search(r"\{.*\}", text, flags=re.DOTALL)
     if match:
-        return match.group(0)
+        return match.group(0).strip()
     return None
 
 
@@ -196,7 +196,10 @@ def clean_title(raw: str) -> str:
     Returns:
         Cleaned title
     """
-    text = (raw or "").strip().splitlines()[0]
+    lines = (raw or "").strip().splitlines()
+    if not lines:
+        return "Daily Security News Summary"
+    text = lines[0]
     # Remove quotes and special characters
     text = text.strip("「」『』\"' 　:：")
     # Remove common prefixes
@@ -230,7 +233,7 @@ def remove_presenter_lines(md: str) -> str:
     )
     
     # Clean up extra newlines
-    head = re.sub(r"\n{3,}", "\n\n", head).strip() + "\n"
+    head = re.sub(r"\n{3,}", "\n\n", head).strip()
     
     return head + ("\n---\n" + parts[1] if len(parts) == 2 else "")
 

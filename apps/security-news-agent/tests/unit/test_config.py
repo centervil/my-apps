@@ -151,12 +151,12 @@ class TestAgentConfig:
         with patch.dict(os.environ, {}, clear=True):
             mock_config.setup_environment()
             
-        assert os.environ["LANGCHAIN_TRACING_V2"] == "true"
-        assert os.environ["LANGCHAIN_ENDPOINT"] == mock_config.langchain_endpoint
-        assert os.environ["LANGCHAIN_API_KEY"] == mock_config.langchain_api_key
-        assert os.environ["LANGCHAIN_PROJECT"] == mock_config.langchain_project
-        assert os.environ["GOOGLE_API_KEY"] == mock_config.google_api_key
-        assert os.environ["TAVILY_API_KEY"] == mock_config.tavily_api_key
+            assert os.environ["LANGCHAIN_TRACING_V2"] == "true"
+            assert os.environ["LANGCHAIN_ENDPOINT"] == mock_config.langchain_endpoint
+            assert os.environ["LANGCHAIN_API_KEY"] == mock_config.langchain_api_key
+            assert os.environ["LANGCHAIN_PROJECT"] == mock_config.langchain_project
+            assert os.environ["GOOGLE_API_KEY"] == mock_config.google_api_key
+            assert os.environ["TAVILY_API_KEY"] == mock_config.tavily_api_key
     
     def test_get_search_queries(self, mock_config):
         """Test search queries configuration."""
@@ -213,3 +213,22 @@ class TestAgentConfig:
                 config = AgentConfig.from_env()
                 
             assert config.marp_paginate == expected, f"Failed for input '{env_value}'"
+
+    @patch('security_news_agent.config.settings.load_dotenv')
+    def test_from_env_with_file(self, mock_load_dotenv):
+        """Test loading from a specified .env file."""
+        env_vars = {
+            "GOOGLE_API_KEY": "file-key",
+            "LANGCHAIN_API_KEY": "file-key",
+            "TAVILY_API_KEY": "file-key"
+        }
+        with patch.dict(os.environ, env_vars, clear=True):
+            config = AgentConfig.from_env(env_file="mock.env")
+            mock_load_dotenv.assert_called_once_with("mock.env")
+            assert config.google_api_key == "file-key"
+
+    def test_from_env_missing_key_no_test_mode(self):
+        """Test that missing keys raise error when not in test mode."""
+        with patch.dict(os.environ, {}, clear=True):
+            with pytest.raises(ConfigurationError):
+                AgentConfig.from_env(test_mode=False)

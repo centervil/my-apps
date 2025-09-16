@@ -27,11 +27,12 @@ class AgentConfig:
     langchain_project: str = "security-news-agent"
     
     @classmethod
-    def from_env(cls, env_file: Optional[str] = None) -> 'AgentConfig':
+    def from_env(cls, env_file: Optional[str] = None, test_mode: bool = False) -> 'AgentConfig':
         """Load configuration from environment variables.
         
         Args:
             env_file: Optional path to .env file to load
+            test_mode: If True, allows missing API keys for testing
             
         Returns:
             AgentConfig instance
@@ -44,25 +45,31 @@ class AgentConfig:
         else:
             load_dotenv()
         
-        # Required API keys
+        # API keys
         google_api_key = os.getenv("GOOGLE_API_KEY")
         langchain_api_key = os.getenv("LANGCHAIN_API_KEY") 
         tavily_api_key = os.getenv("TAVILY_API_KEY")
         
-        # Check for missing required keys
-        missing_keys = []
-        if not google_api_key:
-            missing_keys.append("GOOGLE_API_KEY")
-        if not langchain_api_key:
-            missing_keys.append("LANGCHAIN_API_KEY")
-        if not tavily_api_key:
-            missing_keys.append("TAVILY_API_KEY")
-            
-        if missing_keys:
-            raise ConfigurationError(
-                f"Missing required environment variables: {', '.join(missing_keys)}. "
-                f"Please set these in your .env file or environment."
-            )
+        # In test mode, we can proceed without real keys
+        if test_mode and not all([google_api_key, langchain_api_key, tavily_api_key]):
+            google_api_key = google_api_key or "mock_google_api_key"
+            langchain_api_key = langchain_api_key or "mock_langchain_api_key"
+            tavily_api_key = tavily_api_key or "mock_tavily_api_key"
+        else:
+            # Check for missing required keys
+            missing_keys = []
+            if not google_api_key:
+                missing_keys.append("GOOGLE_API_KEY")
+            if not langchain_api_key:
+                missing_keys.append("LANGCHAIN_API_KEY")
+            if not tavily_api_key:
+                missing_keys.append("TAVILY_API_KEY")
+
+            if missing_keys:
+                raise ConfigurationError(
+                    f"Missing required environment variables: {', '.join(missing_keys)}. "
+                    f"Please set these in your .env file or environment."
+                )
         
         # Optional settings with defaults
         gemini_model_name = os.getenv("GEMINI_MODEL_NAME", "gemini-1.5-flash-latest")

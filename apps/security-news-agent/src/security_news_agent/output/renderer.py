@@ -1,6 +1,7 @@
 """Report rendering and file operations."""
 
 import os
+import re
 import shutil
 import subprocess
 import logging
@@ -319,7 +320,8 @@ class ReportRenderer:
             validation["warnings"].append("No main title found")
         
         # Check for slide separators
-        if "---" not in content[content.find("---\n") + 4:]:  # Skip header
+        body = re.sub(r"^---[\s\S]*?---\s*", "", content, count=1)
+        if "---" not in body:
             validation["warnings"].append("No slide separators found")
         
         # Check content length

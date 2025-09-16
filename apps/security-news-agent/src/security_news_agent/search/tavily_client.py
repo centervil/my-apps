@@ -110,6 +110,9 @@ class TavilyClient:
         except requests.RequestException as e:
             logger.error(f"Network error during Tavily search for query: '{query}': {e}")
             raise TavilyNetworkError(f"Network error: {e}")
+        except TavilyAPIError as e:
+            # Re-raise specific API errors to be caught by the caller
+            raise e
         except Exception as e:
             logger.error(f"Unexpected error during Tavily search for query: '{query}': {e}")
             raise TavilyError(f"Unexpected error: {e}")

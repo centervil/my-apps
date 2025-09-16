@@ -122,7 +122,7 @@ class TestWorkflowNodes:
         state = mock_initial_state.copy()
         state["outline"] = ["Item 1", "Item 2"]
         
-        with patch('security_news_agent.utils.helpers.strip_bullets') as mock_strip:
+        with patch('security_news_agent.processing.nodes.strip_bullets') as mock_strip:
             mock_strip.return_value = ["Chapter 1", "Chapter 2"]
             
             result = WorkflowNodes.make_toc(state, mock_llm)
@@ -159,7 +159,7 @@ class TestWorkflowNodes:
         state = mock_initial_state.copy()
         state["context_md"] = "### Query: test\n- Security news article"
         
-        with patch('security_news_agent.utils.helpers.today_iso') as mock_today:
+        with patch('security_news_agent.processing.nodes.today_iso') as mock_today:
             mock_today.return_value = "2025-09-14"
             
             result = WorkflowNodes.write_slides(state, mock_llm)
@@ -217,8 +217,9 @@ class TestWorkflowNodes:
         mock_llm = Mock()
         
         result = WorkflowNodes.evaluate_slides(state, mock_llm)
-        
-        assert result == {}  # Should return empty dict
+
+        expected = {"passed": False, "attempts": 1}
+        assert result == expected
         mock_llm.invoke.assert_not_called()
     
     def test_evaluate_slides_json_parse_error(self, mock_initial_state):

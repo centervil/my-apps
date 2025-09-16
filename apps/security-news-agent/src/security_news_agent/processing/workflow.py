@@ -19,24 +19,28 @@ logger = logging.getLogger(__name__)
 class SecurityNewsWorkflow:
     """Manages the LangGraph workflow for security news processing."""
     
-    def __init__(self, config: AgentConfig, tavily_client: TavilyClient):
+    def __init__(self, config: AgentConfig, tavily_client: TavilyClient, llm_client: Any = None):
         """Initialize the workflow.
         
         Args:
             config: Agent configuration
             tavily_client: Tavily API client
+            llm_client: Optional pre-initialized LLM client for mocking/testing
         """
         self.config = config
         self.tavily_client = tavily_client
         self.max_attempts = 3
         
         # Initialize LLM
-        self.llm = ChatGoogleGenerativeAI(
-            model=config.gemini_model_name,
-            google_api_key=config.google_api_key,
-            temperature=0.2,
-            convert_system_message_to_human=True  # Gemini specific
-        )
+        if llm_client:
+            self.llm = llm_client
+        else:
+            self.llm = ChatGoogleGenerativeAI(
+                model=config.gemini_model_name,
+                google_api_key=config.google_api_key,
+                temperature=0.2,
+                convert_system_message_to_human=True  # Gemini specific
+            )
         
         # Build the workflow graph
         self.graph = self._build_graph()
