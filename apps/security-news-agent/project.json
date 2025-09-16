@@ -1,0 +1,30 @@
+{
+  "name": "security-news-agent",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/security-news-agent/src",
+  "projectType": "application",
+  "targets": {
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "poetry run pytest --cov=src/security_news_agent --cov-report=xml --cov-report=term-missing --cov-fail-under=80",
+        "cwd": "apps/security-news-agent"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "poetry run flake8 src/ tests/ --max-line-length=88 --extend-ignore=E203,W503 && poetry run mypy src/ --ignore-missing-imports",
+        "cwd": "apps/security-news-agent"
+      }
+    },
+    "format": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "poetry run black src/ tests/ && poetry run isort src/ tests/",
+        "cwd": "apps/security-news-agent"
+      }
+    }
+  },
+  "tags": ["lang:python", "scope:security-news-agent"]
+}
