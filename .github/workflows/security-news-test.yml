@@ -55,28 +55,11 @@ jobs:
       - name: Install dependencies
         run: poetry install --no-interaction
 
-      - name: Run code formatting check
-        run: |
-          poetry run black --check src/ tests/
-          poetry run isort --check-only src/ tests/
+      - name: Run linting and formatting checks
+        run: npx nx lint security-news-agent
 
-      - name: Run linting
-        run: |
-          poetry run flake8 src/ tests/ --max-line-length=88 --extend-ignore=E203,W503
-          poetry run mypy src/ --ignore-missing-imports
-
-      - name: Run unit tests
-        run: |
-          poetry run pytest tests/unit/ -v \
-            --tb=short \
-            --cov=src/security_news_agent \
-            --cov-report=xml \
-            --cov-report=term-missing \
-            --cov-fail-under=80
-
-      - name: Run integration tests
-        run: |
-          poetry run pytest tests/integration/ -v --tb=short
+      - name: Run tests
+        run: npx nx test security-news-agent
 
       - name: Upload coverage to Codecov
         if: matrix.python-version == '3.11'

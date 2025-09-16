@@ -92,6 +92,9 @@ class WorkflowNodes:
         Returns:
             Updated state dictionary
         """
+        if state.get("error"):
+            return {}
+
         topic = state.get("topic") or "Daily Security News Summary"
         context_md = state.get("context_md") or ""
         
@@ -145,6 +148,9 @@ User: Based on the following "Latest News Summary (with sources)", identify the 
         Returns:
             Updated state dictionary
         """
+        if state.get("error"):
+            return {}
+
         outline = state.get("outline") or []
         
         if not outline:
@@ -216,6 +222,9 @@ Outline:
         Returns:
             Updated state dictionary
         """
+        if state.get("error"):
+            return {}
+
         context_md = state.get("context_md") or ""
         
         if not context_md.strip():
@@ -288,7 +297,10 @@ Requirements:
         """
         if state.get("error"):
             logger.info("Skipping evaluation due to previous error")
-            return {}
+            return {
+                "passed": False,
+                "attempts": (state.get("attempts") or 0) + 1,
+            }
         
         slide_md = state.get("slide_md") or ""
         topic = state.get("topic") or ""

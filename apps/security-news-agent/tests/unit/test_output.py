@@ -67,8 +67,8 @@ class TestReportRenderer:
         """Test filename generation with default extension."""
         renderer = ReportRenderer(mock_config)
         
-        with patch('security_news_agent.utils.helpers.today_iso', return_value='2025-09-14'):
-            with patch('security_news_agent.utils.helpers.slugify_en', return_value='test-title'):
+        with patch('security_news_agent.output.renderer.today_iso', return_value='2025-09-14'):
+            with patch('security_news_agent.output.renderer.slugify_en', return_value='test-title'):
                 filename = renderer.generate_filename("Test Title")
                 
                 assert filename == "2025-09-14_test-title.md"
@@ -77,8 +77,8 @@ class TestReportRenderer:
         """Test filename generation with custom extension."""
         renderer = ReportRenderer(mock_config)
         
-        with patch('security_news_agent.utils.helpers.today_iso', return_value='2025-09-14'):
-            with patch('security_news_agent.utils.helpers.slugify_en', return_value='test-title'):
+        with patch('security_news_agent.output.renderer.today_iso', return_value='2025-09-14'):
+            with patch('security_news_agent.output.renderer.slugify_en', return_value='test-title'):
                 filename = renderer.generate_filename("Test Title", "pdf")
                 
                 assert filename == "2025-09-14_test-title.pdf"
@@ -252,21 +252,34 @@ class TestReportRenderer:
     def test_cleanup_old_files(self, mock_config, tmp_path):
         """Test cleanup of old files."""
         renderer = ReportRenderer(mock_config, str(tmp_path))
-        
-        # Create test files with different timestamps
-        files = []
+
+        # Create mock file objects
+        mock_files = []
         for i in range(15):
-            file_path = tmp_path / f"report_{i:02d}.md"
-            file_path.write_text(f"Content {i}")
-            files.append(file_path)
-        
-        # Mock file modification times (newest first)
-        with patch('pathlib.Path.stat') as mock_stat:
-            mock_stat.return_value.st_mtime = lambda: 1000000  # All same time for simplicity
-            
+            mock_file = Mock(spec=Path)
+            mock_file.name = f"report_{i:02d}.md"
+            # Attach a stat mock to each file mock
+            mock_stat_result = Mock()
+            mock_stat_result.st_mtime = 1000000 - i # Newest first
+            mock_file.stat.return_value = mock_stat_result
+            mock_files.append(mock_file)
+
+        # The glob should return .md files, and we can ignore other patterns
+        def glob_side_effect(pattern):
+            if pattern == "*.md":
+                return mock_files
+            return []
+
+        with patch.object(Path, 'glob', side_effect=glob_side_effect):
             deleted_count = renderer.cleanup_old_files(keep_count=10)
-            
-            assert deleted_count == 5  # Should delete 5 oldest files
+            assert deleted_count == 5
+
+        # Verify that unlink was called on the 5 oldest files
+        for i in range(10, 15):
+            mock_files[i].unlink.assert_called_once()
+        # Verify that unlink was NOT called on the 10 newest files
+        for i in range(10):
+            mock_files[i].unlink.assert_not_called()
     
     def test_cleanup_old_files_no_directory(self, mock_config, tmp_path):
         """Test cleanup when output directory doesn't exist."""
@@ -351,7 +364,7 @@ class TestReportRenderer:
         validation = renderer.validate_markdown_content(content)
         
         assert validation["valid"] is True
-        assert "No slide separators found" in validation["warnings"]
+        assert any("No slide separators found" in w for w in validation["warnings"])
     
     def test_validate_markdown_content_too_short(self, mock_config):
         """Test validation of very short content."""
@@ -371,4 +384,4 @@ class TestReportRenderer:
         validation = renderer.validate_markdown_content(content)
         
         assert validation["valid"] is True
-        assert "Content is very long" in validation["warnings"]
+        assert any("Content is very long" in w for w in validation["warnings"])

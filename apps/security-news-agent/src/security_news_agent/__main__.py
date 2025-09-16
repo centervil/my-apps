@@ -15,6 +15,7 @@ from .processing.workflow import SecurityNewsWorkflow
 from .output.renderer import ReportRenderer
 from .utils.logging_config import setup_logging, ProgressLogger
 from .utils.error_handling import SecurityNewsAgentError, handle_errors
+from .processing.mock_clients import MockTavilyClient, MockChatGoogleGenerativeAI
 
 
 def create_argument_parser() -> argparse.ArgumentParser:
@@ -83,10 +84,10 @@ Examples:
 
 
 @handle_errors(reraise=True)
-def load_configuration(config_file: str = None) -> AgentConfig:
+def load_configuration(config_file: str = None, test_mode: bool = False) -> AgentConfig:
     """Load and validate configuration."""
     try:
-        config = AgentConfig.from_env(config_file)
+        config = AgentConfig.from_env(config_file, test_mode=test_mode)
         config.setup_environment()
         return config
     except ConfigurationError as e:
@@ -258,12 +259,19 @@ def main():
     try:
         # Load configuration
         print("⚙️ Loading configuration...")
-        config = load_configuration(args.config_file)
+        config = load_configuration(args.config_file, test_mode=args.test_mode)
         
         # Create components
         print("🔧 Initializing components...")
-        tavily_client = TavilyClient(config.tavily_api_key)
-        workflow = SecurityNewsWorkflow(config, tavily_client)
+        if args.test_mode and "mock" in config.google_api_key:
+            print("🧪 Using MOCK clients for test mode")
+            tavily_client = MockTavilyClient(api_key=config.tavily_api_key)
+            llm_client = MockChatGoogleGenerativeAI(model=config.gemini_model_name)
+            workflow = SecurityNewsWorkflow(config, tavily_client, llm_client=llm_client)
+        else:
+            tavily_client = TavilyClient(config.tavily_api_key)
+            workflow = SecurityNewsWorkflow(config, tavily_client)
+
         renderer = ReportRenderer(config, args.output_dir)
         
         # Validate prerequisites
