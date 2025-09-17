@@ -247,13 +247,13 @@ def convert_exception(
         Converted exception
     """
     error_message = message or str(exception)
-    error_details = {
-        "original_exception": type(exception).__name__,
-        "original_message": str(exception),
-        **details
-    }
     
-    return target_type(error_message, error_details)
+    # Add original exception info to the details that will be passed as kwargs
+    details["original_exception"] = type(exception).__name__
+    details["original_message"] = str(exception)
+
+    # The target constructors (e.g. ProcessingError) expect details as kwargs
+    return target_type(error_message, **details)
 
 
 class ErrorCollector:

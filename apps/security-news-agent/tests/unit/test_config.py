@@ -232,3 +232,26 @@ class TestAgentConfig:
         with patch.dict(os.environ, {}, clear=True):
             with pytest.raises(ConfigurationError):
                 AgentConfig.from_env(test_mode=False)
+
+    def test_from_env_test_mode_no_keys(self):
+        """Test that mock keys are used in test mode when no keys are provided."""
+        with patch.dict(os.environ, {}, clear=True):
+            config = AgentConfig.from_env(test_mode=True)
+
+        assert config.google_api_key == "mock_google_api_key"
+        assert config.langchain_api_key == "mock_langchain_api_key"
+        assert config.tavily_api_key == "mock_tavily_api_key"
+
+    def test_from_env_test_mode_with_real_keys(self):
+        """Test that real keys are used in test mode when they are provided."""
+        env_vars = {
+            "GOOGLE_API_KEY": "real-google-key",
+            "LANGCHAIN_API_KEY": "real-langchain-key",
+            "TAVILY_API_KEY": "real-tavily-key",
+        }
+        assert config.google_api_key == "real-google-key"
+        assert config.langchain_api_key == "real-langchain-key"
+        assert config.tavily_api_key == "real-tavily-key"
+        assert config.google_api_key == "real-google-key"
+        assert config.langchain_api_key == "real-langchain-key"
+        assert config.tavily_api_key == "real-tavily-key"

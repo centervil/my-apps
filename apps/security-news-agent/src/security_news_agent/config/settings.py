@@ -50,13 +50,13 @@ class AgentConfig:
         langchain_api_key = os.getenv("LANGCHAIN_API_KEY") 
         tavily_api_key = os.getenv("TAVILY_API_KEY")
         
-        # In test mode, we can proceed without real keys
-        if test_mode and not all([google_api_key, langchain_api_key, tavily_api_key]):
+        # In test mode, we can proceed without real keys by using mock keys.
+        if test_mode:
             google_api_key = google_api_key or "mock_google_api_key"
             langchain_api_key = langchain_api_key or "mock_langchain_api_key"
             tavily_api_key = tavily_api_key or "mock_tavily_api_key"
         else:
-            # Check for missing required keys
+            # In normal mode, all API keys are required.
             missing_keys = []
             if not google_api_key:
                 missing_keys.append("GOOGLE_API_KEY")

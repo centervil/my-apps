@@ -263,12 +263,17 @@ def main():
         
         # Create components
         print("🔧 Initializing components...")
-        if args.test_mode and "mock" in config.google_api_key:
-            print("🧪 Using MOCK clients for test mode")
+
+        use_mock_clients = args.test_mode and "mock" in config.google_api_key
+
+        if use_mock_clients:
+            print("🧪 API keys not found or incomplete. Using MOCK clients for test mode.")
             tavily_client = MockTavilyClient(api_key=config.tavily_api_key)
             llm_client = MockChatGoogleGenerativeAI(model=config.gemini_model_name)
             workflow = SecurityNewsWorkflow(config, tavily_client, llm_client=llm_client)
         else:
+            if args.test_mode:
+                print("🧪 Running in test mode with REAL API keys.")
             tavily_client = TavilyClient(config.tavily_api_key)
             workflow = SecurityNewsWorkflow(config, tavily_client)
 
