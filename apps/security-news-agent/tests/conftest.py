@@ -1,9 +1,8 @@
 """Pytest configuration and shared fixtures."""
 
-import pytest
 from unittest.mock import Mock, patch
-from pathlib import Path
-from typing import Dict, Any, List
+
+import pytest
 
 from security_news_agent.config.settings import AgentConfig
 from security_news_agent.processing.state import State
@@ -14,12 +13,12 @@ def mock_config():
     """Provide a mock configuration for testing."""
     return AgentConfig(
         google_api_key="test-google-key",
-        langchain_api_key="test-langchain-key", 
+        langchain_api_key="test-langchain-key",
         tavily_api_key="test-tavily-key",
         gemini_model_name="gemini-1.5-flash-latest",
         slide_format="pdf",
         marp_theme="default",
-        marp_paginate=True
+        marp_paginate=True,
     )
 
 
@@ -31,18 +30,18 @@ def mock_tavily_response():
             {
                 "title": "Critical Security Vulnerability Discovered in Popular Framework",
                 "url": "https://example.com/security-news-1",
-                "content": "A critical vulnerability has been discovered in a widely-used web framework that could allow remote code execution. Security researchers recommend immediate patching."
+                "content": "A critical vulnerability has been discovered in a widely-used web framework that could allow remote code execution. Security researchers recommend immediate patching.",
             },
             {
                 "title": "Major Data Breach Affects Millions of Users",
-                "url": "https://example.com/security-news-2", 
-                "content": "A major technology company has disclosed a data breach affecting millions of user accounts. The breach included personal information and encrypted passwords."
+                "url": "https://example.com/security-news-2",
+                "content": "A major technology company has disclosed a data breach affecting millions of user accounts. The breach included personal information and encrypted passwords.",
             },
             {
                 "title": "New Malware Campaign Targets Financial Institutions",
                 "url": "https://example.com/security-news-3",
-                "content": "Cybersecurity firms have identified a sophisticated malware campaign specifically targeting financial institutions with advanced persistent threat techniques."
-            }
+                "content": "Cybersecurity firms have identified a sophisticated malware campaign specifically targeting financial institutions with advanced persistent threat techniques.",
+            },
         ]
     }
 
@@ -101,7 +100,7 @@ def mock_initial_state():
         error="",
         log=[],
         context_md="",
-        sources={}
+        sources={},
     )
 
 
@@ -109,25 +108,27 @@ def mock_initial_state():
 def mock_processed_state(mock_initial_state, mock_gemini_response):
     """Provide a mock state after processing."""
     state = mock_initial_state.copy()
-    state.update({
-        "outline": [
-            "Critical Framework Vulnerability - Remote code execution risk",
-            "Major Data Breach - Millions of users affected", 
-            "Financial Malware Campaign - APT targeting banks"
-        ],
-        "toc": [
-            "Executive Summary",
-            "Key Threats", 
-            "Vulnerability Analysis",
-            "Breach Reports",
-            "Recommendations"
-        ],
-        "slide_md": mock_gemini_response,
-        "title": "Daily Security Briefing - 2025-09-14",
-        "score": 8.5,
-        "passed": True,
-        "context_md": "### Query: latest cybersecurity news\n- Critical Security Vulnerability Discovered in Popular Framework — A critical vulnerability has been discovered... [source](https://example.com/security-news-1)"
-    })
+    state.update(
+        {
+            "outline": [
+                "Critical Framework Vulnerability - Remote code execution risk",
+                "Major Data Breach - Millions of users affected",
+                "Financial Malware Campaign - APT targeting banks",
+            ],
+            "toc": [
+                "Executive Summary",
+                "Key Threats",
+                "Vulnerability Analysis",
+                "Breach Reports",
+                "Recommendations",
+            ],
+            "slide_md": mock_gemini_response,
+            "title": "Daily Security Briefing - 2025-09-14",
+            "score": 8.5,
+            "passed": True,
+            "context_md": "### Query: latest cybersecurity news\n- Critical Security Vulnerability Discovered in Popular Framework — A critical vulnerability has been discovered... [source](https://example.com/security-news-1)",
+        }
+    )
     return state
 
 
@@ -142,7 +143,9 @@ def temp_output_dir(tmp_path):
 @pytest.fixture
 def mock_tavily_client(mock_tavily_response):
     """Mock TavilyClient for testing."""
-    with patch('security_news_agent.search.tavily_client.TavilyClient') as mock_class:
+    with patch(
+        "security_news_agent.search.tavily_client.TavilyClient"
+    ) as mock_class:
         mock_instance = Mock()
         mock_instance.search.return_value = mock_tavily_response
         mock_instance.collect_context.return_value = {
@@ -155,7 +158,9 @@ def mock_tavily_client(mock_tavily_response):
 @pytest.fixture
 def mock_llm(mock_gemini_response):
     """Mock LLM client for testing."""
-    with patch('security_news_agent.processing.nodes.ChatGoogleGenerativeAI') as mock_class:
+    with patch(
+        "security_news_agent.processing.nodes.ChatGoogleGenerativeAI"
+    ) as mock_class:
         mock_instance = Mock()
         mock_response = Mock()
         mock_response.content = mock_gemini_response

@@ -1,12 +1,11 @@
 """Unit tests for mock client implementations."""
 
-import pytest
 from security_news_agent.processing.mock_clients import (
-    MockTavilyClient,
-    MockChatGoogleGenerativeAI,
-    MOCK_TAVILY_SEARCH_RESULTS,
     MOCK_GEMINI_OUTLINE_RESPONSE,
-    MOCK_GEMINI_SLIDES_RESPONSE
+    MOCK_GEMINI_SLIDES_RESPONSE,
+    MOCK_TAVILY_SEARCH_RESULTS,
+    MockChatGoogleGenerativeAI,
+    MockTavilyClient,
 )
 
 
@@ -73,6 +72,7 @@ class TestMockChatGoogleGenerativeAI:
 
     def test_invoke_with_message_list(self):
         """Test invocation with a list of message objects."""
+
         class FakeMessage:
             def __init__(self, content):
                 self.content = content

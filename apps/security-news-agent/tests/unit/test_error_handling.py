@@ -1,17 +1,20 @@
-import pytest
 import logging
 from datetime import datetime
+
+import pytest
+
 from security_news_agent.utils.error_handling import (
-    SecurityNewsAgentError,
-    ConfigurationError,
     APIError,
-    RateLimitError,
-    ProcessingError,
-    OutputError,
+    ConfigurationError,
     ErrorCollector,
-    handle_errors,
+    OutputError,
+    ProcessingError,
+    RateLimitError,
+    SecurityNewsAgentError,
     convert_exception,
+    handle_errors,
 )
+
 
 class TestCustomExceptions:
     """Test cases for custom exception classes."""
@@ -34,7 +37,9 @@ class TestCustomExceptions:
 
     def test_api_error(self):
         """Test the API exception."""
-        err = APIError("API failed", service="TestService", status_code=500, extra="info")
+        err = APIError(
+            "API failed", service="TestService", status_code=500, extra="info"
+        )
         assert err.service == "TestService"
         assert err.status_code == 500
         assert err.details["extra"] == "info"
@@ -50,7 +55,9 @@ class TestCustomExceptions:
 
     def test_processing_error(self):
         """Test the processing exception."""
-        err = ProcessingError("Processing failed", stage="parsing", file="test.txt")
+        err = ProcessingError(
+            "Processing failed", stage="parsing", file="test.txt"
+        )
         assert err.stage == "parsing"
         assert err.details["file"] == "test.txt"
 
@@ -109,33 +116,41 @@ class TestErrorCollector:
         except ProcessingError:
             pytest.fail("raise_if_errors should not have raised an exception.")
 
+
 class TestHandleErrorsDecorator:
     """Test cases for the @handle_errors decorator."""
 
     def test_handle_errors_success(self):
         """Test decorator with a successful function call."""
+
         @handle_errors()
         def success_func():
             return "success"
+
         assert success_func() == "success"
 
     def test_handle_errors_reraises_by_default(self):
         """Test that the decorator reraises exceptions by default."""
+
         @handle_errors()
         def fail_func():
             raise ValueError("Failure")
+
         with pytest.raises(ValueError):
             fail_func()
 
     def test_handle_errors_no_reraise(self):
         """Test decorator with reraise=False."""
+
         @handle_errors(reraise=False, default_return="error_occurred")
         def fail_func():
             raise ValueError("Failure")
+
         assert fail_func() == "error_occurred"
 
     def test_handle_errors_logs_exception(self, caplog):
         """Test that the decorator logs the exception."""
+
         @handle_errors(reraise=False)
         def fail_func():
             raise SecurityNewsAgentError("Custom error")
@@ -153,7 +168,9 @@ class TestConvertException:
     def test_convert_exception(self):
         """Test basic exception conversion."""
         original_exc = ValueError("Original error")
-        new_exc = convert_exception(original_exc, ProcessingError, stage="conversion")
+        new_exc = convert_exception(
+            original_exc, ProcessingError, stage="conversion"
+        )
 
         assert isinstance(new_exc, ProcessingError)
         assert new_exc.message == "Original error"
@@ -163,7 +180,9 @@ class TestConvertException:
     def test_convert_exception_with_custom_message(self):
         """Test exception conversion with a custom message."""
         original_exc = ValueError("Original error")
-        new_exc = convert_exception(original_exc, APIError, message="New message", service="Test")
+        new_exc = convert_exception(
+            original_exc, APIError, message="New message", service="Test"
+        )
 
         assert isinstance(new_exc, APIError)
         assert new_exc.message == "New message"

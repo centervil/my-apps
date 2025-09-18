@@ -2,16 +2,18 @@
 
 __version__ = "0.2.0"
 __author__ = "Jules"
-__description__ = "An AI agent that collects security news and generates reports"
+__description__ = (
+    "An AI agent that collects security news and generates reports"
+)
 
 from .config.settings import AgentConfig
-from .search.tavily_client import TavilyClient
-from .processing.workflow import SecurityNewsWorkflow
 from .output.renderer import ReportRenderer
+from .processing.workflow import SecurityNewsWorkflow
+from .search.tavily_client import TavilyClient
 
 __all__ = [
     "AgentConfig",
-    "TavilyClient", 
+    "TavilyClient",
     "SecurityNewsWorkflow",
-    "ReportRenderer"
+    "ReportRenderer",
 ]

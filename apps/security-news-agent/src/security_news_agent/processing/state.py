@@ -1,11 +1,11 @@
 """State management for the LangGraph workflow."""
 
-from typing import TypedDict, List, Dict
+from typing import Dict, List, TypedDict
 
 
 class State(TypedDict):
     """State object for the security news workflow."""
-    
+
     topic: str
     outline: List[str]
     toc: List[str]
