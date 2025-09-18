@@ -249,9 +249,9 @@ class TestAgentConfig:
             "LANGCHAIN_API_KEY": "real-langchain-key",
             "TAVILY_API_KEY": "real-tavily-key",
         }
-        assert config.google_api_key == "real-google-key"
-        assert config.langchain_api_key == "real-langchain-key"
-        assert config.tavily_api_key == "real-tavily-key"
+        with patch.dict(os.environ, env_vars, clear=True):
+            config = AgentConfig.from_env(test_mode=True)
+
         assert config.google_api_key == "real-google-key"
         assert config.langchain_api_key == "real-langchain-key"
         assert config.tavily_api_key == "real-tavily-key"
