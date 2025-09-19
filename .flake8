@@ -1,0 +1,30 @@
+[flake8]
+# Ignore E501 (line too long) as per Issue #45
+# This rule is disabled due to cost-benefit analysis:
+# - High volume of violations in existing codebase
+# - Low impact on code functionality and readability
+# - Significant effort required to fix across monorepo
+# - Focus on more critical code quality issues
+ignore = E501
+
+# Maximum line length (kept for reference, but E501 ignored)
+max-line-length = 88
+
+# Exclude common directories that should not be linted
+exclude = 
+    .git,
+    __pycache__,
+    .pytest_cache,
+    .mypy_cache,
+    node_modules,
+    .nx,
+    build,
+    dist,
+    *.egg-info,
+    .venv,
+    venv,
+    .tox
+
+# Additional flake8 settings for better code quality
+max-complexity = 10
+select = E,W,F,C
