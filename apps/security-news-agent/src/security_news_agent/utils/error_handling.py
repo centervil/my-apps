@@ -508,7 +508,7 @@ def retry_with_backoff(
                         break
 
                     # Add jitter to prevent thundering herd
-                    jitter = random.uniform(0.1, 0.3) * delay
+                    jitter = random.uniform(0.1, 0.3) * delay  # nosec B311
                     sleep_time = min(delay + jitter, max_delay)
 
                     logger.warning(
