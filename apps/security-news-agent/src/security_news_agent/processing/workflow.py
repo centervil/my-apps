@@ -1,7 +1,7 @@
 """LangGraph workflow management for security news processing."""
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict
 
 from langchain_core.runnables import RunnableConfig
@@ -159,7 +159,7 @@ class SecurityNewsWorkflow:
             tags=["security", "langgraph", "gemini", "tavily"],
             metadata={
                 "env": "production",
-                "date": datetime.utcnow().isoformat(),
+                "date": datetime.now(timezone.utc).isoformat(),
                 "model": self.config.gemini_model_name,
             },
             recursion_limit=60,
