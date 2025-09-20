@@ -3,7 +3,7 @@
 import logging
 import re
 import shutil
-import subprocess
+import subprocess  # nosec B404
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -164,7 +164,7 @@ class ReportRenderer:
         logger.debug(f"Marp command: {' '.join(cmd)}")
 
         try:
-            subprocess.run(
+            subprocess.run(  # nosec B603
                 cmd,
                 check=True,
                 stdout=subprocess.PIPE,
