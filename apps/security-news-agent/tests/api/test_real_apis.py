@@ -114,10 +114,8 @@ class TestRealAPIIntegration:
         except Exception as e:
             pytest.fail(f"Unexpected error in context collection test: {e}")
 
-    @pytest.mark.slow
-    def test_minimal_workflow_execution(self, limited_config, tmp_path):
-        """Test minimal workflow execution with real APIs."""
-
+    def _setup_test_environment(self, limited_config, tmp_path):
+        """Set up test environment with minimal configuration."""
         # Create Tavily client
         tavily_client = TavilyClient(limited_config.tavily_api_key, timeout=60)
 
@@ -135,84 +133,98 @@ class TestRealAPIIntegration:
 
         limited_config.get_search_queries = get_minimal_queries
 
-        try:
-            # Create workflow with reduced max attempts
-            workflow = SecurityNewsWorkflow(limited_config, tavily_client)
-            workflow.max_attempts = 1  # Reduce attempts to save API calls
+        # Create workflow with reduced max attempts
+        workflow = SecurityNewsWorkflow(limited_config, tavily_client)
+        workflow.max_attempts = 1  # Reduce attempts to save API calls
 
-            # Validate prerequisites
-            if not workflow.validate_prerequisites():
-                pytest.skip("Workflow prerequisites not met")
+        return workflow, original_get_queries
 
-            # Create initial state with simple topic
-            initial_state = workflow.create_initial_state("Security News Test")
+    def _execute_and_validate_workflow(self, workflow, limited_config):
+        """Execute workflow and perform basic validation."""
+        # Validate prerequisites
+        if not workflow.validate_prerequisites():
+            pytest.skip("Workflow prerequisites not met")
 
-            # Execute workflow
-            result = workflow.run(initial_state)
+        # Create initial state with simple topic
+        initial_state = workflow.create_initial_state("Security News Test")
 
-            # Verify basic workflow completion
-            assert result is not None
-            assert isinstance(result, dict)
+        # Execute workflow
+        result = workflow.run(initial_state)
 
-            # Check if we got through news collection
-            if "sources" in result and result["sources"]:
+        # Verify basic workflow completion
+        assert result is not None
+        assert isinstance(result, dict)
+
+        return result
+
+    def _verify_test_results(self, result, limited_config, tmp_path):
+        """Verify test results and handle output rendering."""
+        # Check if we got through news collection
+        if "sources" in result and result["sources"]:
+            print(
+                f"✅ News collection successful. Found sources: {list(result['sources'].keys())}"
+            )
+
+            # If we have sources, check other steps
+            if "outline" in result and result["outline"]:
                 print(
-                    f"✅ News collection successful. Found sources: {list(result['sources'].keys())}"
+                    f"✅ Outline generation successful. Items: {len(result['outline'])}"
                 )
 
-                # If we have sources, check other steps
-                if "outline" in result and result["outline"]:
+            if "slide_md" in result and result["slide_md"]:
+                print(
+                    f"✅ Slide generation successful. Length: {len(result['slide_md'])} chars"
+                )
+
+                # Test output rendering
+                renderer = ReportRenderer(limited_config, str(tmp_path))
+                render_result = renderer.save_and_render(
+                    result["slide_md"],
+                    result.get("title", "API Test Report"),
+                )
+
+                if render_result["success"]:
                     print(
-                        f"✅ Outline generation successful. Items: {len(result['outline'])}"
+                        f"✅ Report rendering successful: {render_result['markdown_path']}"
                     )
 
-                if "slide_md" in result and result["slide_md"]:
-                    print(
-                        f"✅ Slide generation successful. Length: {len(result['slide_md'])} chars"
-                    )
-
-                    # Test output rendering
-                    renderer = ReportRenderer(limited_config, str(tmp_path))
-                    render_result = renderer.save_and_render(
-                        result["slide_md"],
-                        result.get("title", "API Test Report"),
-                    )
-
-                    if render_result["success"]:
-                        print(
-                            f"✅ Report rendering successful: {render_result['markdown_path']}"
-                        )
-
-                        # Verify file exists and has content
-                        report_path = Path(render_result["markdown_path"])
-                        assert report_path.exists()
-                        content = report_path.read_text()
-                        # Should have substantial content
-                        assert len(content) > 100
-                        assert "marp: true" in content
-                    else:
-                        print(
-                            f"⚠️ Report rendering failed: {render_result.get('error', 'Unknown error')}"
-                        )
+                    # Verify file exists and has content
+                    report_path = Path(render_result["markdown_path"])
+                    assert report_path.exists()
+                    content = report_path.read_text()
+                    # Should have substantial content
+                    assert len(content) > 100
+                    assert "marp: true" in content
                 else:
-                    print("⚠️ Slide generation did not complete")
+                    print(
+                        f"⚠️ Report rendering failed: {render_result.get('error', 'Unknown error')}"
+                    )
             else:
-                print(
-                    "⚠️ No news sources found - this may be normal if no recent news matches the query"
+                print("⚠️ Slide generation did not complete")
+        else:
+            print(
+                "⚠️ No news sources found - this may be normal if no recent news matches the query"
+            )
+
+        # Check for errors
+        if result.get("error"):
+            print(f"⚠️ Workflow completed with error: {result['error']}")
+            # Don't fail the test for API-related errors, just log them
+            if "api" in result["error"].lower() or "rate" in result["error"].lower():
+                pytest.skip(
+                    f"API-related error (expected): {result['error']}"
                 )
 
-            # Check for errors
-            if result.get("error"):
-                print(f"⚠️ Workflow completed with error: {result['error']}")
-                # Don't fail the test for API-related errors, just log them
-                if (
-                    "api" in result["error"].lower()
-                    or "rate" in result["error"].lower()
-                ):
-                    pytest.skip(
-                        f"API-related error (expected): {result['error']}"
-                    )
+    @pytest.mark.slow
+    def test_minimal_workflow_execution(self, limited_config, tmp_path):
+        """Test minimal workflow execution with real APIs."""
+        workflow, original_get_queries = self._setup_test_environment(
+            limited_config, tmp_path
+        )
 
+        try:
+            result = self._execute_and_validate_workflow(workflow, limited_config)
+            self._verify_test_results(result, limited_config, tmp_path)
             print("✅ Minimal workflow test completed successfully")
 
         except Exception as e:
@@ -254,7 +266,7 @@ class TestRealAPIIntegration:
                 )
 
                 assert isinstance(result, dict)
-                print(f"✅ Request {i+1}/3 successful")
+                print(f"✅ Request {i + 1}/3 successful")
 
                 # Small delay between requests
                 import time

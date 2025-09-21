@@ -154,18 +154,9 @@ class TestAgentConfig:
             mock_config.setup_environment()
 
             assert os.environ["LANGCHAIN_TRACING_V2"] == "true"
-            assert (
-                os.environ["LANGCHAIN_ENDPOINT"]
-                == mock_config.langchain_endpoint
-            )
-            assert (
-                os.environ["LANGCHAIN_API_KEY"]
-                == mock_config.langchain_api_key
-            )
-            assert (
-                os.environ["LANGCHAIN_PROJECT"]
-                == mock_config.langchain_project
-            )
+            assert os.environ["LANGCHAIN_ENDPOINT"] == mock_config.langchain_endpoint
+            assert os.environ["LANGCHAIN_API_KEY"] == mock_config.langchain_api_key
+            assert os.environ["LANGCHAIN_PROJECT"] == mock_config.langchain_project
             assert os.environ["GOOGLE_API_KEY"] == mock_config.google_api_key
             assert os.environ["TAVILY_API_KEY"] == mock_config.tavily_api_key
 
