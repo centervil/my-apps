@@ -84,3 +84,4 @@ slides/
 # Cache directories
 .cache/
 .pytest_cache/
+apps/security-news-agent/coverage.xml
