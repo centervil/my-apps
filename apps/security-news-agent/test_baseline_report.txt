@@ -1,0 +1,26 @@
+Test Baseline Report - Issue 53
+=====================================
+
+Unit Test Results:
+- Total tests: 198
+- Passed: 191
+- Failed: 7
+- Coverage: 81.10%
+
+Failed tests (unrelated to linting issues):
+1. test_from_env_with_defaults - Model name assertion
+2. test_from_env_missing_google_key - Configuration error not raised
+3. test_from_env_missing_langchain_key - Configuration error not raised  
+4. test_from_env_missing_tavily_key - Configuration error not raised
+5. test_from_env_missing_multiple_keys - Configuration error not raised
+6. test_from_env_missing_key_no_test_mode - Configuration error not raised
+7. test_from_env_test_mode_no_keys - API key assertion
+
+Note: These test failures are related to configuration and environment setup,
+not to the linting errors we are fixing in Issue 53.
+
+Flake8 Baseline:
+- C901 errors: 2 (complexity violations)
+- E226 errors: 1 (whitespace around operators)
+- W503 errors: 9 (line break before binary operators)
+- Total errors: 12

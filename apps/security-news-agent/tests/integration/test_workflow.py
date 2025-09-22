@@ -145,10 +145,7 @@ class TestEndToEndWorkflow:
             # Verify error handling
             assert result is not None
             assert "error" in result
-            assert (
-                "tavily_error" in result["error"]
-                or "Tavily API Error" in result["error"]
-            )
+            assert "tavily_error" in result["error"] or "Tavily API Error" in result["error"]
 
     def test_workflow_with_llm_error(
         self, integration_config, mock_tavily_client, temp_output_dir
@@ -171,10 +168,7 @@ class TestEndToEndWorkflow:
             # Verify error handling
             assert result is not None
             assert "error" in result
-            assert (
-                "outline_error" in result["error"]
-                or "LLM API Error" in result["error"]
-            )
+            assert "outline_error" in result["error"] or "LLM API Error" in result["error"]
 
     def test_workflow_retry_logic(
         self, integration_config, mock_tavily_client, temp_output_dir
@@ -416,10 +410,7 @@ class TestEndToEndWorkflow:
             # Verify error was captured and propagated
             assert result is not None
             assert "error" in result
-            assert (
-                "slides_error" in result["error"]
-                or "Slides generation failed" in result["error"]
-            )
+            assert "slides_error" in result["error"] or "Slides generation failed" in result["error"]
 
             # Verify partial state was preserved
             assert "outline" in result

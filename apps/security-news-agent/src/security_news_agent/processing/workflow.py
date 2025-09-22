@@ -206,8 +206,7 @@ class SecurityNewsWorkflow:
             error_state.update(
                 {
                     "error": f"workflow_execution_error: {e}",
-                    "log": initial_state.get("log", [])
-                    + [f"[workflow] EXECUTION FAILED: {e}"],
+                    "log": initial_state.get("log", []) + [f"[workflow] EXECUTION FAILED: {e}"],
                 }
             )
             return error_state

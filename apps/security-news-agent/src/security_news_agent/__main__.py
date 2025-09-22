@@ -152,6 +152,94 @@ def print_workflow_summary(
     print(f"  Workflow Nodes: {len(summary['nodes'])}")
 
 
+def _setup_workflow_environment(
+    config: AgentConfig, workflow: SecurityNewsWorkflow, topic: str, test_mode: bool
+) -> dict:
+    """Set up the workflow environment and create initial state."""
+    initial_state = workflow.create_initial_state(topic)
+
+    if test_mode:
+        print("🧪 Running in test mode - using limited API calls")
+        # Override search queries for test mode
+
+        def get_test_queries():
+            return [
+                {
+                    "q": "cybersecurity news",
+                    "include_domains": ["thehackernews.com"],
+                    "time_range": "week",
+                }
+            ]
+
+        config.get_search_queries = get_test_queries
+
+    return initial_state
+
+
+def _execute_workflow_steps(workflow: SecurityNewsWorkflow, initial_state: dict) -> dict:
+    """Execute the workflow and return the result."""
+    return workflow.run(initial_state)
+
+
+def _handle_workflow_results(
+    result: dict, renderer: ReportRenderer, progress: ProgressLogger
+) -> bool:
+    """Handle workflow results including validation, rendering, and output display."""
+    # Check for errors
+    if result.get("error"):
+        print(f"❌ Workflow failed: {result['error']}")
+        progress.complete(success=False)
+        return False
+
+    # Validate output
+    if not result.get("slide_md"):
+        print("❌ No content was generated")
+        progress.complete(success=False)
+        return False
+
+    # Validate markdown content
+    validation = renderer.validate_markdown_content(result["slide_md"])
+    if not validation["valid"]:
+        errors = validation["errors"]
+        print(f"❌ Generated content validation failed: {errors}")
+        progress.complete(success=False)
+        return False
+
+    if validation["warnings"]:
+        print("⚠️ Content validation warnings:")
+        for warning in validation["warnings"]:
+            print(f"  - {warning}")
+
+    # Save and render output
+    render_result = renderer.save_and_render(
+        result["slide_md"], result.get("title", "Security News Report")
+    )
+
+    if not render_result["success"]:
+        error_msg = render_result.get("error", "Unknown error")
+        print(f"❌ Failed to save report: {error_msg}")
+        progress.complete(success=False)
+        return False
+
+    # Display results
+    print("\n🎉 Security news report generated successfully!")
+    print(f"📄 Markdown: {render_result['markdown_path']}")
+
+    if render_result["rendered_path"]:
+        print(f"📊 Rendered: {render_result['rendered_path']}")
+
+    # Display workflow statistics
+    print("\n📊 Workflow Statistics:")
+    print(f"  Score: {result.get('score', 'N/A')}")
+    print(f"  Passed: {result.get('passed', 'N/A')}")
+    print(f"  Attempts: {result.get('attempts', 'N/A')}")
+
+    if result.get("log"):
+        print(f"  Log entries: {len(result['log'])}")
+
+    return True
+
+
 def run_workflow(
     config: AgentConfig,
     tavily_client: TavilyClient,
@@ -167,87 +255,24 @@ def run_workflow(
     progress = ProgressLogger(logger, "Security News Generation", 6)
 
     try:
-        # Step 1: Create initial state
+        # Step 1: Set up workflow environment
         progress.step("Creating initial workflow state")
-        initial_state = workflow.create_initial_state(topic)
-
-        if test_mode:
-            print("🧪 Running in test mode - using limited API calls")
-            # Override search queries for test mode
-
-            def get_test_queries():
-                return [
-                    {
-                        "q": "cybersecurity news",
-                        "include_domains": ["thehackernews.com"],
-                        "time_range": "week",
-                    }
-                ]
-
-            config.get_search_queries = get_test_queries
+        initial_state = _setup_workflow_environment(config, workflow, topic, test_mode)
 
         # Step 2: Execute workflow
         progress.step("Executing security news workflow")
-        result = workflow.run(initial_state)
+        result = _execute_workflow_steps(workflow, initial_state)
 
-        # Step 3: Check for errors
+        # Step 3-6: Handle results, validation, rendering, and display
         progress.step("Checking workflow results")
-        if result.get("error"):
-            print(f"❌ Workflow failed: {result['error']}")
-            progress.complete(success=False)
-            return False
-
-        # Step 4: Validate output
         progress.step("Validating generated content")
-        if not result.get("slide_md"):
-            print("❌ No content was generated")
-            progress.complete(success=False)
-            return False
-
-        # Validate markdown content
-        validation = renderer.validate_markdown_content(result["slide_md"])
-        if not validation["valid"]:
-            errors = validation["errors"]
-            print(f"❌ Generated content validation failed: {errors}")
-            progress.complete(success=False)
-            return False
-
-        if validation["warnings"]:
-            print("⚠️ Content validation warnings:")
-            for warning in validation["warnings"]:
-                print(f"  - {warning}")
-
-        # Step 5: Save and render output
         progress.step("Saving and rendering report")
-        render_result = renderer.save_and_render(
-            result["slide_md"], result.get("title", "Security News Report")
-        )
-
-        if not render_result["success"]:
-            error_msg = render_result.get("error", "Unknown error")
-            print(f"❌ Failed to save report: {error_msg}")
-            progress.complete(success=False)
-            return False
-
-        # Step 6: Display results
         progress.step("Finalizing results")
-        print("\n🎉 Security news report generated successfully!")
-        print(f"📄 Markdown: {render_result['markdown_path']}")
 
-        if render_result["rendered_path"]:
-            print(f"📊 Rendered: {render_result['rendered_path']}")
-
-        # Display workflow statistics
-        print("\n📊 Workflow Statistics:")
-        print(f"  Score: {result.get('score', 'N/A')}")
-        print(f"  Passed: {result.get('passed', 'N/A')}")
-        print(f"  Attempts: {result.get('attempts', 'N/A')}")
-
-        if result.get("log"):
-            print(f"  Log entries: {len(result['log'])}")
-
-        progress.complete(success=True)
-        return True
+        success = _handle_workflow_results(result, renderer, progress)
+        if success:
+            progress.complete(success=True)
+        return success
 
     except SecurityNewsAgentError as e:
         print(f"❌ Security News Agent Error: {e.message}")

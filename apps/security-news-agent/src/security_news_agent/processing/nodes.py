@@ -424,8 +424,7 @@ Return strictly this JSON schema:
                     "conciseness": "Unable to evaluate",
                 },
                 "suggestions": ["Review slide content manually"],
-                "passed": attempts
-                >= max_attempts,  # Pass if max attempts reached
+                "passed": attempts >= max_attempts,  # Pass if max attempts reached
                 "feedback": "Evaluation parsing failed, using default scores",
                 "attempts": attempts,
                 "log": log_message(
