@@ -1,6 +1,5 @@
 import { type Page, type BrowserContext, type Cookie } from '@playwright/test';
 import * as fs from 'fs/promises';
-import * as path from 'path';
 import { AuthError, ErrorHandler } from './authErrors';
 
 export interface AuthState {
@@ -99,7 +98,7 @@ export class AuthManager {
 
       console.log('Successfully loaded authentication state.');
       return true;
-    } catch (error) {
+    } catch {
       const authError = new AuthError(
         'Failed to load authentication state into browser context.',
         'INVALID_AUTH_FILE'
@@ -142,7 +141,7 @@ export class AuthManager {
   private async validateAuthFile(): Promise<boolean> {
     try {
       await fs.access(this.authFilePath, fs.constants.R_OK);
-    } catch (error) {
+    } catch {
       throw new AuthError(
         `Authentication file not found or not readable at ${this.authFilePath}`,
         'FILE_NOT_FOUND'
@@ -156,7 +155,7 @@ export class AuthManager {
         throw new Error('Missing essential properties in auth file.');
       }
       return true;
-    } catch (error) {
+    } catch {
       throw new AuthError(
         'Authentication file is corrupted or improperly formatted.',
         'INVALID_AUTH_FILE'

@@ -1,4 +1,4 @@
-import { chromium, type Page } from '@playwright/test';
+import { chromium } from '@playwright/test';
 import * as path from 'path';
 import { AuthManager } from '../src/auth/authManager';
 
