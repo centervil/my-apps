@@ -85,3 +85,4 @@ slides/
 .cache/
 .pytest_cache/
 apps/security-news-agent/coverage.xml
+apps/ui-automations/spotify-automation/.auth/
