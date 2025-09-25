@@ -1,0 +1,17 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "es2018",
+    "module": "NodeNext",
+    "lib": ["es2020", "dom"],
+    "outDir": "../../../dist/out-tsc",
+    "allowJs": true,
+    "types": ["node"]
+  },
+  "include": [
+    "**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

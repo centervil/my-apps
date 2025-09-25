@@ -45,8 +45,8 @@ Thumbs.db
 
 # Playwright specific
 packages/spotify-podcast-automation/.env
-packages/spotify-podcast-automation/playwright-report/
-packages/spotify-podcast-automation/test-results/
+apps/ui-automations/spotify-automation/playwright-report/
+apps/ui-automations/spotify-automation/test-results/
 
 serena.log
 

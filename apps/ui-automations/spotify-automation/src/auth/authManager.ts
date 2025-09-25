@@ -108,7 +108,7 @@ export class AuthManager {
     }
   }
 
-  public async isAuthValid(maxAgeHours: number = 24): Promise<boolean> {
+  public async isAuthValid(maxAgeHours: number = 720): Promise<boolean> {
     const fileIsValid = await this.validateAuthFile();
     if (!fileIsValid) {
       return false;
