@@ -4,7 +4,7 @@ import logging
 import traceback
 from datetime import datetime
 from functools import wraps
-from typing import Any, Callable, Dict, Optional, Type
+from typing import Any, Callable, Dict, List, NoReturn, Optional, Type
 
 logger = logging.getLogger(__name__)
 
@@ -48,8 +48,8 @@ class APIError(SecurityNewsAgentError):
         message: str,
         service: str,
         status_code: Optional[int] = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         """Initialize API error.
 
         Args:
@@ -58,7 +58,7 @@ class APIError(SecurityNewsAgentError):
             status_code: HTTP status code if applicable
             **kwargs: Additional error details
         """
-        details = {"service": service, **kwargs}
+        details: Dict[str, Any] = {"service": service, **kwargs}
         if status_code:
             details["status_code"] = status_code
 
@@ -71,8 +71,11 @@ class RateLimitError(APIError):
     """Raised when API rate limits are exceeded."""
 
     def __init__(
-        self, service: str, retry_after: Optional[int] = None, **kwargs
-    ):
+        self,
+        service: str,
+        retry_after: Optional[int] = None,
+        **kwargs: Any,
+    ) -> None:
         """Initialize rate limit error.
 
         Args:
@@ -95,7 +98,7 @@ class RateLimitError(APIError):
 class ProcessingError(SecurityNewsAgentError):
     """Raised when content processing fails."""
 
-    def __init__(self, message: str, stage: str, **kwargs):
+    def __init__(self, message: str, stage: str, **kwargs: Any) -> None:
         """Initialize processing error.
 
         Args:
@@ -103,7 +106,7 @@ class ProcessingError(SecurityNewsAgentError):
             stage: Processing stage where error occurred
             **kwargs: Additional error details
         """
-        details = {"stage": stage, **kwargs}
+        details: Dict[str, Any] = {"stage": stage, **kwargs}
         super().__init__(message, details)
         self.stage = stage
 
@@ -111,7 +114,7 @@ class ProcessingError(SecurityNewsAgentError):
 class OutputError(SecurityNewsAgentError):
     """Raised when output generation fails."""
 
-    def __init__(self, message: str, output_type: str, **kwargs):
+    def __init__(self, message: str, output_type: str, **kwargs: Any) -> None:
         """Initialize output error.
 
         Args:
@@ -119,7 +122,7 @@ class OutputError(SecurityNewsAgentError):
             output_type: Type of output being generated
             **kwargs: Additional error details
         """
-        details = {"output_type": output_type, **kwargs}
+        details: Dict[str, Any] = {"output_type": output_type, **kwargs}
         super().__init__(message, details)
         self.output_type = output_type
 
@@ -128,7 +131,7 @@ def handle_errors(
     default_return: Any = None,
     reraise: bool = True,
     log_level: int = logging.ERROR,
-):
+) -> Callable:
     """Decorator for comprehensive error handling.
 
     Args:
@@ -142,7 +145,7 @@ def handle_errors(
 
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             try:
                 return func(*args, **kwargs)
             except SecurityNewsAgentError as e:
@@ -177,10 +180,10 @@ def handle_errors(
 
 def safe_execute(
     func: Callable,
-    *args,
+    *args: Any,
     default_return: Any = None,
-    error_message: str = None,
-    **kwargs,
+    error_message: str = "",
+    **kwargs: Any,
 ) -> Any:
     """Safely execute a function with error handling.
 
@@ -220,10 +223,10 @@ def create_error_context(operation: str) -> Dict[str, Any]:
 
 def log_and_reraise(
     exception: Exception,
-    message: str = None,
-    context: Dict[str, Any] = None,
+    message: Optional[str] = None,
+    context: Optional[Dict[str, Any]] = None,
     level: int = logging.ERROR,
-):
+) -> NoReturn:
     """Log an exception and reraise it.
 
     Args:
@@ -234,7 +237,7 @@ def log_and_reraise(
     """
     log_message = message or f"Exception occurred: {exception}"
 
-    extra = {"exception_type": type(exception).__name__}
+    extra: Dict[str, Any] = {"exception_type": type(exception).__name__}
     if context:
         extra.update(context)
 
@@ -245,8 +248,8 @@ def log_and_reraise(
 def convert_exception(
     exception: Exception,
     target_type: Type[SecurityNewsAgentError],
-    message: str = None,
-    **details,
+    message: Optional[str] = None,
+    **details: Any,
 ) -> SecurityNewsAgentError:
     """Convert a generic exception to a specific SecurityNewsAgentError.
 
@@ -272,19 +275,21 @@ def convert_exception(
 class ErrorCollector:
     """Collect and manage multiple errors during processing."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize error collector."""
-        self.errors = []
-        self.warnings = []
+        self.errors: List[Dict[str, Any]] = []
+        self.warnings: List[Dict[str, Any]] = []
 
-    def add_error(self, error: Exception, context: str = None):
+    def add_error(
+        self, error: Exception, context: Optional[str] = None
+    ) -> None:
         """Add an error to the collection.
 
         Args:
             error: Exception to add
             context: Optional context information
         """
-        error_info = {
+        error_info: Dict[str, Any] = {
             "exception": error,
             "type": type(error).__name__,
             "message": str(error),
@@ -298,7 +303,9 @@ class ErrorCollector:
             extra={"context": context, "error_type": type(error).__name__},
         )
 
-    def add_warning(self, message: str, context: str = None):
+    def add_warning(
+        self, message: str, context: Optional[str] = None
+    ) -> None:
         """Add a warning to the collection.
 
         Args:
@@ -348,7 +355,7 @@ class ErrorCollector:
             ],
         }
 
-    def raise_if_errors(self, message: str = None):
+    def raise_if_errors(self, message: Optional[str] = None) -> None:
         """Raise an exception if any errors were collected.
 
         Args:
@@ -366,7 +373,9 @@ class ErrorCollector:
             )
 
 
-def log_api_call(logger_instance, service: str):
+def log_api_call(
+    logger_instance: logging.Logger, service: str
+) -> Callable:
     """Decorator for logging API calls.
 
     Args:
@@ -379,7 +388,7 @@ def log_api_call(logger_instance, service: str):
 
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             import time
 
             start_time = time.time()
@@ -423,58 +432,13 @@ def log_api_call(logger_instance, service: str):
     return decorator
 
 
-def log_api_call_simple(
-    service: str,
-    endpoint: str,
-    method: str = "GET",
-    status_code: Optional[int] = None,
-    duration: Optional[float] = None,
-    error: Optional[str] = None,
-):
-    """Log API call information (simple function version).
-
-    Args:
-        service: Name of the API service
-        endpoint: API endpoint called
-        method: HTTP method used
-        status_code: HTTP status code received
-        duration: Request duration in seconds
-        error: Error message if call failed
-    """
-    log_data = {
-        "service": service,
-        "endpoint": endpoint,
-        "method": method,
-        "status_code": status_code,
-        "duration": duration,
-        "error": error,
-    }
-
-    if error:
-        logger.error(
-            f"API call failed: {service} {method} {endpoint} - {error}",
-            extra=log_data,
-        )
-    elif status_code and status_code >= 400:
-        logger.warning(
-            f"API call returned error: {service} {method} {endpoint} - {status_code}",
-            extra=log_data,
-        )
-    else:
-        duration_str = f" ({duration:.2f}s)" if duration else ""
-        logger.info(
-            f"API call successful: {service} {method} {endpoint}{duration_str}",
-            extra=log_data,
-        )
-
-
 def retry_with_backoff(
     max_attempts: int = 3,
     base_delay: float = 1.0,
     max_delay: float = 60.0,
     backoff_factor: float = 2.0,
-    exceptions: tuple = (Exception,),
-):
+    exceptions: Type[Exception] = Exception,
+) -> Callable:
     """Decorator for retrying functions with exponential backoff.
 
     Args:
@@ -490,11 +454,11 @@ def retry_with_backoff(
 
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             import random
             import time
 
-            last_exception = None
+            last_exception: Optional[Exception] = None
             delay = base_delay
 
             for attempt in range(max_attempts):
@@ -523,7 +487,10 @@ def retry_with_backoff(
             logger.error(
                 f"All {max_attempts} attempts failed for {func.__name__}"
             )
-            raise last_exception
+            if last_exception:
+                raise last_exception
+            # This part should ideally not be reached if exceptions are always caught
+            raise Exception(f"All {max_attempts} attempts failed for {func.__name__}")
 
         return wrapper
 

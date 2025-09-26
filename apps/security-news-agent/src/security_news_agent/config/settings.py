@@ -76,6 +76,11 @@ class AgentConfig:
                     f"Please set these in your .env file or environment."
                 )
 
+        # After this block, we can be sure the keys are strings.
+        assert google_api_key is not None
+        assert langchain_api_key is not None
+        assert tavily_api_key is not None
+
         # Optional settings with defaults
         gemini_model_name = os.getenv(
             "GEMINI_MODEL_NAME", "gemini-1.5-flash-latest"

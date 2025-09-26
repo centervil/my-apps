@@ -87,8 +87,8 @@ class MockTavilyClient:
         self.api_key = api_key
 
     def collect_context(
-        self, queries: List[Dict[str, Any]], **kwargs
-    ) -> Dict[str, List[Dict[str, str]]]:
+        self, queries: List[Dict[str, Any]], **kwargs: Any
+    ) -> Dict[str, List[Dict[str, Any]]]:
         """Mocks the context collection, returning a fixed list of results for the first query."""
         print(
             f"--- MOCK Tavily: Collecting context for {len(queries)} queries ---"
@@ -97,7 +97,7 @@ class MockTavilyClient:
         return {first_query: MOCK_TAVILY_SEARCH_RESULTS}
 
     def format_context_as_markdown(
-        self, context: Dict[str, List[Dict[str, str]]]
+        self, context: Dict[str, List[Dict[str, Any]]]
     ) -> str:
         """Mocks the markdown formatting."""
         print("--- MOCK Tavily: Formatting context as markdown ---")
@@ -112,7 +112,7 @@ class MockTavilyClient:
         return "\n".join(bullets)
 
     def get_total_results_count(
-        self, context: Dict[str, List[Dict[str, str]]]
+        self, context: Dict[str, List[Dict[str, Any]]]
     ) -> int:
         """Mocks the result counting."""
         print("--- MOCK Tavily: Counting total results ---")
@@ -135,7 +135,7 @@ class MockChatGoogleGenerativeAI:
         # Model and other parameters are ignored in the mock client
         self.model = model
 
-    def invoke(self, messages: List[Any]) -> MockAIMessage:
+    def invoke(self, messages: list[Any] | str) -> MockAIMessage:
         """
         Mocks the AI model's `invoke` method.
         Returns a pre-defined outline or slide content based on the input prompt.
@@ -150,7 +150,6 @@ class MockChatGoogleGenerativeAI:
 
         if "outline" in prompt_content:
             return MockAIMessage(MOCK_GEMINI_OUTLINE_RESPONSE)
-        elif "slide" in prompt_content:
+        if "slide" in prompt_content:
             return MockAIMessage(MOCK_GEMINI_SLIDES_RESPONSE)
-        else:
-            return MockAIMessage("This is a generic mock AI response.")
+        return MockAIMessage("This is a generic mock AI response.")
