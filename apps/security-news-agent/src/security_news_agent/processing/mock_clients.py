@@ -1,7 +1,8 @@
 """Mock API clients for running the agent in test mode without real API
 keys."""
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
+
 
 # Mock data for Tavily search results
 MOCK_TAVILY_SEARCH_RESULTS = [
@@ -135,7 +136,7 @@ class MockChatGoogleGenerativeAI:
         # Model and other parameters are ignored in the mock client
         self.model = model
 
-    def invoke(self, messages: list[Any] | str) -> MockAIMessage:
+    def invoke(self, messages: Union[list[Any], str]) -> MockAIMessage:
         """
         Mocks the AI model's `invoke` method.
         Returns a pre-defined outline or slide content based on the input prompt.
