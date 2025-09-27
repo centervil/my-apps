@@ -10,7 +10,7 @@ from tenacity import (
     wait_exponential,
 )
 
-from ..utils.error_handling import APIError, log_api_call
+from ..utils.error_handling import APIError
 from ..utils.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -19,7 +19,7 @@ logger = get_logger(__name__)
 class TavilyError(APIError):
     """Base exception for Tavily API errors."""
 
-    def __init__(self, message: str, **kwargs):
+    def __init__(self, message: str, **kwargs: Any) -> None:
         super().__init__(message, "Tavily", **kwargs)
 
 
@@ -56,7 +56,6 @@ class TavilyClient:
             (requests.RequestException, requests.Timeout)
         ),
     )
-    @log_api_call(logger, "Tavily")
     def search(
         self,
         query: str,
@@ -103,7 +102,7 @@ class TavilyClient:
             )
             response.raise_for_status()
 
-            data = response.json()
+            data: Dict[str, Any] = response.json()
 
             # Check for API-level errors
             if "error" in data:

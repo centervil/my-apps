@@ -32,7 +32,7 @@ class WorkflowNodes:
     @traceable(name="0_collect_security_news")
     def collect_info(
         state: State, tavily_client: TavilyClient, config: Any
-    ) -> Dict:
+    ) -> Dict[str, Any]:
         """Collect security news from various sources.
 
         Args:
@@ -89,7 +89,9 @@ class WorkflowNodes:
 
     @staticmethod
     @traceable(name="1_make_outline")
-    def make_outline(state: State, llm: ChatGoogleGenerativeAI) -> Dict:
+    def make_outline(
+        state: State, llm: ChatGoogleGenerativeAI
+    ) -> Dict[str, Any]:
         """Generate outline from collected news.
 
         Args:
@@ -130,8 +132,13 @@ concise bulleted list. Include URLs in your points.
         try:
             logger.info("Generating outline from collected news")
             msg = llm.invoke(prompt)
-            bullets = strip_bullets(msg.content.splitlines())[:5] or [
-                msg.content.strip()
+            content = (
+                msg.content
+                if isinstance(msg.content, str)
+                else str(msg.content)
+            )
+            bullets = strip_bullets(content.splitlines())[:5] or [
+                content.strip()
             ]
 
             logger.info(f"Generated outline with {len(bullets)} items")
@@ -152,7 +159,7 @@ concise bulleted list. Include URLs in your points.
 
     @staticmethod
     @traceable(name="2_make_toc")
-    def make_toc(state: State, llm: ChatGoogleGenerativeAI) -> Dict:
+    def make_toc(state: State, llm: ChatGoogleGenerativeAI) -> Dict[str, Any]:
         """Generate table of contents from outline.
 
         Args:
@@ -186,16 +193,21 @@ Outline:
         try:
             logger.info("Generating table of contents")
             msg = llm.invoke(prompt)
+            content = (
+                msg.content
+                if isinstance(msg.content, str)
+                else str(msg.content)
+            )
 
             try:
-                json_content = find_json(msg.content) or msg.content
+                json_content = find_json(content) or content
                 data = json.loads(json_content)
                 toc = [s.strip() for s in data.get("toc", []) if s.strip()]
             except (json.JSONDecodeError, KeyError):
                 logger.warning(
                     "Failed to parse JSON response, falling back to bullet parsing"
                 )
-                toc = strip_bullets(msg.content.splitlines())
+                toc = strip_bullets(content.splitlines())
 
             # Ensure we have a reasonable TOC
             if not toc:
@@ -230,7 +242,9 @@ Outline:
 
     @staticmethod
     @traceable(name="3_write_slides")
-    def write_slides(state: State, llm: ChatGoogleGenerativeAI) -> Dict:
+    def write_slides(
+        state: State, llm: ChatGoogleGenerativeAI
+    ) -> Dict[str, Any]:
         """Write slide content in Marp format.
 
         Args:
@@ -278,7 +292,12 @@ Requirements:
         try:
             logger.info("Generating slide content")
             msg = llm.invoke(prompt)
-            slide_md = msg.content.strip()
+            content = (
+                msg.content
+                if isinstance(msg.content, str)
+                else str(msg.content)
+            )
+            slide_md = content.strip()
 
             # Process the markdown
             slide_md = strip_whole_code_fence(slide_md)
@@ -311,7 +330,7 @@ Requirements:
     @traceable(name="4_evaluate_slides")
     def evaluate_slides(
         state: State, llm: ChatGoogleGenerativeAI, max_attempts: int = 3
-    ) -> Dict:
+    ) -> Dict[str, Any]:
         """Evaluate the generated slides for quality.
 
         Args:
@@ -379,7 +398,11 @@ Return strictly this JSON schema:
         try:
             logger.info("Evaluating slide quality")
             msg = llm.invoke(prompt)
-            raw = msg.content or ""
+            raw = (
+                msg.content
+                if isinstance(msg.content, str)
+                else str(msg.content)
+            )
             json_content = find_json(raw) or raw
             data = json.loads(json_content)
 
@@ -440,7 +463,9 @@ Return strictly this JSON schema:
             }
 
     @staticmethod
-    def route_after_eval(state: State, max_attempts: int = 3) -> str:
+    def route_after_eval(
+        state: Dict[str, Any], max_attempts: int = 3
+    ) -> str:
         """Determine next step after evaluation.
 
         Args:

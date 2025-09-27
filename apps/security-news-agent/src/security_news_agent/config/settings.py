@@ -76,6 +76,14 @@ class AgentConfig:
                     f"Please set these in your .env file or environment."
                 )
 
+        # After this block, we can be sure the keys are strings.
+        if not all((google_api_key, langchain_api_key, tavily_api_key)):
+            # This should not be reached in normal mode due to earlier checks,
+            # but it ensures type safety for mypy.
+            raise ConfigurationError(
+                "One or more API keys are missing after environment loading."
+            )
+
         # Optional settings with defaults
         gemini_model_name = os.getenv(
             "GEMINI_MODEL_NAME", "gemini-1.5-flash-latest"

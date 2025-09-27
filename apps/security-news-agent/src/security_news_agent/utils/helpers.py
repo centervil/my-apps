@@ -3,7 +3,7 @@
 import json
 import re
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from zoneinfo import ZoneInfo
 
 # Timezone configuration
@@ -373,7 +373,7 @@ def sanitize_filename(filename: str) -> str:
     return sanitized or "untitled"
 
 
-def parse_json_safely(text: str) -> Optional[dict]:
+def parse_json_safely(text: str) -> Optional[Dict[Any, Any]]:
     """Safely parse JSON text.
 
     Args:
@@ -388,7 +388,7 @@ def parse_json_safely(text: str) -> Optional[dict]:
         return None
 
 
-def merge_dicts(*dicts) -> dict:
+def merge_dicts(*dicts: Dict[Any, Any]) -> Dict[Any, Any]:
     """Merge multiple dictionaries.
 
     Args:

@@ -4,7 +4,11 @@ import logging
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Any, Callable, Optional, Type, TypeVar
+
+from typing_extensions import Self
+
+F = TypeVar("F", bound=Callable[..., Any])
 
 
 def setup_logging(
@@ -81,7 +85,7 @@ def setup_logging(
 class JsonFormatter(logging.Formatter):
     """JSON formatter for structured logging."""
 
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         """Format log record as JSON."""
         import json
 
@@ -134,7 +138,7 @@ class ProgressLogger:
 
     def __init__(
         self, logger: logging.Logger, operation: str, total_steps: int
-    ):
+    ) -> None:
         """Initialize progress logger.
 
         Args:
@@ -150,7 +154,7 @@ class ProgressLogger:
 
         self.logger.info(f"Starting {operation} ({total_steps} steps)")
 
-    def step(self, description: str = None):
+    def step(self, description: str = "") -> None:
         """Log progress for a step.
 
         Args:
@@ -168,7 +172,7 @@ class ProgressLogger:
 
         self.logger.info(message)
 
-    def complete(self, success: bool = True):
+    def complete(self, success: bool = True) -> None:
         """Log completion of the operation.
 
         Args:
@@ -183,7 +187,7 @@ class ProgressLogger:
         )
 
 
-def log_function_call(logger: logging.Logger):
+def log_function_call(logger: logging.Logger) -> Callable[[F], F]:
     """Decorator to log function calls and execution time.
 
     Args:
@@ -193,8 +197,8 @@ def log_function_call(logger: logging.Logger):
         Decorator function
     """
 
-    def decorator(func):
-        def wrapper(*args, **kwargs):
+    def decorator(func: F) -> F:
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             start_time = datetime.now()
             func_name = f"{func.__module__}.{func.__name__}"
 
@@ -217,12 +221,14 @@ def log_function_call(logger: logging.Logger):
                 )
                 raise
 
-        return wrapper
+        return wrapper  # type: ignore
 
     return decorator
 
 
-def log_api_call(logger: logging.Logger, service: str):
+def log_api_call(
+    logger: logging.Logger, service: str
+) -> Callable[[F], F]:
     """Decorator to log API calls with rate limiting awareness.
 
     Args:
@@ -233,8 +239,8 @@ def log_api_call(logger: logging.Logger, service: str):
         Decorator function
     """
 
-    def decorator(func):
-        def wrapper(*args, **kwargs):
+    def decorator(func: F) -> F:
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             start_time = datetime.now()
 
             logger.info(f"Making {service} API call: {func.__name__}")
@@ -265,7 +271,7 @@ def log_api_call(logger: logging.Logger, service: str):
                     )
                 raise
 
-        return wrapper
+        return wrapper  # type: ignore
 
     return decorator
 
@@ -274,8 +280,11 @@ class ContextLogger:
     """Context manager for logging operations with automatic cleanup."""
 
     def __init__(
-        self, logger: logging.Logger, operation: str, level: int = logging.INFO
-    ):
+        self,
+        logger: logging.Logger,
+        operation: str,
+        level: int = logging.INFO,
+    ) -> None:
         """Initialize context logger.
 
         Args:
@@ -286,16 +295,25 @@ class ContextLogger:
         self.logger = logger
         self.operation = operation
         self.level = level
-        self.start_time = None
+        self.start_time: Optional[datetime] = None
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         """Enter the context."""
         self.start_time = datetime.now()
         self.logger.log(self.level, f"Starting {self.operation}")
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[Any],
+    ) -> bool:
         """Exit the context."""
+        if self.start_time is None:
+            # Should not happen if __enter__ was called
+            return False
+
         elapsed = datetime.now() - self.start_time
 
         if exc_type is None:
@@ -312,7 +330,7 @@ class ContextLogger:
         return False  # Don't suppress exceptions
 
 
-def get_logger(name: str = None) -> logging.Logger:
+def get_logger(name: Optional[str] = None) -> logging.Logger:
     """Get a logger instance with the application's configuration.
 
     Args:
@@ -325,7 +343,12 @@ def get_logger(name: str = None) -> logging.Logger:
         # Get the calling module's name
         import inspect
 
-        frame = inspect.currentframe().f_back
-        name = frame.f_globals.get("__name__", "security_news_agent")
+        frame = inspect.currentframe()
+        if frame and frame.f_back:
+            name = frame.f_back.f_globals.get(
+                "__name__", "security_news_agent"
+            )
+        else:
+            name = "security_news_agent"
 
     return logging.getLogger(name)
