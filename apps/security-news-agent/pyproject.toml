@@ -27,6 +27,7 @@ flake8 = ">=6.0.0"
 mypy = ">=1.0.0"
 autopep8 = "^2.3.2"
 bandit = {extras = ["toml"], version = "^1.8.6"}
+types-requests = ">=2.31.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

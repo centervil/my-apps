@@ -5,7 +5,7 @@ import re
 import shutil
 import subprocess  # nosec B404
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from ..config.settings import AgentConfig
 from ..utils.helpers import slugify_en, today_iso
@@ -73,7 +73,7 @@ class ReportRenderer:
                 f"Failed to create output directory {self.output_dir}: {e}"
             )
 
-    def generate_filename(self, title: str, extension: str = "md") -> str:
+    def generate_filename(self, title: str, extension: str = "md") -> Path:
         """Generate filename from title.
 
         Args:
@@ -81,17 +81,17 @@ class ReportRenderer:
             extension: File extension (without dot)
 
         Returns:
-            Generated filename
+            Generated filename as a Path object
         """
         date_prefix = today_iso()
         slug = slugify_en(title)
         filename = f"{date_prefix}_{slug}.{extension}"
 
         logger.debug(f"Generated filename: {filename}")
-        return filename
+        return self.output_dir / filename
 
     def save_markdown(
-        self, content: str, title: str, filename: str = None
+        self, content: str, title: str, filename: str = ""
     ) -> Path:
         """Save markdown content to file.
 
@@ -109,10 +109,10 @@ class ReportRenderer:
         try:
             self.ensure_output_directory()
 
-            if filename is None:
-                filename = self.generate_filename(title, "md")
-
-            file_path = self.output_dir / filename
+            if not filename:
+                file_path = self.generate_filename(title, "md")
+            else:
+                file_path = self.output_dir / filename
 
             # Write content with UTF-8 encoding
             file_path.write_text(content, encoding="utf-8")
@@ -264,7 +264,7 @@ class ReportRenderer:
 
         try:
             # Get all report files (markdown and rendered)
-            all_files = []
+            all_files: List[Path] = []
             for pattern in ["*.md", "*.pdf", "*.png", "*.html"]:
                 all_files.extend(self.output_dir.glob(pattern))
 
@@ -320,7 +320,11 @@ class ReportRenderer:
         Returns:
             Dictionary with validation results
         """
-        validation = {"valid": True, "warnings": [], "errors": []}
+        validation: Dict[str, Any] = {
+            "valid": True,
+            "warnings": [],
+            "errors": [],
+        }
 
         if not content.strip():
             validation["valid"] = False

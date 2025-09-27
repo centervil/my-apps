@@ -17,11 +17,10 @@ from .processing.mock_clients import (
 )
 from .processing.workflow import SecurityNewsWorkflow
 from .search.tavily_client import TavilyClient
-from .utils.error_handling import (
-    SecurityNewsAgentError,
-    handle_errors,
-)
+from .utils.error_handling import SecurityNewsAgentError, handle_errors
 from .utils.logging_config import ProgressLogger, setup_logging
+from .processing.state import State
+from typing import Any, Dict, Optional, Union
 
 
 def create_argument_parser() -> argparse.ArgumentParser:
@@ -93,7 +92,7 @@ Examples:
 
 @handle_errors(reraise=True)
 def load_configuration(
-    config_file: str = None, test_mode: bool = False
+    config_file: Optional[str] = None, test_mode: bool = False
 ) -> AgentConfig:
     """Load and validate configuration."""
     try:
@@ -139,7 +138,7 @@ def validate_prerequisites(
 
 def print_workflow_summary(
     workflow: SecurityNewsWorkflow, config: AgentConfig, output_dir: str
-):
+) -> None:
     """Print summary of workflow configuration."""
     summary = workflow.get_workflow_summary()
 
@@ -154,35 +153,33 @@ def print_workflow_summary(
 
 def _setup_workflow_environment(
     config: AgentConfig, workflow: SecurityNewsWorkflow, topic: str, test_mode: bool
-) -> dict:
+) -> State:
     """Set up the workflow environment and create initial state."""
     initial_state = workflow.create_initial_state(topic)
 
     if test_mode:
         print("🧪 Running in test mode - using limited API calls")
         # Override search queries for test mode
-
-        def get_test_queries():
-            return [
-                {
-                    "q": "cybersecurity news",
-                    "include_domains": ["thehackernews.com"],
-                    "time_range": "week",
-                }
-            ]
-
-        config.get_search_queries = get_test_queries
+        config.get_search_queries = lambda: [
+            {
+                "q": "cybersecurity news",
+                "include_domains": ["thehackernews.com"],
+                "time_range": "week",
+            }
+        ]
 
     return initial_state
 
 
-def _execute_workflow_steps(workflow: SecurityNewsWorkflow, initial_state: dict) -> dict:
+def _execute_workflow_steps(
+    workflow: SecurityNewsWorkflow, initial_state: State
+) -> Dict[str, Any]:
     """Execute the workflow and return the result."""
     return workflow.run(initial_state)
 
 
 def _handle_workflow_results(
-    result: dict, renderer: ReportRenderer, progress: ProgressLogger
+    result: Dict[str, Any], renderer: ReportRenderer, progress: ProgressLogger
 ) -> bool:
     """Handle workflow results including validation, rendering, and output display."""
     # Check for errors
@@ -242,7 +239,7 @@ def _handle_workflow_results(
 
 def run_workflow(
     config: AgentConfig,
-    tavily_client: TavilyClient,
+    tavily_client: Union[TavilyClient, MockTavilyClient],
     workflow: SecurityNewsWorkflow,
     renderer: ReportRenderer,
     topic: str,
@@ -286,7 +283,7 @@ def run_workflow(
         return False
 
 
-def main():
+def main() -> None:
     """Main entry point."""
     parser = create_argument_parser()
     args = parser.parse_args()
@@ -309,6 +306,7 @@ def main():
 
         use_mock_clients = args.test_mode and "mock" in config.google_api_key
 
+        tavily_client: Union[TavilyClient, MockTavilyClient]
         if use_mock_clients:
             print(
                 "🧪 API keys not found or incomplete. "

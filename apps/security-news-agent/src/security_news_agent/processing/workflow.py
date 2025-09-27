@@ -2,7 +2,7 @@
 
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from langchain_core.runnables import RunnableConfig
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -54,7 +54,7 @@ class SecurityNewsWorkflow:
             f"Initialized SecurityNewsWorkflow with model: {config.gemini_model_name}"
         )
 
-    def _build_graph(self) -> StateGraph:
+    def _build_graph(self) -> Any:
         """Build the LangGraph workflow.
 
         Returns:
@@ -87,25 +87,25 @@ class SecurityNewsWorkflow:
 
         return graph_builder.compile()
 
-    def _collect_info_wrapper(self, state: State) -> Dict:
+    def _collect_info_wrapper(self, state: State) -> Dict[str, Any]:
         """Wrapper for collect_info node."""
         return WorkflowNodes.collect_info(
             state, self.tavily_client, self.config
         )
 
-    def _make_outline_wrapper(self, state: State) -> Dict:
+    def _make_outline_wrapper(self, state: State) -> Dict[str, Any]:
         """Wrapper for make_outline node."""
         return WorkflowNodes.make_outline(state, self.llm)
 
-    def _make_toc_wrapper(self, state: State) -> Dict:
+    def _make_toc_wrapper(self, state: State) -> Dict[str, Any]:
         """Wrapper for make_toc node."""
         return WorkflowNodes.make_toc(state, self.llm)
 
-    def _write_slides_wrapper(self, state: State) -> Dict:
+    def _write_slides_wrapper(self, state: State) -> Dict[str, Any]:
         """Wrapper for write_slides node."""
         return WorkflowNodes.write_slides(state, self.llm)
 
-    def _evaluate_slides_wrapper(self, state: State) -> Dict:
+    def _evaluate_slides_wrapper(self, state: State) -> Dict[str, Any]:
         """Wrapper for evaluate_slides node."""
         return WorkflowNodes.evaluate_slides(
             state, self.llm, self.max_attempts
@@ -115,7 +115,7 @@ class SecurityNewsWorkflow:
         """Wrapper for route_after_eval."""
         return WorkflowNodes.route_after_eval(state, self.max_attempts)
 
-    def create_initial_state(self, topic: str = None) -> State:
+    def create_initial_state(self, topic: Optional[str] = None) -> State:
         """Create initial state for the workflow.
 
         Args:
@@ -145,7 +145,9 @@ class SecurityNewsWorkflow:
             sources={},
         )
 
-    def create_run_config(self, run_name: str = None) -> RunnableConfig:
+    def create_run_config(
+        self, run_name: Optional[str] = None
+    ) -> RunnableConfig:
         """Create configuration for workflow execution.
 
         Args:
@@ -166,8 +168,10 @@ class SecurityNewsWorkflow:
         )
 
     def run(
-        self, initial_state: State = None, config: RunnableConfig = None
-    ) -> Dict:
+        self,
+        initial_state: Optional[State] = None,
+        config: Optional[RunnableConfig] = None,
+    ) -> Dict[str, Any]:
         """Execute the complete workflow.
 
         Args:
@@ -186,7 +190,9 @@ class SecurityNewsWorkflow:
         logger.info("Starting security news workflow execution")
 
         try:
-            result = self.graph.invoke(initial_state, config=config)
+            result: Dict[str, Any] = self.graph.invoke(
+                initial_state, config=config
+            )
 
             if result.get("error"):
                 logger.error(
@@ -202,13 +208,14 @@ class SecurityNewsWorkflow:
         except Exception as e:
             logger.error(f"Workflow execution failed: {e}")
             # Return the current state with error information
-            error_state = initial_state.copy()
-            error_state.update(
-                {
-                    "error": f"workflow_execution_error: {e}",
-                    "log": initial_state.get("log", []) + [f"[workflow] EXECUTION FAILED: {e}"],
-                }
-            )
+            error_log = initial_state.get("log", []) + [
+                f"[workflow] EXECUTION FAILED: {e}"
+            ]
+            error_state = {
+                **initial_state,
+                "error": f"workflow_execution_error: {e}",
+                "log": error_log,
+            }
             return error_state
 
     def validate_prerequisites(self) -> bool:

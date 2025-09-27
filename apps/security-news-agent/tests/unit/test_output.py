@@ -82,7 +82,7 @@ class TestReportRenderer:
             ):
                 filename = renderer.generate_filename("Test Title")
 
-                assert filename == "2025-09-14_test-title.md"
+                assert str(filename) == "slides/2025-09-14_test-title.md"
 
     def test_generate_filename_custom_extension(self, mock_config):
         """Test filename generation with custom extension."""
@@ -98,7 +98,7 @@ class TestReportRenderer:
             ):
                 filename = renderer.generate_filename("Test Title", "pdf")
 
-                assert filename == "2025-09-14_test-title.pdf"
+                assert str(filename) == "slides/2025-09-14_test-title.pdf"
 
     def test_save_markdown_success(self, mock_config, tmp_path):
         """Test successful markdown saving."""
