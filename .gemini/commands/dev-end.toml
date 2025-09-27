@@ -1,14 +1,54 @@
-description="開発セッションを終了し、作業内容を記録・コミットします。"
+description="開発セッションを終了し、PRを作成してCIの結果を監視します。"
 prompt = """\
-あなたはプロの開発アシスタントです。ユーザーの指示に従い、開発セッションを終了してください。
+あなたはプロの開発アシスタントです。AGENTS.MDの指示に基づき、以下の手順で開発セッションを終了してください。
 
-1.  現在のブランチ名からIssue番号を抽出してください。ブランチ名は `!{git branch --show-current}` で取得できます。形式は `issue-[issue番号]-...` です。
-2.  `development_logs` ディレクトリを確認し、そのIssue番号の次のセッション番号を決定してください。例えば、`issue-8-session-1.md` があれば、次はセッション2です。もしファイルがなければセッション1としてください。
-3.  `YYYY-MM-DD-issue-[issue番号]-session-[セッション番号].md` という名前で新しいログファイルを作成してください。日付は `!{date +%Y-%m-%d}` で取得できます。
-4.  **この開発セッションで行った作業内容を箇条書きで要約し、作成したログファイルに書き込んでください。** これは非常に重要です。あなたの記憶とここまでの対話履歴を基に、詳細かつ明確なサマリーを生成してください。
-5.  作成したログファイルを `git add` でステージングしてください。
-6.  `docs(log): record development session for issue [issue番号]` という件名でコミットを作成してください。コミットボディには `Closes #[issue番号]` を含めてください。
-7.  変更をリモートリポジトリにプッシュしてください（例: `git push origin [ブランチ名]`）。
-8.  GitHub CLI（`gh`）などを使い、プルリクエスト（PR）を発行してください。タイトルは「Resolve Issue #[issue番号] [issueタイトル]」、本文には作業内容の要約や関連Issueへのリンクを含めてください。
-9.  最後に、「issue [issue番号] の開発セッションを終了し、作業ログをコミットし、PRを発行しました。」という確認メッセージをユーザーに送信してください。
+1.  **作業内容の記録とコミット**:
+    - 現在のブランチ名からIssue番号を抽出してください (`!{git branch --show-current}`).
+    - `development_logs` ディレクトリに次のセッション番号でログファイルを作成してください (`YYYY-MM-DD-issue-[issue番号]-session-[セッション番号].md`)。
+    - **この開発セッションで行った作業内容を箇条書きで要約し、作成したログファイルに書き込んでください。**
+    - ログファイルをステージングし、`docs(log): record development session for issue [issue番号]` というメッセージでコミットしてください。
+
+2.  **プルリクエストの作成とCIの監視**: `!{
+    set -e
+    BRANCH_NAME=$(git branch --show-current)
+    ISSUE_NUMBER=$(echo "$BRANCH_NAME" | sed -n 's/.*\\/\\([0-9]*\\)-.*/\\1/p')
+
+    if [ -z "$ISSUE_NUMBER" ]; then
+        echo "エラー: ブランチ名からIssue番号を抽出できませんでした。"
+        exit 1
+    fi
+
+    echo "変更をリモートリポジトリにプッシュしています..."
+    git push origin "$BRANCH_NAME" --force
+
+    echo "プルリクエストを作成しています..."
+    ISSUE_TITLE=$(gh issue view "$ISSUE_NUMBER" --json title -q .title)
+    PR_URL=$(gh pr create --title "feat(gemini): Resolve Issue #$ISSUE_NUMBER $ISSUE_TITLE" --body "Closes #$ISSUE_NUMBER" --fill 2>/dev/null || gh pr view --json url -q .url)
+
+    if [ -z "$PR_URL" ]; then
+        echo "エラー: プルリクエストの作成またはURLの取得に失敗しました。"
+        exit 1
+    fi
+    echo "PRを処理しています: $PR_URL"
+
+    echo "CIの完了を待っています... (これには数分かかる場合があります)"
+    gh pr checks "$PR_URL" --watch --interval 5
+    CI_STATUS=$?
+
+    if [ $CI_STATUS -eq 0 ]; then
+        echo "✅ CIチェックがすべて成功しました。"
+        echo "mainブランチに切り替えます。"
+        git checkout main
+        echo "作業が完了しました。お疲れ様でした。"
+    else
+        echo "❌ CIチェックでエラーが検出されました。"
+        echo "----------------------------------------"
+        gh pr checks "$PR_URL"
+        echo "----------------------------------------"
+        echo "上記のエラーを修正し、再度変更をプッシュしてください。"
+        echo "修正後、このブランチで '/dev-end' を再度実行するか、手動でCIの結果を確認してください。"
+    fi
+    }`
+    上記のコマンドを実行し、PRの作成とCIの監視を行ってください。
+    **注意**: 最初のステップである「作業内容の記録とコミット」は、あなた（アシスタント）が実行する必要があります。その後のシェルスクリプトは自動で進行します。
 """
