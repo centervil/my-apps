@@ -17,8 +17,7 @@
   - [9.2. Tooling and Version Management](#92-tooling-and-version-management)
   - [9.3. Quick Reference Maintenance](#93-quick-reference-maintenance)
 - [10. Playwright Browser Automation Tasks](#10-playwright-browser-automation-tasks)
-- [11. Serena MCP](#11-serena-mcp)
-- [12. Self-Reflection and Self-Correction](#12-self-reflection-and-self-correction)
+- [11. Self-Reflection and Self-Correction](#11-self-reflection-and-self-correction)
 
 ## 1. Core Principles
 
@@ -172,13 +171,7 @@ This section describes specific guidelines and best practices for browser automa
 *   **Security Challenges**: Isolate automation challenges like reCAPTCHA as separate concerns from the primary test objective.
 *   **User Collaboration**: Work closely with the user to debug complex issues instead of guessing solutions.
 
-## 11. Serena MCP
-
-Serena MCP (Meta-Coding-Platform) is a toolkit that transforms LLMs into coding agents.
-
-- **Usage**: Start the server with `pnpm serena:start`.
-
-## 12. Self-Reflection and Self-Correction
+## 11. Self-Reflection and Self-Correction
 
 Agents must critically evaluate their own work to ensure high quality.
 
