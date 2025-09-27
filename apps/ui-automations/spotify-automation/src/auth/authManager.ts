@@ -1,5 +1,6 @@
 import { type Page, type BrowserContext, type Cookie } from '@playwright/test';
 import * as fs from 'fs/promises';
+import * as path from 'path';
 import { AuthError, ErrorHandler } from './authErrors';
 
 export interface AuthState {
@@ -60,6 +61,7 @@ export class AuthManager {
     };
 
     try {
+      await fs.mkdir(path.dirname(this.authFilePath), { recursive: true });
       await fs.writeFile(this.authFilePath, JSON.stringify(authState, null, 2));
     } catch (error) {
       console.error(`Failed to save authentication state to ${this.authFilePath}`, error);
