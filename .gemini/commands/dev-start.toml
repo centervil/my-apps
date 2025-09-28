@@ -1,30 +1,8 @@
 description="開発セッションを開始します。issue番号を引数に取ります。"
-prompt = """\
+prompt = """
 あなたはプロの開発アシスタントです。AGENTS.MDの指示に基づき、以下の手順で開発セッションを開始してください。
 
-1.  **ブランチ確認、Issue情報取得、ブランチ作成**: `!{
-    CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-    if [ "$CURRENT_BRANCH" != "main" ]; then
-      echo "エラー: mainブランチで実行してください。"
-      exit 1
-    fi
-    ISSUE_JSON=$(gh issue view {{args}} --json title,body)
-    if [ $? -ne 0 ]; then
-        echo "エラー: Issue {{args}} の取得に失敗しました。"
-        exit 1
-    fi
-    ISSUE_TITLE=$(echo "$ISSUE_JSON" | jq -r .title)
-    ISSUE_BODY=$(echo "$ISSUE_JSON" | jq -r .body)
-    KEBAB_TITLE=$(echo "$ISSUE_TITLE" | tr '[:upper:]' '[:lower:]' | sed -e 's/[:/()]/ /g' -e 's/[^a-z0-9]/-/g' -e 's/--\+/-/g' -e 's/^-//' -e 's/-$//')
-    git checkout -b feat/{{args}}-$KEBAB_TITLE
-    mkdir -p docs/issues/{{args}}
-    echo "ブランチ feat/{{args}}-$KEBAB_TITLE を作成し、ディレクトリ docs/issues/{{args}}/ を準備しました。"
-    echo "---"
-    echo "ISSUE_TITLE_FOR_GENERATION: $ISSUE_TITLE"
-    echo "---"
-    echo "ISSUE_BODY_FOR_GENERATION: $ISSUE_BODY"
-    }`
-    上記のコマンドを実行し、ブランチ作成とディレクトリ準備を完了してください。エラーが発生した場合は処理を中止します。
+1.  **ブランチ作成と仕様定義用の情報取得**: `!{bash .gemini/scripts/dev-start.sh {{args}}}` を実行してください。
     コマンドの出力から `ISSUE_TITLE_FOR_GENERATION:` と `ISSUE_BODY_FOR_GENERATION:` の内容を抽出し、以降のステップで利用してください。
 
 2.  **`requirements.md`の生成**: 抽出したIssue情報を基に、`AGENTS.MD`の「3.2. Specification Document Creation Process」で定義されている形式に従って、**ユーザーストーリーと受け入れ基準を記述した要件定義書(`requirements.md`)を生成してください。** 生成した内容は `docs/issues/{{args}}/requirements.md` に保存してください。
