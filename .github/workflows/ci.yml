@@ -12,6 +12,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'pull_request' }} # Skip this job for pull requests
     steps:
       - uses: actions/checkout@v4
         with:
@@ -40,13 +41,13 @@ jobs:
       - name: Run Playwright tests (Nx Affected on PR)
         if: ${{ github.event_name == 'pull_request' }}
         env:
-          NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+          # NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }} # Removed as per user feedback
         run: pnpm nx affected --base=${{ github.event.pull_request.base.sha }} --head=${{ github.event.pull_request.head.sha }} --target=test
 
       - name: Run Playwright tests (Nx Affected on Main)
         if: ${{ github.event_name == 'push' }}
         env:
-          NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+          # NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }} # Removed as per user feedback
         run: pnpm nx affected:test
 
       - name: Run pnpm audit for vulnerabilities
