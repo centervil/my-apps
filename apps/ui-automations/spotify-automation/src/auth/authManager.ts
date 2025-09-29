@@ -64,7 +64,10 @@ export class AuthManager {
       await fs.mkdir(path.dirname(this.authFilePath), { recursive: true });
       await fs.writeFile(this.authFilePath, JSON.stringify(authState, null, 2));
     } catch (error) {
-      console.error(`Failed to save authentication state to ${this.authFilePath}`, error);
+      console.error(
+        `Failed to save authentication state to ${this.authFilePath}`,
+        error,
+      );
       throw error;
     }
   }
@@ -76,7 +79,10 @@ export class AuthManager {
       if (error instanceof AuthError) {
         ErrorHandler.handleAuthError(error);
       } else {
-        console.error('An unexpected error occurred during auth validation:', error);
+        console.error(
+          'An unexpected error occurred during auth validation:',
+          error,
+        );
       }
       return false;
     }
@@ -86,13 +92,13 @@ export class AuthManager {
       const authState: AuthState = JSON.parse(content);
 
       await context.addCookies(authState.cookies);
-      await context.addInitScript(storage => {
+      await context.addInitScript((storage) => {
         for (const [key, value] of Object.entries(storage)) {
           window.localStorage.setItem(key, value);
         }
       }, authState.localStorage);
 
-      await context.addInitScript(storage => {
+      await context.addInitScript((storage) => {
         for (const [key, value] of Object.entries(storage)) {
           window.sessionStorage.setItem(key, value);
         }
@@ -103,7 +109,7 @@ export class AuthManager {
     } catch {
       const authError = new AuthError(
         'Failed to load authentication state into browser context.',
-        'INVALID_AUTH_FILE'
+        'INVALID_AUTH_FILE',
       );
       ErrorHandler.handleAuthError(authError);
       return false;
@@ -120,11 +126,12 @@ export class AuthManager {
       const content = await fs.readFile(this.authFilePath, 'utf-8');
       const authState: AuthState = JSON.parse(content);
 
-      const authAgeHours = (Date.now() - authState.timestamp) / (1000 * 60 * 60);
+      const authAgeHours =
+        (Date.now() - authState.timestamp) / (1000 * 60 * 60);
       if (authAgeHours > maxAgeHours) {
         throw new AuthError(
           `Authentication is older than ${maxAgeHours} hours.`,
-          'EXPIRED_AUTH'
+          'EXPIRED_AUTH',
         );
       }
 
@@ -135,7 +142,7 @@ export class AuthManager {
       }
       throw new AuthError(
         'Failed to read or parse the authentication file.',
-        'INVALID_AUTH_FILE'
+        'INVALID_AUTH_FILE',
       );
     }
   }
@@ -146,7 +153,7 @@ export class AuthManager {
     } catch {
       throw new AuthError(
         `Authentication file not found or not readable at ${this.authFilePath}`,
-        'FILE_NOT_FOUND'
+        'FILE_NOT_FOUND',
       );
     }
 
@@ -160,7 +167,7 @@ export class AuthManager {
     } catch {
       throw new AuthError(
         'Authentication file is corrupted or improperly formatted.',
-        'INVALID_AUTH_FILE'
+        'INVALID_AUTH_FILE',
       );
     }
   }

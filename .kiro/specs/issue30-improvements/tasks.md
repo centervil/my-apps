@@ -35,7 +35,7 @@
   - _Requirements: 1.2, 2.1, 2.2_
 
 - [x] 6. Create utility module for helper functions
-  - Extract utility functions (_log, _strip_bullets, _slugify_en, etc.)
+  - Extract utility functions (\_log, \_strip_bullets, \_slugify_en, etc.)
   - Organize functions by category and add proper documentation
   - Write comprehensive unit tests for all utility functions
   - _Requirements: 1.2, 2.1, 2.2_
@@ -69,7 +69,7 @@
   - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
 - [x] 11. Update main entry point to use new modular structure
-  - Refactor __main__.py to use new modular components
+  - Refactor **main**.py to use new modular components
   - Implement command-line argument parsing for test modes
   - Add proper initialization and cleanup logic
   - Ensure backward compatibility with existing usage

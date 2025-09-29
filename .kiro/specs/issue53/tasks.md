@@ -8,7 +8,7 @@
 - [x] 2. Refactor complex functions to reduce complexity
 - [x] 2.1 Refactor `run_workflow` function in `__main__.py`
   - Extract environment setup logic into `_setup_workflow_environment` method
-  - Extract workflow execution logic into `_execute_workflow_steps` method  
+  - Extract workflow execution logic into `_execute_workflow_steps` method
   - Extract result handling logic into `_handle_workflow_results` method
   - Ensure complexity score drops below 10
   - _Requirements: 2.1, 2.3, 2.4_

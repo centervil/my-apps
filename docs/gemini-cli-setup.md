@@ -14,11 +14,11 @@ GitHub リポジトリ設定で以下のシークレットを設定してくだ�
 
 ### 認証シークレット
 
-| シークレット名 | 説明 | 必須 |
-|---------------|------|------|
-| `GEMINI_API_KEY` | 認証用 Gemini API キー | はい（または `GOOGLE_API_KEY` を使用） |
-| `GOOGLE_API_KEY` | 代替 Google API キー | はい（`GEMINI_API_KEY` を使用しない場合） |
-| `APP_PRIVATE_KEY` | GitHub App 秘密鍵（GitHub App を使用する場合） | オプション |
+| シークレット名    | 説明                                           | 必須                                      |
+| ----------------- | ---------------------------------------------- | ----------------------------------------- |
+| `GEMINI_API_KEY`  | 認証用 Gemini API キー                         | はい（または `GOOGLE_API_KEY` を使用）    |
+| `GOOGLE_API_KEY`  | 代替 Google API キー                           | はい（`GEMINI_API_KEY` を使用しない場合） |
+| `APP_PRIVATE_KEY` | GitHub App 秘密鍵（GitHub App を使用する場合） | オプション                                |
 
 ### シークレットのセットアップ手順
 
@@ -32,26 +32,26 @@ GitHub リポジトリ設定で以下の変数を設定してください：
 
 ### Google Cloud 変数
 
-| 変数名 | 説明 | 例の値 |
-|--------|------|--------|
-| `GOOGLE_CLOUD_PROJECT` | GCP プロジェクト ID | `my-project-123` |
-| `GOOGLE_CLOUD_LOCATION` | GCP リージョン | `us-central1` |
-| `SERVICE_ACCOUNT_EMAIL` | GCP サービスアカウントメール | `gemini-cli@my-project.iam.gserviceaccount.com` |
-| `GCP_WIF_PROVIDER` | Workload Identity Federation プロバイダー | `projects/123/locations/global/workloadIdentityPools/pool/providers/provider` |
+| 変数名                  | 説明                                      | 例の値                                                                        |
+| ----------------------- | ----------------------------------------- | ----------------------------------------------------------------------------- |
+| `GOOGLE_CLOUD_PROJECT`  | GCP プロジェクト ID                       | `my-project-123`                                                              |
+| `GOOGLE_CLOUD_LOCATION` | GCP リージョン                            | `us-central1`                                                                 |
+| `SERVICE_ACCOUNT_EMAIL` | GCP サービスアカウントメール              | `gemini-cli@my-project.iam.gserviceaccount.com`                               |
+| `GCP_WIF_PROVIDER`      | Workload Identity Federation プロバイダー | `projects/123/locations/global/workloadIdentityPools/pool/providers/provider` |
 
 ### Gemini CLI 設定変数
 
-| 変数名 | 説明 | デフォルト値 |
-|--------|------|-------------|
-| `GEMINI_CLI_VERSION` | 特定の Gemini CLI バージョン | `latest` |
-| `GOOGLE_GENAI_USE_VERTEXAI` | 直接 API の代わりに Vertex AI を使用 | `false` |
-| `GOOGLE_GENAI_USE_GCA` | Gemini Code Assist を使用 | `false` |
-| `DEBUG` | デバッグログを有効化 | `false` |
+| 変数名                      | 説明                                 | デフォルト値 |
+| --------------------------- | ------------------------------------ | ------------ |
+| `GEMINI_CLI_VERSION`        | 特定の Gemini CLI バージョン         | `latest`     |
+| `GOOGLE_GENAI_USE_VERTEXAI` | 直接 API の代わりに Vertex AI を使用 | `false`      |
+| `GOOGLE_GENAI_USE_GCA`      | Gemini Code Assist を使用            | `false`      |
+| `DEBUG`                     | デバッグログを有効化                 | `false`      |
 
 ### GitHub App 変数（オプション）
 
-| 変数名 | 説明 | 必須 |
-|--------|------|------|
+| 変数名   | 説明          | 必須                          |
+| -------- | ------------- | ----------------------------- |
 | `APP_ID` | GitHub App ID | GitHub App を使用する場合のみ |
 
 ### 変数のセットアップ手順
@@ -156,14 +156,15 @@ Once configured, the workflows will automatically:
 Comment on issues or pull requests with:
 
 - `@gemini-cli /review [additional context]` - Request code review
-- `@gemini-cli /triage` - Request issue triage  
+- `@gemini-cli /triage` - Request issue triage
 - `@gemini-cli [your question]` - General AI assistance
 
 ### Permissions
 
 Only users with the following associations can trigger manual workflows:
+
 - Repository owners (`OWNER`)
-- Repository members (`MEMBER`) 
+- Repository members (`MEMBER`)
 - Repository collaborators (`COLLABORATOR`)
 
 ## Troubleshooting
@@ -187,6 +188,7 @@ Only users with the following associations can trigger manual workflows:
 ### Debug Mode
 
 Enable debug mode by setting the `DEBUG` variable to `true`. This will:
+
 - Show detailed execution logs
 - Print GitHub event context
 - Enable verbose Gemini CLI output
@@ -202,13 +204,15 @@ Enable debug mode by setting the `DEBUG` variable to `true`. This will:
 ### Adjusting Prompts
 
 The AI prompts are embedded in the workflow files and can be customized by editing:
+
 - `.github/workflows/gemini-review.yml` - Code review prompts
-- `.github/workflows/gemini-triage.yml` - Issue triage prompts  
+- `.github/workflows/gemini-triage.yml` - Issue triage prompts
 - `.github/workflows/gemini-invoke.yml` - General assistance prompts
 
 ### Timeout Configuration
 
 Adjust workflow timeouts in the respective YAML files:
+
 - Review workflow: 7 minutes (default)
 - Triage workflow: 5 minutes (default)
 - Invoke workflow: 10 minutes (default)
@@ -228,6 +232,7 @@ The workflows use the GitHub MCP server for repository interaction. You can cust
 ## Support
 
 For issues and questions:
+
 1. Check the workflow execution logs
 2. Review this documentation
 3. Consult the [Gemini CLI documentation](https://github.com/google-github-actions/run-gemini-cli)

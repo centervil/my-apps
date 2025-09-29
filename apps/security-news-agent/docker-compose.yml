@@ -24,8 +24,8 @@ services:
       # 設定ファイルをマウント
       - ./.env:/app/.env:ro
     working_dir: /app
-    command: ["poetry", "run", "python", "-m", "security_news_agent"]
-    restart: "no"
+    command: ['poetry', 'run', 'python', '-m', 'security_news_agent']
+    restart: 'no'
 
   # テスト専用サービス
   security-news-agent-test:
@@ -45,8 +45,18 @@ services:
       - ./logs:/app/logs
       - ./.env:/app/.env:ro
     working_dir: /app
-    command: ["poetry", "run", "python", "-m", "security_news_agent", "--test-mode", "--log-level", "DEBUG"]
-    restart: "no"
+    command:
+      [
+        'poetry',
+        'run',
+        'python',
+        '-m',
+        'security_news_agent',
+        '--test-mode',
+        '--log-level',
+        'DEBUG',
+      ]
+    restart: 'no'
 
   # 単体テスト実行用サービス
   security-news-agent-unittest:
@@ -57,8 +67,8 @@ services:
     volumes:
       - ./logs:/app/logs
     working_dir: /app
-    command: ["poetry", "run", "pytest", "tests/unit/", "-v", "--tb=short"]
-    restart: "no"
+    command: ['poetry', 'run', 'pytest', 'tests/unit/', '-v', '--tb=short']
+    restart: 'no'
 
   # 統合テスト実行用サービス
   security-news-agent-integration:
@@ -69,8 +79,9 @@ services:
     volumes:
       - ./logs:/app/logs
     working_dir: /app
-    command: ["poetry", "run", "pytest", "tests/integration/", "-v", "--tb=short"]
-    restart: "no"
+    command:
+      ['poetry', 'run', 'pytest', 'tests/integration/', '-v', '--tb=short']
+    restart: 'no'
 
   # 設定検証用サービス
   security-news-agent-validate:
@@ -85,5 +96,13 @@ services:
     volumes:
       - ./.env:/app/.env:ro
     working_dir: /app
-    command: ["poetry", "run", "python", "-m", "security_news_agent", "--validate-only"]
-    restart: "no"
+    command:
+      [
+        'poetry',
+        'run',
+        'python',
+        '-m',
+        'security_news_agent',
+        '--validate-only',
+      ]
+    restart: 'no'

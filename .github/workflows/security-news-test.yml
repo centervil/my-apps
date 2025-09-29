@@ -5,12 +5,12 @@ permissions:
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths:
       - 'apps/security-news-agent/**'
       - '.github/workflows/security-news-*.yml'
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths:
       - 'apps/security-news-agent/**'
       - '.github/workflows/security-news-*.yml'
@@ -203,10 +203,10 @@ jobs:
         run: |
           # Test installation from wheel
           pip install dist/*.whl
-          
+
           # Test basic import
           python -c "import security_news_agent; print('✅ Package import successful')"
-          
+
           # Test CLI help
           python -m security_news_agent --help
 

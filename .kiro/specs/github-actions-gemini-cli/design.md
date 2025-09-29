@@ -33,8 +33,9 @@ graph TD
 ## Components and Interfaces
 
 ### 1. Dispatcher Component
+
 - **Purpose**: Route incoming GitHub events to appropriate workflows
-- **Triggers**: 
+- **Triggers**:
   - Pull request events (opened)
   - Issue events (opened, reopened)
   - Comments containing `@gemini-cli`
@@ -42,6 +43,7 @@ graph TD
 - **Command Parsing**: Extracts commands and additional context from comments
 
 ### 2. Review Component
+
 - **Purpose**: Perform AI-powered code reviews on pull requests
 - **Features**:
   - Comprehensive code analysis using Gemini CLI
@@ -52,6 +54,7 @@ graph TD
 - **Output**: Structured review comments with severity levels
 
 ### 3. Triage Component
+
 - **Purpose**: Automatically categorize and prioritize issues
 - **Features**:
   - Issue classification and labeling
@@ -61,6 +64,7 @@ graph TD
 - **Output**: Issue labels, comments, and metadata updates
 
 ### 4. Invoke Component
+
 - **Purpose**: Handle general AI assistance requests
 - **Features**:
   - Custom prompt processing
@@ -71,28 +75,30 @@ graph TD
 ## Data Models
 
 ### Workflow Configuration
+
 ```yaml
 # Environment Variables
-GEMINI_API_KEY: string          # Gemini API authentication
-GOOGLE_API_KEY: string          # Google API authentication (alternative)
-GITHUB_TOKEN: string            # GitHub API access
-GCP_PROJECT_ID: string          # Google Cloud Project ID
-GCP_LOCATION: string            # Google Cloud region
-SERVICE_ACCOUNT_EMAIL: string   # GCP service account
-GCP_WIF_PROVIDER: string        # Workload Identity Federation
+GEMINI_API_KEY: string # Gemini API authentication
+GOOGLE_API_KEY: string # Google API authentication (alternative)
+GITHUB_TOKEN: string # GitHub API access
+GCP_PROJECT_ID: string # Google Cloud Project ID
+GCP_LOCATION: string # Google Cloud region
+SERVICE_ACCOUNT_EMAIL: string # GCP service account
+GCP_WIF_PROVIDER: string # Workload Identity Federation
 
 # Repository Variables
-APP_ID: string                  # GitHub App ID (optional)
-GEMINI_CLI_VERSION: string      # Specific Gemini CLI version
+APP_ID: string # GitHub App ID (optional)
+GEMINI_CLI_VERSION: string # Specific Gemini CLI version
 GOOGLE_GENAI_USE_VERTEXAI: bool # Use Vertex AI instead of direct API
-GOOGLE_GENAI_USE_GCA: bool      # Use Gemini Code Assist
-DEBUG: bool                     # Enable debug logging
+GOOGLE_GENAI_USE_GCA: bool # Use Gemini Code Assist
+DEBUG: bool # Enable debug logging
 ```
 
 ### Review Comment Structure
+
 ```typescript
 interface ReviewComment {
-  severity: '🔴' | '🟠' | '🟡' | '🟢';  // Critical, High, Medium, Low
+  severity: '🔴' | '🟠' | '🟡' | '🟢'; // Critical, High, Medium, Low
   line_number: number;
   file_path: string;
   comment_text: string;
@@ -101,6 +107,7 @@ interface ReviewComment {
 ```
 
 ### Command Structure
+
 ```typescript
 interface GeminiCommand {
   command: 'review' | 'triage' | 'invoke' | 'fallthrough';
@@ -113,21 +120,25 @@ interface GeminiCommand {
 ## Error Handling
 
 ### Authentication Errors
+
 - Fallback from GitHub App token to GITHUB_TOKEN
 - Clear error messages for missing credentials
 - Graceful degradation when optional services unavailable
 
 ### API Rate Limiting
+
 - Implement exponential backoff for API calls
 - Queue management for multiple concurrent requests
 - Timeout handling (7-minute workflow timeout)
 
 ### Workflow Failures
+
 - Fallthrough job handles all failure scenarios
 - User notification with links to detailed logs
 - Prevents silent failures
 
 ### Security Constraints
+
 - Input validation for all external data
 - Sandboxed execution environment
 - No exposure of sensitive configuration in logs
@@ -135,24 +146,28 @@ interface GeminiCommand {
 ## Testing Strategy
 
 ### Unit Testing
+
 - Mock GitHub API responses
 - Test command parsing logic
 - Validate security constraints
 - Test error handling scenarios
 
 ### Integration Testing
+
 - End-to-end workflow testing in test repository
 - GitHub App permission validation
 - API integration testing with rate limiting
 - Multi-workflow coordination testing
 
 ### Security Testing
+
 - Input sanitization validation
 - Permission boundary testing
 - Secret exposure prevention
 - Fork security validation
 
 ### Performance Testing
+
 - Workflow execution time optimization
 - Concurrent request handling
 - Resource usage monitoring
@@ -161,6 +176,7 @@ interface GeminiCommand {
 ## Configuration Management
 
 ### Repository Setup Requirements
+
 1. **Secrets Configuration**:
    - `GEMINI_API_KEY` or `GOOGLE_API_KEY`
    - `APP_PRIVATE_KEY` (if using GitHub App)
@@ -174,6 +190,7 @@ interface GeminiCommand {
    - GitHub App permissions (if applicable)
 
 ### Customization Options
+
 - Configurable Gemini CLI prompts
 - Adjustable severity thresholds
 - Custom MCP server configurations
@@ -182,17 +199,20 @@ interface GeminiCommand {
 ## Deployment Considerations
 
 ### Prerequisites
+
 - Google Cloud Project with Gemini API enabled
 - GitHub repository with Actions enabled
 - Appropriate API quotas and billing setup
 
 ### Rollout Strategy
+
 1. Deploy to test repository first
 2. Validate core functionality with sample PRs/issues
 3. Gradually enable additional features
 4. Monitor performance and adjust configurations
 
 ### Monitoring and Observability
+
 - GitHub Actions workflow logs
 - API usage tracking
 - Error rate monitoring

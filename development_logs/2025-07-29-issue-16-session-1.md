@@ -5,8 +5,8 @@
 - **Issue:** #16 - Nx Cloudワークスペースの接続エラーでCIジョブが失敗する
 - **原因:** Nx Cloudワークスペースが作成から3日以内に接続されなかったため、CI/CDパイプラインで認証エラーが発生している。
 - **解決策:**
-    1.  リポジトリのSecretsにNx Cloudから発行されたアクセストークン (`NX_CLOUD_ACCESS_TOKEN`) を追加する。
-    2.  GitHub Actionsのワークフロー (`.github/workflows/ci.yml`) を更新し、テスト実行ステップでそのトークンを環境変数として読み込むように設定する。
+  1.  リポジトリのSecretsにNx Cloudから発行されたアクセストークン (`NX_CLOUD_ACCESS_TOKEN`) を追加する。
+  2.  GitHub Actionsのワークフロー (`.github/workflows/ci.yml`) を更新し、テスト実行ステップでそのトークンを環境変数として読み込むように設定する。
 
 ## 2. 作業ブランチの作成
 
@@ -21,17 +21,18 @@ Issue解決のため、`main`ブランチから新しい作業ブランチを作
 `gh issue view 16` で示された解決策に基づき、`.github/workflows/ci.yml` を修正した。
 
 - **修正内容:**
-    - `Run Playwright tests (Nx Affected)` ステップに環境変数を追加。
-    - `NX_CLOUD_ACCESS_TOKEN` を `secrets.NX_CLOUD_ACCESS_TOKEN` から読み込むように設定。
+  - `Run Playwright tests (Nx Affected)` ステップに環境変数を追加。
+  - `NX_CLOUD_ACCESS_TOKEN` を `secrets.NX_CLOUD_ACCESS_TOKEN` から読み込むように設定。
 - **技術的背景:**
-    - `secrets.NX_CLOUD_ACCESS_TOKEN` は、GitHubリポジトリの `Settings > Secrets and variables > Actions` に保存されている機密情報（アクセストークン）を参照するための構文。これにより、トークンをコードに直接ハードコーディングすることなく、安全にCI/CDプロセスで利用できる。
-    - Nxは、この環境変数を自動的に検出し、Nx Cloudへの接続に使用する。
+  - `secrets.NX_CLOUD_ACCESS_TOKEN` は、GitHubリポジトリの `Settings > Secrets and variables > Actions` に保存されている機密情報（アクセストークン）を参照するための構文。これにより、トークンをコードに直接ハードコーディングすることなく、安全にCI/CDプロセスで利用できる。
+  - Nxは、この環境変数を自動的に検出し、Nx Cloudへの接続に使用する。
 
 ## 4. コミットとPull Requestの作成
 
 修正内容をコミットし、`main`ブランチへのマージを提案するPull Requestを作成した。
 
 - **コミットメッセージ:**
+
   ```
   fix(ci): add NX_CLOUD_ACCESS_TOKEN to CI workflow
 
@@ -39,12 +40,13 @@ Issue解決のため、`main`ブランチから新しい作業ブランチを作
 
   Closes #16
   ```
+
   - Conventional Commits の規約に従い、修正内容 (`fix`) と影響範囲 (`ci`) を明記した。
   - `Closes #16` により、このコミットがマージされると自動的にIssue #16がクローズされるようにした。
 
 - **Pull Request:**
-    - `gh pr create` コマンドを使用して作成した。
-    - タイトルと本文には、変更の概要と関連するIssue番号を記載した。
+  - `gh pr create` コマンドを使用して作成した。
+  - タイトルと本文には、変更の概要と関連するIssue番号を記載した。
 
 ## 5. ユーザーへの依頼
 

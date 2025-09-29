@@ -16,7 +16,7 @@ The `security-news-agent` currently requires valid API keys for Google Gemini, L
 
 - **Acceptance Criteria 2.1:** The application logic should bypass strict API key validation at startup if the `--test-mode` flag is present.
 - **Acceptance Criteria 2.2:** If the `--test-mode` flag is used and API keys are not found, the system must inject mock clients for all external services (Tavily, Gemini, LangChain).
-- **Acceptance Criteria 2.3:** If the `--test-mode` flag is used and API keys *are* present, the agent should use the real API keys and services, allowing for testing with actual external services.
+- **Acceptance Criteria 2.3:** If the `--test-mode` flag is used and API keys _are_ present, the agent should use the real API keys and services, allowing for testing with actual external services.
 - **Acceptance Criteria 2.4:** Unit and integration tests related to the agent's workflow should be runnable without needing real API keys in the test environment.
 
 ## 3. Non-Functional Requirements

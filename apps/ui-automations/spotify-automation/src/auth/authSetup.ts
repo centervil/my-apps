@@ -9,7 +9,7 @@ export class AuthSetup {
    */
   static async setupAuthentication(
     context: BrowserContext,
-    authManager: AuthManager
+    authManager: AuthManager,
   ): Promise<void> {
     const success = await authManager.loadAuthState(context);
     if (!success) {
@@ -18,7 +18,7 @@ export class AuthSetup {
       throw new AuthError(
         'Authentication setup failed. Please run the saveAuth script.',
         'INVALID_AUTH_FILE',
-        false // Non-recoverable for this test run
+        false, // Non-recoverable for this test run
       );
     }
   }
@@ -37,11 +37,14 @@ export class AuthSetup {
         // Throw again to fail the global setup and prevent tests from running.
         throw error;
       }
-      console.error('An unexpected error occurred during authentication check:', error);
+      console.error(
+        'An unexpected error occurred during authentication check:',
+        error,
+      );
       throw new AuthError(
         'An unexpected error occurred during authentication check.',
         'INVALID_AUTH_FILE',
-        false
+        false,
       );
     }
   }
