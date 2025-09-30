@@ -3,12 +3,14 @@
 This checklist breaks down the work required to complete Issue #56, based on the requirements and design specifications.
 
 ## 1. Specification and Planning
+
 - [x] Create `.kiro/specs/issue56/` directory.
 - [x] Create `requirements.md` with user stories.
 - [x] Create `design.md` with the design plan.
 - [ ] Create this `tasks.md` file.
 
 ## 2. Workflow Cleanup
+
 - [ ] Delete `.github/workflows/gemini-invoke.yml`.
 - [ ] Delete `.github/workflows/gemini-triage.yml`.
 - [ ] Delete `.github/workflows/test-gemini-workflows.yml`.
@@ -16,6 +18,7 @@ This checklist breaks down the work required to complete Issue #56, based on the
 - [ ] Verify deletion by listing files in `.github/workflows/`.
 
 ## 3. Implement Japanese Language Response
+
 - [ ] Read the contents of `.github/workflows/gemini-dispatch.yml`.
 - [ ] Read the contents of `.github/workflows/gemini-review.yml`.
 - [ ] Identify the prompt construction step in both files.
@@ -24,6 +27,7 @@ This checklist breaks down the work required to complete Issue #56, based on the
 - [ ] Verify the modifications by reading the files again.
 
 ## 4. Documentation and Finalization
+
 - [ ] Create the development log file: `development_logs/2025-09-23-issue-56-session-1.md`.
 - [ ] Write a summary of the work session in the log file (in Japanese).
 - [ ] Request a code review.

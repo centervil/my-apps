@@ -1,6 +1,7 @@
 # AGENTS.md - Agent Development Guidelines
 
 ## Quick Reference
+
 - [1. Core Principles](#1-core-principles)
 - [2. Technology Stack](#2-technology-stack)
 - [3. Development Workflows](#3-development-workflows)
@@ -60,15 +61,15 @@ All work is managed through GitHub Issues.
 
 To ensure high-quality software development, the following three specification documents are created for each Issue.
 
--   **`requirements.md`**: Defines what the system should do.
-    -   Requirements are described in **user story format**.
-    -   Each user story clearly defines **acceptance criteria** that serve as the criteria for completion.
--   **`design.md`**: Designs how to build the system.
-    -   Defines the system's **architecture**, **components**, **interfaces**, and **data models**.
-    -   Also describes **error handling** and **test strategies**.
--   **`tasks.md`**: Creates a concrete plan for building the system.
-    -   Based on the design, implementation tasks are listed in **checklist format**.
-    -   Each task must be small and clearly defined.
+- **`requirements.md`**: Defines what the system should do.
+  - Requirements are described in **user story format**.
+  - Each user story clearly defines **acceptance criteria** that serve as the criteria for completion.
+- **`design.md`**: Designs how to build the system.
+  - Defines the system's **architecture**, **components**, **interfaces**, and **data models**.
+  - Also describes **error handling** and **test strategies**.
+- **`tasks.md`**: Creates a concrete plan for building the system.
+  - Based on the design, implementation tasks are listed in **checklist format**.
+  - Each task must be small and clearly defined.
 
 ### 3.3. Test-Driven Development (TDD)
 
@@ -113,6 +114,7 @@ All work sessions must be recorded in Markdown files. **注: すべての開発�
 The CI pipeline runs on every push or pull request to `main`, performing linting, formatting, testing, and uploading a test report.
 
 ## 8. Project Structure
+
 ```
 /
 ├── apps/
@@ -153,23 +155,28 @@ This section outlines general best practices and considerations for development 
 This section describes specific guidelines and best practices for browser automation tasks using Playwright.
 
 ### 10.1. Debugging and UI Element Identification
-*   **Leveraging `page.pause()` and Playwright Inspector**: Use `await page.pause()` in `--headed` mode to inspect the browser state and debug step-by-step.
+
+- **Leveraging `page.pause()` and Playwright Inspector**: Use `await page.pause()` in `--headed` mode to inspect the browser state and debug step-by-step.
 
 ### 10.2. Locator Selection and Management
-*   **Dynamic Locators**: Acquire locators for dynamic elements right when they are needed.
-*   **Robust Selectors**: Prefer semantic locators like `getByTestId()`, `getByRole()`, or `getByPlaceholder()`.
+
+- **Dynamic Locators**: Acquire locators for dynamic elements right when they are needed.
+- **Robust Selectors**: Prefer semantic locators like `getByTestId()`, `getByRole()`, or `getByPlaceholder()`.
 
 ### 10.3. Enhancing Test Stability
-*   **Strategic Delays**: Use `await page.waitForTimeout(500);` before critical interactions to improve stability with dynamic UIs.
-*   **`waitFor` Methods**: Use `locator.waitFor({ state: 'visible' })` to wait for elements to become available.
+
+- **Strategic Delays**: Use `await page.waitForTimeout(500);` before critical interactions to improve stability with dynamic UIs.
+- **`waitFor` Methods**: Use `locator.waitFor({ state: 'visible' })` to wait for elements to become available.
 
 ### 10.4. Addressing Environment-Specific Issues
-*   **System Dependencies**: Use `sudo pnpm exec playwright install-deps` to install necessary system dependencies like fonts.
-*   **Tooling Conflicts**: Use the absolute path to the local Playwright binary in `node_modules/.bin` to avoid conflicts with global installations.
+
+- **System Dependencies**: Use `sudo pnpm exec playwright install-deps` to install necessary system dependencies like fonts.
+- **Tooling Conflicts**: Use the absolute path to the local Playwright binary in `node_modules/.bin` to avoid conflicts with global installations.
 
 ### 10.5. Scope Management and Issue Isolation
-*   **Security Challenges**: Isolate automation challenges like reCAPTCHA as separate concerns from the primary test objective.
-*   **User Collaboration**: Work closely with the user to debug complex issues instead of guessing solutions.
+
+- **Security Challenges**: Isolate automation challenges like reCAPTCHA as separate concerns from the primary test objective.
+- **User Collaboration**: Work closely with the user to debug complex issues instead of guessing solutions.
 
 ## 11. Self-Reflection and Self-Correction
 

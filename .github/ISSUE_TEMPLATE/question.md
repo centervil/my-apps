@@ -1,10 +1,9 @@
 ---
-name: "❓ 質問"
+name: '❓ 質問'
 about: プロジェクトに関する質問
 title: ''
 labels: 'question'
 assignees: ''
-
 ---
 
 ### 質問内容

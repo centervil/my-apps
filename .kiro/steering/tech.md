@@ -9,12 +9,14 @@
 ## Languages & Frameworks
 
 ### TypeScript/JavaScript
+
 - **Runtime**: Node.js with ES modules
 - **Testing**: Playwright Test for UI automation
 - **Linting**: ESLint with TypeScript support
 - **Formatting**: Prettier
 
 ### Python
+
 - **Version**: Python 3.9+
 - **Dependency Management**: Poetry
 - **Testing**: pytest with coverage, mock, and asyncio support
@@ -24,10 +26,12 @@
 ## Key Libraries & Tools
 
 ### UI Automation
+
 - **Playwright**: Browser automation framework
 - **Page Object Model**: Structured test organization
 
 ### AI & Data Processing
+
 - **LangChain/LangGraph**: AI workflow orchestration
 - **Google Gemini**: Content generation
 - **Tavily**: News search API
@@ -36,6 +40,7 @@
 ## Common Commands
 
 ### Development
+
 ```bash
 # Install dependencies
 pnpm install
@@ -55,6 +60,7 @@ poetry run pytest  # For Python apps
 ```
 
 ### Nx Workspace
+
 ```bash
 # View project graph
 npx nx graph
@@ -67,6 +73,7 @@ npx nx sync
 ```
 
 ### Python Apps (Security News Agent)
+
 ```bash
 # Run the agent
 poetry run python -m security_news_agent

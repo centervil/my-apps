@@ -16,7 +16,7 @@ on:
         default: 'Daily Cybersecurity Threat Briefing'
         type: string
   schedule:
-    - cron: "0 0 * * *" # Runs every day at midnight UTC
+    - cron: '0 0 * * *' # Runs every day at midnight UTC
 
 jobs:
   test:
@@ -67,7 +67,7 @@ jobs:
       - name: Generate test coverage report
         run: |
           poetry run pytest --cov=src/security_news_agent --cov-report=xml --cov-report=term-missing
-          
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
@@ -130,12 +130,12 @@ jobs:
           LANGCHAIN_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
           # Configuration
-          GEMINI_MODEL_NAME: "gemini-1.5-flash-latest"
-          SLIDE_FORMAT: "pdf"
-          MARP_THEME: "default"
-          MARP_PAGINATE: "true"
-          LANGCHAIN_PROJECT: "security-news-agent-prod"
-          LANGCHAIN_TRACING_V2: "true"
+          GEMINI_MODEL_NAME: 'gemini-1.5-flash-latest'
+          SLIDE_FORMAT: 'pdf'
+          MARP_THEME: 'default'
+          MARP_PAGINATE: 'true'
+          LANGCHAIN_PROJECT: 'security-news-agent-prod'
+          LANGCHAIN_TRACING_V2: 'true'
         run: |
           if [ "${{ github.event.inputs.test_mode }}" = "true" ]; then
             echo "Running in test mode"
@@ -157,13 +157,13 @@ jobs:
             echo "❌ No report files generated"
             exit 1
           fi
-          
+
           # Check for markdown files
           if ! ls slides/*.md 1> /dev/null 2>&1; then
             echo "❌ No markdown files found"
             exit 1
           fi
-          
+
           # Validate markdown content
           for md_file in slides/*.md; do
             if [ -f "$md_file" ]; then
@@ -196,10 +196,10 @@ jobs:
         run: |
           git config user.name "Security News Bot"
           git config user.email "security-news-bot@github.com"
-          
+
           # Add generated files
           git add slides/
-          
+
           # Check if there are any changes to commit
           if git diff --staged --quiet; then
             echo "No new report generated, nothing to commit."

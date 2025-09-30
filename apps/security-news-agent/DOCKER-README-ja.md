@@ -106,19 +106,19 @@ apps/security-news-agent/
 
 ### 必須変数
 
-| 変数名 | 説明 |
-|--------|------|
-| `GOOGLE_API_KEY` | Google Gemini APIキー |
-| `LANGCHAIN_API_KEY` | LangChain APIキー |
-| `TAVILY_API_KEY` | Tavily検索APIキー |
+| 変数名              | 説明                  |
+| ------------------- | --------------------- |
+| `GOOGLE_API_KEY`    | Google Gemini APIキー |
+| `LANGCHAIN_API_KEY` | LangChain APIキー     |
+| `TAVILY_API_KEY`    | Tavily検索APIキー     |
 
 ### オプション変数
 
-| 変数名 | デフォルト | 説明 |
-|--------|------------|------|
-| `GEMINI_MODEL_NAME` | `gemini-1.5-flash-latest` | 使用するGeminiモデル |
-| `SLIDE_FORMAT` | `pdf` | 出力形式 |
-| `MARP_THEME` | `default` | Marpテーマ |
+| 変数名              | デフォルト                   | 説明                    |
+| ------------------- | ---------------------------- | ----------------------- |
+| `GEMINI_MODEL_NAME` | `gemini-1.5-flash-latest`    | 使用するGeminiモデル    |
+| `SLIDE_FORMAT`      | `pdf`                        | 出力形式                |
+| `MARP_THEME`        | `default`                    | Marpテーマ              |
 | `LANGCHAIN_PROJECT` | `security-news-agent-docker` | LangChainプロジェクト名 |
 
 ## 出力ファイル
@@ -133,34 +133,38 @@ apps/security-news-agent/
 ### よくある問題
 
 1. **APIキーエラー**
+
    ```bash
    # 設定を確認
    cat .env
-   
+
    # 設定検証を実行
    ./scripts/docker_test.sh validate
    ```
 
 2. **権限エラー**
+
    ```bash
    # スクリプトに実行権限を付与
    chmod +x scripts/docker_test.sh
    ```
 
 3. **Docker容量不足**
+
    ```bash
    # 未使用リソースをクリーンアップ
    ./scripts/docker_test.sh clean
-   
+
    # システム全体のクリーンアップ
    docker system prune -a
    ```
 
 4. **ポート競合**
+
    ```bash
    # 実行中のコンテナを確認
    docker ps
-   
+
    # 停止
    docker-compose down
    ```
@@ -224,18 +228,21 @@ docker-compose build --parallel
 本番環境でDockerを使用する場合の推奨事項：
 
 1. **環境変数の管理**
+
    ```bash
    # Docker Secretsまたは外部シークレット管理を使用
    docker secret create google_api_key /path/to/google_api_key.txt
    ```
 
 2. **ログ管理**
+
    ```bash
    # ログドライバーの設定
    docker-compose.override.yml で logging 設定を追加
    ```
 
 3. **監視**
+
    ```bash
    # ヘルスチェックの活用
    docker-compose ps

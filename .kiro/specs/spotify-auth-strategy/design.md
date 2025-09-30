@@ -68,7 +68,7 @@ interface AuthState {
 
 class AuthManager {
   private authFilePath: string;
-  
+
   async saveAuthState(page: Page): Promise<void>;
   async loadAuthState(context: BrowserContext): Promise<boolean>;
   async isAuthValid(): Promise<boolean>;
@@ -109,16 +109,17 @@ async function saveSpotifyAuth(options?: SaveAuthOptions): Promise<void>;
 interface AuthState {
   // Cookie情報
   cookies: Cookie[];
-  
+
   // ブラウザストレージ
   localStorage: Record<string, string>;
   sessionStorage: Record<string, string>;
-  
+
   // メタデータ
-  timestamp: number;        // 保存時刻
-  expiresAt?: number;      // 有効期限（オプション）
-  userAgent?: string;      // ユーザーエージェント
-  viewport?: {             // ビューポート設定
+  timestamp: number; // 保存時刻
+  expiresAt?: number; // 有効期限（オプション）
+  userAgent?: string; // ユーザーエージェント
+  viewport?: {
+    // ビューポート設定
     width: number;
     height: number;
   };
@@ -161,8 +162,12 @@ interface Cookie {
 class AuthError extends Error {
   constructor(
     message: string,
-    public code: 'FILE_NOT_FOUND' | 'INVALID_AUTH' | 'EXPIRED_AUTH' | 'NETWORK_ERROR',
-    public recoverable: boolean = true
+    public code:
+      | 'FILE_NOT_FOUND'
+      | 'INVALID_AUTH'
+      | 'EXPIRED_AUTH'
+      | 'NETWORK_ERROR',
+    public recoverable: boolean = true,
   ) {
     super(message);
   }
@@ -172,7 +177,9 @@ class ErrorHandler {
   static async handleAuthError(error: AuthError): Promise<void> {
     switch (error.code) {
       case 'FILE_NOT_FOUND':
-        console.log('認証ファイルが見つかりません。scripts/saveAuth.ts を実行してください。');
+        console.log(
+          '認証ファイルが見つかりません。scripts/saveAuth.ts を実行してください。',
+        );
         break;
       case 'EXPIRED_AUTH':
         console.log('認証が期限切れです。再度認証情報を保存してください。');
@@ -208,7 +215,7 @@ class ErrorHandler {
 export default defineConfig({
   // グローバルセットアップで認証状態を確認
   globalSetup: require.resolve('./tests/auth.setup.ts'),
-  
+
   projects: [
     {
       name: 'setup',
@@ -259,12 +266,15 @@ export default defineConfig({
 class SecurityManager {
   // 認証ファイルの権限チェック
   static async validateFilePermissions(filePath: string): Promise<boolean>;
-  
+
   // 機密情報のマスキング
   static maskSensitiveData(data: any): any;
-  
+
   // 認証情報の有効期限チェック
-  static isAuthExpired(timestamp: number, maxAge: number = 24 * 60 * 60 * 1000): boolean;
+  static isAuthExpired(
+    timestamp: number,
+    maxAge: number = 24 * 60 * 60 * 1000,
+  ): boolean;
 }
 ```
 

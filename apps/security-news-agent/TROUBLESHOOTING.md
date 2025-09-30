@@ -19,7 +19,9 @@ This guide covers common issues and their solutions when using the Security News
 **Problem**: `ConfigurationError: Missing required environment variables`
 
 **Solution**:
+
 1. Ensure all required API keys are set:
+
    ```bash
    export GOOGLE_API_KEY="your-google-api-key"
    export LANGCHAIN_API_KEY="your-langchain-api-key"
@@ -27,6 +29,7 @@ This guide covers common issues and their solutions when using the Security News
    ```
 
 2. Or create a `.env` file:
+
    ```bash
    cp .env.example .env
    # Edit .env with your actual API keys
@@ -42,6 +45,7 @@ This guide covers common issues and their solutions when using the Security News
 **Problem**: `ConfigurationError: Invalid SLIDE_FORMAT 'invalid'`
 
 **Solution**: Use valid format values:
+
 - `pdf` - PDF output
 - `png` - PNG images
 - `html` - HTML presentation
@@ -52,12 +56,15 @@ This guide covers common issues and their solutions when using the Security News
 **Problem**: Configuration seems correct but still getting errors
 
 **Solution**:
+
 1. Check if `.env` file is in the correct directory:
+
    ```bash
    ls -la .env  # Should be in apps/security-news-agent/
    ```
 
 2. Verify file format (no spaces around `=`):
+
    ```bash
    GOOGLE_API_KEY=your-key-here
    # NOT: GOOGLE_API_KEY = your-key-here
@@ -75,7 +82,9 @@ This guide covers common issues and their solutions when using the Security News
 **Problem**: `TavilyError: Tavily API rate limit exceeded`
 
 **Solution**:
+
 1. Use test mode to reduce API calls:
+
    ```bash
    poetry run python -m security_news_agent --test-mode
    ```
@@ -89,6 +98,7 @@ This guide covers common issues and their solutions when using the Security News
 **Problem**: `TavilyAPIError: Invalid API key` or similar
 
 **Solution**:
+
 1. Verify API keys are correct and active
 2. Check if keys have necessary permissions
 3. Test individual APIs:
@@ -101,6 +111,7 @@ This guide covers common issues and their solutions when using the Security News
 **Problem**: `TavilyNetworkError: Request timeout`
 
 **Solution**:
+
 1. Check internet connection
 2. Try again later (may be temporary API issues)
 3. Increase timeout in test mode:
@@ -113,6 +124,7 @@ This guide covers common issues and their solutions when using the Security News
 **Problem**: `APIError: Google API error`
 
 **Solution**:
+
 1. Verify Google API key is for Gemini API
 2. Check if Gemini API is enabled in Google Cloud Console
 3. Ensure you have sufficient quota
@@ -128,12 +140,15 @@ This guide covers common issues and their solutions when using the Security News
 **Problem**: `Command 'poetry' not found`
 
 **Solution**:
+
 1. Install Poetry:
+
    ```bash
    curl -sSL https://install.python-poetry.org | python3 -
    ```
 
 2. Add to PATH:
+
    ```bash
    export PATH="$HOME/.local/bin:$PATH"
    ```
@@ -148,12 +163,15 @@ This guide covers common issues and their solutions when using the Security News
 **Problem**: `Python 3.9+ required`
 
 **Solution**:
+
 1. Check Python version:
+
    ```bash
    python --version
    ```
 
 2. Install Python 3.9+ using pyenv:
+
    ```bash
    pyenv install 3.11.0
    pyenv local 3.11.0
@@ -171,12 +189,15 @@ This guide covers common issues and their solutions when using the Security News
 **Problem**: `poetry install` fails
 
 **Solution**:
+
 1. Clear Poetry cache:
+
    ```bash
    poetry cache clear pypi --all
    ```
 
 2. Update Poetry:
+
    ```bash
    poetry self update
    ```
@@ -193,12 +214,15 @@ This guide covers common issues and their solutions when using the Security News
 **Problem**: `ProcessingError: Workflow execution failed`
 
 **Solution**:
+
 1. Enable debug logging:
+
    ```bash
    poetry run python -m security_news_agent --log-level DEBUG
    ```
 
 2. Check individual components:
+
    ```bash
    poetry run python -m security_news_agent --validate-only
    ```
@@ -213,6 +237,7 @@ This guide covers common issues and their solutions when using the Security News
 **Problem**: `MemoryError` or system becomes unresponsive
 
 **Solution**:
+
 1. Reduce content size by using test mode
 2. Close other applications
 3. Increase system swap space
@@ -223,12 +248,15 @@ This guide covers common issues and their solutions when using the Security News
 **Problem**: `ModuleNotFoundError: No module named 'security_news_agent'`
 
 **Solution**:
+
 1. Ensure you're in the correct directory:
+
    ```bash
    cd apps/security-news-agent
    ```
 
 2. Activate Poetry environment:
+
    ```bash
    poetry shell
    python -m security_news_agent
@@ -246,13 +274,16 @@ This guide covers common issues and their solutions when using the Security News
 **Problem**: Agent runs but no files are created
 
 **Solution**:
+
 1. Check permissions on output directory:
+
    ```bash
    ls -la slides/
    chmod 755 slides/
    ```
 
 2. Verify workflow completed successfully:
+
    ```bash
    poetry run python -m security_news_agent --log-level INFO
    ```
@@ -264,12 +295,15 @@ This guide covers common issues and their solutions when using the Security News
 **Problem**: `MarpNotFoundError: Marp CLI not found`
 
 **Solution**:
+
 1. Install Marp CLI:
+
    ```bash
    npm install -g @marp-team/marp-cli
    ```
 
 2. Or use Markdown-only output:
+
    ```bash
    poetry run python -m security_news_agent --format md
    ```
@@ -284,12 +318,15 @@ This guide covers common issues and their solutions when using the Security News
 **Problem**: PDF files are corrupted or empty
 
 **Solution**:
+
 1. Update Marp CLI:
+
    ```bash
    npm update -g @marp-team/marp-cli
    ```
 
 2. Try different format:
+
    ```bash
    poetry run python -m security_news_agent --format html
    ```
@@ -304,7 +341,9 @@ This guide covers common issues and their solutions when using the Security News
 **Problem**: `PermissionError: [Errno 13] Permission denied`
 
 **Solution**:
+
 1. Check directory permissions:
+
    ```bash
    chmod 755 slides/
    ```
@@ -322,7 +361,9 @@ This guide covers common issues and their solutions when using the Security News
 **Problem**: Agent takes very long to complete
 
 **Solution**:
+
 1. Use test mode for faster execution:
+
    ```bash
    poetry run python -m security_news_agent --test-mode
    ```
@@ -336,6 +377,7 @@ This guide covers common issues and their solutions when using the Security News
 **Problem**: System runs out of memory
 
 **Solution**:
+
 1. Use test mode to reduce content size
 2. Close other applications
 3. Monitor memory usage:
@@ -348,6 +390,7 @@ This guide covers common issues and their solutions when using the Security News
 **Problem**: Hitting API limits frequently
 
 **Solution**:
+
 1. Use test mode for development
 2. Implement caching (future enhancement)
 3. Reduce execution frequency
@@ -360,12 +403,15 @@ This guide covers common issues and their solutions when using the Security News
 **Problem**: `pytest` tests fail
 
 **Solution**:
+
 1. Install test dependencies:
+
    ```bash
    poetry install --with dev
    ```
 
 2. Run specific test files:
+
    ```bash
    poetry run pytest tests/unit/test_config.py -v
    ```
@@ -377,6 +423,7 @@ This guide covers common issues and their solutions when using the Security News
 **Problem**: Integration tests fail with mock errors
 
 **Solution**:
+
 1. Update mock data in `tests/fixtures/mock_data.py`
 2. Check mock configurations in `conftest.py`
 3. Run with verbose output:
@@ -389,6 +436,7 @@ This guide covers common issues and their solutions when using the Security News
 **Problem**: Real API tests fail
 
 **Solution**:
+
 1. Ensure API keys are set for testing
 2. Check API quotas and limits
 3. Run minimal tests only:
@@ -464,12 +512,14 @@ When reporting issues, include:
 If the agent is completely broken:
 
 1. **Reset environment**:
+
    ```bash
    rm -rf .venv/
    poetry install
    ```
 
 2. **Use minimal configuration**:
+
    ```bash
    poetry run python -m security_news_agent \
      --test-mode \

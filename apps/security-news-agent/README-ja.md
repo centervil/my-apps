@@ -25,22 +25,26 @@
 ### インストール
 
 1. **プロジェクトに移動:**
+
    ```bash
    cd apps/security-news-agent
    ```
 
 2. **依存関係をインストール:**
+
    ```bash
    poetry install
    ```
 
 3. **環境変数を設定:**
+
    ```bash
    cp .env.example .env
    # .envファイルをAPIキーで編集（設定セクションを参照）
    ```
 
 4. **設定を検証:**
+
    ```bash
    poetry run python -m security_news_agent --validate-only
    ```
@@ -54,23 +58,23 @@
 
 ### 必須環境変数
 
-| 変数 | 説明 | 必須 |
-|------|------|------|
-| `GOOGLE_API_KEY` | Google Gemini APIキー | ✅ |
-| `LANGCHAIN_API_KEY` | トレース用LangChain APIキー | ✅ |
-| `TAVILY_API_KEY` | Tavily検索APIキー | ✅ |
+| 変数                | 説明                        | 必須 |
+| ------------------- | --------------------------- | ---- |
+| `GOOGLE_API_KEY`    | Google Gemini APIキー       | ✅   |
+| `LANGCHAIN_API_KEY` | トレース用LangChain APIキー | ✅   |
+| `TAVILY_API_KEY`    | Tavily検索APIキー           | ✅   |
 
 ### オプション環境変数
 
-| 変数 | デフォルト | 説明 |
-|------|------------|------|
-| `GEMINI_MODEL_NAME` | `gemini-1.5-flash-latest` | 使用するGeminiモデル |
-| `SLIDE_FORMAT` | `pdf` | 出力形式: `pdf`、`png`、`html`、またはMarkdownのみの場合は空 |
-| `MARP_THEME` | `default` | プレゼンテーション用Marpテーマ |
-| `MARP_PAGINATE` | `true` | スライドページネーションを有効化 |
-| `LANGCHAIN_TRACING_V2` | `true` | LangChainトレースを有効化 |
-| `LANGCHAIN_ENDPOINT` | `https://api.smith.langchain.com` | LangChainトレースエンドポイント |
-| `LANGCHAIN_PROJECT` | `security-news-agent` | LangChainプロジェクト名 |
+| 変数                   | デフォルト                        | 説明                                                         |
+| ---------------------- | --------------------------------- | ------------------------------------------------------------ |
+| `GEMINI_MODEL_NAME`    | `gemini-1.5-flash-latest`         | 使用するGeminiモデル                                         |
+| `SLIDE_FORMAT`         | `pdf`                             | 出力形式: `pdf`、`png`、`html`、またはMarkdownのみの場合は空 |
+| `MARP_THEME`           | `default`                         | プレゼンテーション用Marpテーマ                               |
+| `MARP_PAGINATE`        | `true`                            | スライドページネーションを有効化                             |
+| `LANGCHAIN_TRACING_V2` | `true`                            | LangChainトレースを有効化                                    |
+| `LANGCHAIN_ENDPOINT`   | `https://api.smith.langchain.com` | LangChainトレースエンドポイント                              |
+| `LANGCHAIN_PROJECT`    | `security-news-agent`             | LangChainプロジェクト名                                      |
 
 ### APIキーの取得
 
@@ -111,17 +115,17 @@ poetry run python -m security_news_agent --cleanup 5
 
 ### コマンドラインオプション
 
-| オプション | 説明 |
-|------------|------|
-| `--topic TEXT` | セキュリティブリーフィングのトピック |
-| `--output-dir PATH` | レポートの出力ディレクトリ |
-| `--format {pdf,png,html,md}` | 出力形式 |
-| `--test-mode` | テスト用の制限されたAPI呼び出しを使用 |
-| `--log-level {DEBUG,INFO,WARNING,ERROR}` | ログの詳細レベル |
-| `--log-file PATH` | コンソールの代わりにファイルにログ出力 |
-| `--config-file PATH` | .env設定ファイルのパス |
-| `--validate-only` | 設定の検証のみ |
-| `--cleanup N` | 古いファイルをクリーンアップ、最新N件を保持 |
+| オプション                               | 説明                                        |
+| ---------------------------------------- | ------------------------------------------- |
+| `--topic TEXT`                           | セキュリティブリーフィングのトピック        |
+| `--output-dir PATH`                      | レポートの出力ディレクトリ                  |
+| `--format {pdf,png,html,md}`             | 出力形式                                    |
+| `--test-mode`                            | テスト用の制限されたAPI呼び出しを使用       |
+| `--log-level {DEBUG,INFO,WARNING,ERROR}` | ログの詳細レベル                            |
+| `--log-file PATH`                        | コンソールの代わりにファイルにログ出力      |
+| `--config-file PATH`                     | .env設定ファイルのパス                      |
+| `--validate-only`                        | 設定の検証のみ                              |
+| `--cleanup N`                            | 古いファイルをクリーンアップ、最新N件を保持 |
 
 ## 開発
 

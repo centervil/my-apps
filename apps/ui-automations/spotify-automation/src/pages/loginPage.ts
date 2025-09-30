@@ -11,7 +11,9 @@ export class LoginPage {
     this.emailInput = page.locator('#login-username');
     this.loginButton = page.getByTestId('login-button');
     // New locator for the "Log in with password" button
-    this.loginWithPasswordButton = page.getByRole('button', { name: 'パスワードでログイン' });
+    this.loginWithPasswordButton = page.getByRole('button', {
+      name: 'パスワードでログイン',
+    });
   }
 
   async goto() {

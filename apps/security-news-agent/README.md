@@ -25,22 +25,26 @@ An AI-powered agent that automatically collects the latest cybersecurity news an
 ### Installation
 
 1. **Clone and navigate to the project:**
+
    ```bash
    cd apps/security-news-agent
    ```
 
 2. **Install dependencies:**
+
    ```bash
    poetry install
    ```
 
 3. **Set up environment variables:**
+
    ```bash
    cp .env.example .env
    # Edit .env with your API keys (see Configuration section)
    ```
 
 4. **Validate configuration:**
+
    ```bash
    poetry run python -m security_news_agent --validate-only
    ```
@@ -54,23 +58,23 @@ An AI-powered agent that automatically collects the latest cybersecurity news an
 
 ### Required Environment Variables
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `GOOGLE_API_KEY` | Google Gemini API key | ✅ |
-| `LANGCHAIN_API_KEY` | LangChain API key for tracing | ✅ |
-| `TAVILY_API_KEY` | Tavily search API key | ✅ |
+| Variable            | Description                   | Required |
+| ------------------- | ----------------------------- | -------- |
+| `GOOGLE_API_KEY`    | Google Gemini API key         | ✅       |
+| `LANGCHAIN_API_KEY` | LangChain API key for tracing | ✅       |
+| `TAVILY_API_KEY`    | Tavily search API key         | ✅       |
 
 ### Optional Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `GEMINI_MODEL_NAME` | `gemini-1.5-flash-latest` | Gemini model to use |
-| `SLIDE_FORMAT` | `pdf` | Output format: `pdf`, `png`, `html`, or empty for Markdown only |
-| `MARP_THEME` | `default` | Marp theme for presentations |
-| `MARP_PAGINATE` | `true` | Enable slide pagination |
-| `LANGCHAIN_TRACING_V2` | `true` | Enable LangChain tracing |
-| `LANGCHAIN_ENDPOINT` | `https://api.smith.langchain.com` | LangChain tracing endpoint |
-| `LANGCHAIN_PROJECT` | `security-news-agent` | LangChain project name |
+| Variable               | Default                           | Description                                                     |
+| ---------------------- | --------------------------------- | --------------------------------------------------------------- |
+| `GEMINI_MODEL_NAME`    | `gemini-1.5-flash-latest`         | Gemini model to use                                             |
+| `SLIDE_FORMAT`         | `pdf`                             | Output format: `pdf`, `png`, `html`, or empty for Markdown only |
+| `MARP_THEME`           | `default`                         | Marp theme for presentations                                    |
+| `MARP_PAGINATE`        | `true`                            | Enable slide pagination                                         |
+| `LANGCHAIN_TRACING_V2` | `true`                            | Enable LangChain tracing                                        |
+| `LANGCHAIN_ENDPOINT`   | `https://api.smith.langchain.com` | LangChain tracing endpoint                                      |
+| `LANGCHAIN_PROJECT`    | `security-news-agent`             | LangChain project name                                          |
 
 ### Getting API Keys
 
@@ -111,17 +115,17 @@ poetry run python -m security_news_agent --cleanup 5
 
 ### Command Line Options
 
-| Option | Description |
-|--------|-------------|
-| `--topic TEXT` | Topic for the security briefing |
-| `--output-dir PATH` | Output directory for reports |
-| `--format {pdf,png,html,md}` | Output format |
-| `--test-mode` | Use limited API calls for testing |
-| `--log-level {DEBUG,INFO,WARNING,ERROR}` | Logging verbosity |
-| `--log-file PATH` | Log to file instead of console |
-| `--config-file PATH` | Path to .env configuration file |
-| `--validate-only` | Only validate configuration |
-| `--cleanup N` | Clean up old files, keeping N most recent |
+| Option                                   | Description                               |
+| ---------------------------------------- | ----------------------------------------- |
+| `--topic TEXT`                           | Topic for the security briefing           |
+| `--output-dir PATH`                      | Output directory for reports              |
+| `--format {pdf,png,html,md}`             | Output format                             |
+| `--test-mode`                            | Use limited API calls for testing         |
+| `--log-level {DEBUG,INFO,WARNING,ERROR}` | Logging verbosity                         |
+| `--log-file PATH`                        | Log to file instead of console            |
+| `--config-file PATH`                     | Path to .env configuration file           |
+| `--validate-only`                        | Only validate configuration               |
+| `--cleanup N`                            | Clean up old files, keeping N most recent |
 
 ## Development
 

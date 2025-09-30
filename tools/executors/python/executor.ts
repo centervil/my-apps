@@ -3,7 +3,7 @@ import { execSync } from 'child_process';
 
 export default async function pythonExecutor(
   options: unknown,
-  context: ExecutorContext
+  context: ExecutorContext,
 ) {
   console.log('Executing Python script...');
   const projectName = context.projectName;
