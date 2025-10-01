@@ -85,6 +85,10 @@ export class NewEpisodePage {
     // On the next screen, select to publish immediately
     await this.publishNowOption.click();
 
+    // Add a small strategic delay to wait for UI updates after clicking 'Publish Now'.
+    // This can help prevent flakiness in dynamic UIs.
+    await this.page.waitForTimeout(1000);
+
     // Click the final publish button
     await expect(this.publishButton).toBeEnabled({ timeout: 10000 });
     await this.publishButton.click();

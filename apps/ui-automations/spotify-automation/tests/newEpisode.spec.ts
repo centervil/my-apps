@@ -1,6 +1,10 @@
 import { test, expect } from '@playwright/test';
 import path from 'path';
 import { NewEpisodePage } from '../src/pages/NewEpisodePage';
+import {
+  uploadAndPublishEpisode,
+  type EpisodeDetails,
+} from '../src/features/spotifyUploader';
 
 test.describe('Spotify for Creators - New Episode Wizard', () => {
   test.beforeEach(async ({ page }) => {
@@ -41,20 +45,19 @@ test.describe('Spotify for Creators - New Episode Wizard', () => {
   test('should publish a new episode and verify it appears in the list', async ({
     page,
   }) => {
-    const newEpisodePage = new NewEpisodePage(page);
     const { SPOTIFY_PODCAST_ID } = process.env;
 
-    // 1. Upload audio and fill details
-    const audioFilePath = path.resolve(__dirname, 'fixtures/test-audio.mp3');
-    await newEpisodePage.uploadAudioFile(audioFilePath);
-    const episodeDetails = {
+    // 1. Prepare episode details
+    const episodeDetails: EpisodeDetails = {
       title: `My Published Episode ${new Date().getTime()}`,
       description: 'This episode should be published.',
+      audioFilePath: path.resolve(__dirname, 'fixtures/test-audio.mp3'),
+      season: '1',
+      episode: '1',
     };
-    await newEpisodePage.fillEpisodeDetails(episodeDetails);
 
-    // 2. Publish the episode
-    await newEpisodePage.publishEpisode('1', '1');
+    // 2. Execute the upload and publish feature
+    await uploadAndPublishEpisode(page, episodeDetails);
 
     // 3. Verify navigation to the episodes list
     await expect(page).toHaveURL(
