@@ -3,9 +3,11 @@ keys."""
 
 from typing import Any, Dict, List, Union
 
+from ..search.tavily_client import TavilyClient
 
-# Mock data for Tavily search results
-MOCK_TAVILY_SEARCH_RESULTS = [
+
+# Mock data for Tavily search results, matching the expected output type
+MOCK_TAVILY_SEARCH_RESULTS: List[Dict[str, str]] = [
     {
         "url": "https://mock-news.com/article1",
         "content": (
@@ -13,11 +15,7 @@ MOCK_TAVILY_SEARCH_RESULTS = [
             "All users are advised to update immediately. "
             "The vulnerability, dubbed 'LogLeak', allows for remote code execution."
         ),
-        "title": (
-            "Critical RCE Vulnerability 'LogLeak' Discovered in LogIt Library"
-        ),
-        "raw_content": ("Full raw text of the article about LogLeak..."),
-        "score": 0.98,
+        "title": "Critical RCE Vulnerability 'LogLeak' Discovered in LogIt Library",
     },
     {
         "url": "https://mock-security.net/breach-announcement",
@@ -26,12 +24,7 @@ MOCK_TAVILY_SEARCH_RESULTS = [
             "The breach was discovered on Monday and is believed to have been "
             "carried out by the 'DataWraiths' hacking group."
         ),
-        "title": (
-            "CloudCorp Announces Major Data Breach, "
-            "Millions of Records Exposed"
-        ),
-        "raw_content": "Full raw text of the CloudCorp breach announcement...",
-        "score": 0.95,
+        "title": "CloudCorp Announces Major Data Breach, Millions of Records Exposed",
     },
 ]
 
@@ -81,20 +74,28 @@ of users.**
 """
 
 
-class MockTavilyClient:
+class MockTavilyClient(TavilyClient):
     """A mock Tavily client that returns pre-defined search results."""
 
     def __init__(self, api_key: str):
-        self.api_key = api_key
+        super().__init__(api_key=api_key)
 
     def collect_context(
-        self, queries: List[Dict[str, Any]], **kwargs: Any
-    ) -> Dict[str, List[Dict[str, Any]]]:
-        """Mocks the context collection, returning a fixed list of results for the first query."""
+        self,
+        queries: List[Union[str, Dict[str, Any]]],
+        max_per_query: int = 5,
+        default_time_range: str = "day",
+    ) -> Dict[str, List[Dict[str, str]]]:
+        """Mocks the context collection, returning a fixed list of results."""
         print(
             f"--- MOCK Tavily: Collecting context for {len(queries)} queries ---"
         )
-        first_query = queries[0].get("q", "mock_query")
+        # For simplicity, use the first query's text or a default
+        if isinstance(queries[0], dict):
+            first_query = queries[0].get("q", "mock_query")
+        else:
+            first_query = queries[0]
+
         return {first_query: MOCK_TAVILY_SEARCH_RESULTS}
 
     def format_context_as_markdown(

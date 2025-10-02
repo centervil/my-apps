@@ -1,8 +1,8 @@
 """Configuration management for the security news agent."""
 
 import os
-from dataclasses import dataclass
-from typing import List, Optional
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
 
 from dotenv import load_dotenv
 
@@ -27,6 +27,9 @@ class AgentConfig:
     langchain_tracing_v2: bool = True
     langchain_endpoint: str = "https://api.smith.langchain.com"
     langchain_project: str = "security-news-agent"
+    _test_queries: Optional[List[Dict[str, Any]]] = field(
+        default=None, repr=False, compare=False
+    )
 
     @classmethod
     def from_env(
@@ -76,12 +79,12 @@ class AgentConfig:
                     f"Please set these in your .env file or environment."
                 )
 
-        # After this block, we can be sure the keys are strings.
-        if not all((google_api_key, langchain_api_key, tavily_api_key)):
-            # This should not be reached in normal mode due to earlier checks,
-            # but it ensures type safety for mypy.
+        # The previous checks ensure that the keys are now strings.
+        # We add a final check to satisfy the type checker.
+        if google_api_key is None or langchain_api_key is None or tavily_api_key is None:
+            # This block should be unreachable if the logic above is correct.
             raise ConfigurationError(
-                "One or more API keys are missing after environment loading."
+                "API keys are unexpectedly None after validation."
             )
 
         # Optional settings with defaults
@@ -157,12 +160,18 @@ class AgentConfig:
         os.environ["GOOGLE_API_KEY"] = self.google_api_key
         os.environ["TAVILY_API_KEY"] = self.tavily_api_key
 
-    def get_search_queries(self) -> List[dict]:
-        """Get default search queries for security news collection.
+    def get_search_queries(self) -> List[Dict[str, Any]]:
+        """Get search queries for security news collection.
+
+        If `_test_queries` is set on the instance, it returns those.
+        Otherwise, it returns the default production queries.
 
         Returns:
-            List of search query configurations
+            A list of search query configurations.
         """
+        if self._test_queries is not None:
+            return self._test_queries
+
         return [
             {
                 "q": "latest cybersecurity news",

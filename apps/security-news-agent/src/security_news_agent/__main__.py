@@ -159,8 +159,8 @@ def _setup_workflow_environment(
 
     if test_mode:
         print("🧪 Running in test mode - using limited API calls")
-        # Override search queries for test mode
-        config.get_search_queries = lambda: [
+        # Set test-specific search queries
+        config._test_queries = [
             {
                 "q": "cybersecurity news",
                 "include_domains": ["thehackernews.com"],
