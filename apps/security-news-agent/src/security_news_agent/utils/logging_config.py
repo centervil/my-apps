@@ -4,7 +4,8 @@ import logging
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Optional, Type, TypeVar
+from types import TracebackType
+from typing import Any, Callable, Literal, Optional, Type, TypeVar
 
 from typing_extensions import Self
 
@@ -307,27 +308,30 @@ class ContextLogger:
         self,
         exc_type: Optional[Type[BaseException]],
         exc_val: Optional[BaseException],
-        exc_tb: Optional[Any],
-    ) -> bool:
-        """Exit the context."""
+        exc_tb: Optional[TracebackType],
+    ) -> Literal[False]:
+        """Exit the context, logging completion or failure."""
         if self.start_time is None:
-            # Should not happen if __enter__ was called
+            # This path should ideally not be taken if __enter__ was called.
             return False
 
         elapsed = datetime.now() - self.start_time
 
         if exc_type is None:
+            # Operation completed without errors
             self.logger.log(
                 self.level,
-                f"{self.operation} completed successfully in {elapsed.total_seconds():.3f}s",
+                f"'{self.operation}' completed in {elapsed.total_seconds():.3f}s.",
             )
         else:
+            # An exception occurred
             self.logger.error(
-                f"{self.operation} failed after {elapsed.total_seconds():.3f}s: {exc_val}",
-                exc_info=(exc_type, exc_val, exc_tb),
+                f"'{self.operation}' failed after {elapsed.total_seconds():.3f}s: {exc_val}",
+                exc_info=True,
             )
 
-        return False  # Don't suppress exceptions
+        # Return False to propagate exceptions
+        return False
 
 
 def get_logger(name: Optional[str] = None) -> logging.Logger:

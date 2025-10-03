@@ -3,22 +3,22 @@
 import json
 import re
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Mapping, Optional
 from zoneinfo import ZoneInfo
 
 # Timezone configuration
 JST = ZoneInfo("Asia/Tokyo")
 
 
-def log_message(state: dict, msg: str) -> List[str]:
-    """Add a log message to the state log.
+def log_message(state: Mapping[str, Any], msg: str) -> List[str]:
+    """Append a message to the state's log list.
 
     Args:
-        state: Current state dictionary
-        msg: Message to log
+        state: The current state, which must be a mapping.
+        msg: The message to append.
 
     Returns:
-        Updated log list
+        The updated list of log messages.
     """
     return (state.get("log") or []) + [msg]
 
@@ -374,16 +374,19 @@ def sanitize_filename(filename: str) -> str:
 
 
 def parse_json_safely(text: str) -> Optional[Dict[Any, Any]]:
-    """Safely parse JSON text.
+    """Safely parse JSON text, ensuring a dictionary is returned.
 
     Args:
-        text: JSON text to parse
+        text: JSON text to parse.
 
     Returns:
-        Parsed dictionary or None if parsing fails
+        Parsed dictionary, or None if parsing fails or the result is not a dictionary.
     """
     try:
-        return json.loads(text)
+        data = json.loads(text)
+        if isinstance(data, dict):
+            return data
+        return None
     except (json.JSONDecodeError, TypeError):
         return None
 

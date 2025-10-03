@@ -463,9 +463,7 @@ Return strictly this JSON schema:
             }
 
     @staticmethod
-    def route_after_eval(
-        state: Dict[str, Any], max_attempts: int = 3
-    ) -> str:
+    def route_after_eval(state: State, max_attempts: int = 3) -> str:
         """Determine next step after evaluation.
 
         Args:
