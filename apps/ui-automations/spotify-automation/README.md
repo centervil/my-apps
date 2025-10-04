@@ -92,7 +92,19 @@ GOOGLE_DRIVE_FOLDER_ID=your_folder_id_to_monitor
 
 ### 実行
 
+`pnpm --filter @my-apps/spotify-automation upload -- <args>` 形式でコマンドを実行します。
+
+**オプション:**
+- `--showId, -s`: **(必須)** アップロード先のPodcast番組ID。
+- `--audioPath, -a`: (オプション) アップロードする音声ファイルのローカルパス。指定しない場合、プロジェクトルートの `tmp/downloads` ディレクトリから最新のファイルが自動的に選択されます。
+- `--help, -h`: ヘルプメッセージを表示します。
+
+**例:**
+
 ```bash
-# 最新エピソードを自動アップロード
-npm run upload -- --showId "YOUR_SHOW_ID"
+# ローカルの一時ディレクトリ（tmp/downloads）から最新の音声ファイルをアップロード
+pnpm --filter @my-apps/spotify-automation upload -- --showId "YOUR_SHOW_ID"
+
+# 特定の音声ファイルを指定してアップロード
+pnpm --filter @my-apps/spotify-automation upload -- --showId "YOUR_SHOW_ID" --audioPath "./path/to/your/episode.mp3"
 ```
