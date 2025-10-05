@@ -15,6 +15,11 @@ if [ "$CURRENT_BRANCH" != "main" ]; then
   exit 1
 fi
 
+# mainブランチを最新の状態に更新
+echo "mainブランチを最新の状態に更新しています..."
+git pull origin main
+
+
 # gh-cliでIssue情報を取得
 ISSUE_JSON=$(gh issue view "$ISSUE_NUMBER" --json title,body)
 if [ $? -ne 0 ]; then

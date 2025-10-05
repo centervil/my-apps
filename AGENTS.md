@@ -49,6 +49,7 @@ This repository combines two core development methodologies: Issue-Driven Develo
 
 All work is managed through GitHub Issues.
 
+0.  **Sync `main` branch**: Before creating a new branch, ensure your local `main` branch is up-to-date with the remote repository (`git pull origin main`).
 1.  **Task Definition**: A task is defined as a GitHub Issue.
 2.  **Branch Creation**: Create a branch named `[type]/[issue-number]-[short-description]` (e.g., `feat/123-add-login-page`).
 3.  **Implementation**: Follow the TDD cycle.
