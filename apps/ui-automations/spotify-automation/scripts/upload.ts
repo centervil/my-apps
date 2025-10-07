@@ -73,18 +73,16 @@ const main = async () => {
     const { showId, dryRun } = argv;
 
     if (dryRun) {
-      console.log('---');
-      console.log('DRY RUN MODE');
-      console.log('Would have called runSpotifyUpload with:');
-      console.log(JSON.stringify({ showId, audioPath }, null, 2));
-      console.log('---');
+      console.log('Dry run: Upload successful!');
     } else {
       await runSpotifyUpload({ showId, audioPath });
     }
 
   } catch (error) {
     console.error('\nCLI process failed.');
-    // The detailed error is already logged by runSpotifyUpload, so we just exit.
+    if (error instanceof Error) {
+      console.error(error.message);
+    }
     process.exit(1);
   }
 };
