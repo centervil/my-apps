@@ -1,6 +1,6 @@
 import { chromium, type Page } from '@playwright/test';
+import fs from 'fs';
 import { NewEpisodePage } from '../pages/NewEpisodePage';
-import { LoginPage } from '../pages/loginPage';
 import path from 'path';
 
 // エピソード詳細のデータ構造を定義
@@ -41,26 +41,28 @@ export async function uploadAndPublishEpisode(
  */
 export async function runSpotifyUpload(options: { showId: string; audioPath: string; }) {
   const { showId, audioPath } = options;
-
-  const email = process.env.SPOTIFY_EMAIL;
-  const password = process.env.SPOTIFY_PASSWORD;
   const baseUrl = 'https://podcasters.spotify.com';
 
-  if (!email || !password) {
-    throw new Error('Spotify email or password not set in environment variables. Make sure .env file is loaded.');
+  const authFilePath = path.resolve(
+    __dirname,
+    '../../.auth/spotify-auth.json'
+  );
+
+  if (!fs.existsSync(authFilePath)) {
+    throw new Error(
+      `Authentication file not found at ${authFilePath}. Please ensure you have a valid session file.`
+    );
   }
 
   const browser = await chromium.launch({ headless: false });
-  const context = await browser.newContext();
+  const context = await browser.newContext({
+    storageState: authFilePath,
+  });
   const page = await context.newPage();
 
   try {
-    // Login
-    const loginPage = new LoginPage(page);
-    await loginPage.goto();
-    await loginPage.login(email, password);
-    await page.waitForURL(`${baseUrl}/**`, { timeout: 60000 });
-    console.log('Successfully logged in.');
+    // Session is loaded from storageState, no login needed.
+    console.log('Session state loaded successfully.');
 
     // Navigate to episode upload wizard
     const newEpisodePage = new NewEpisodePage(page);
