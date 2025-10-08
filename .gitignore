@@ -86,3 +86,5 @@ slides/
 .pytest_cache/
 apps/security-news-agent/coverage.xml
 apps/ui-automations/spotify-automation/.auth/
+# Playwright error screenshots
+apps/ui-automations/spotify-automation/error-screenshot.png

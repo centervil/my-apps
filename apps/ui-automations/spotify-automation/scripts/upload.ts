@@ -52,11 +52,12 @@ const main = async () => {
     .parse();
 
   try {
+    const { showId, dryRun } = argv;
     let audioPath = argv.audioPath;
 
+    // 1. Resolve Audio Path
     if (!audioPath) {
       console.log('🎧 Audio path not provided, searching for the latest file in `tmp/downloads`...');
-      // The tmp directory should be at the root of the project
       const fallbackDir = path.resolve(__dirname, '../../../../tmp/downloads');
       audioPath = findLatestFile(fallbackDir);
 
@@ -65,26 +66,30 @@ const main = async () => {
       }
       console.log(`✅ Found audio file: ${audioPath}`);
     } else {
-      // Ensure the provided path is absolute
       audioPath = path.resolve(audioPath);
+      if (!fs.existsSync(audioPath)) {
+        throw new Error(`The specified audio file does not exist: ${audioPath}`);
+      }
     }
 
-
-    const { showId, dryRun } = argv;
-
+    // 2. Handle Dry Run
     if (dryRun) {
-      console.log('---');
-      console.log('DRY RUN MODE');
-      console.log('Would have called runSpotifyUpload with:');
-      console.log(JSON.stringify({ showId, audioPath }, null, 2));
-      console.log('---');
-    } else {
-      await runSpotifyUpload({ showId, audioPath });
+      console.log('\n--- Dry Run Mode ---');
+      console.log(`Show ID: ${showId}`);
+      console.log(`Audio File Path: ${audioPath}`);
+      console.log('Dry run would proceed with these values.');
+      // Exiting gracefully for dry run
+      process.exit(0);
     }
+
+    // 3. Execute Upload
+    await runSpotifyUpload({ showId, audioPath });
 
   } catch (error) {
     console.error('\nCLI process failed.');
-    // The detailed error is already logged by runSpotifyUpload, so we just exit.
+    if (error instanceof Error) {
+      console.error(error.message);
+    }
     process.exit(1);
   }
 };
