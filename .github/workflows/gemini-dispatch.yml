@@ -7,9 +7,6 @@ on:
   pull_request_review:
     types:
       - 'submitted'
-  pull_request:
-    types:
-      - 'opened'
   issues:
     types:
       - 'opened'
@@ -43,11 +40,10 @@ jobs:
           env | grep '^DEBUG_'
 
   dispatch:
-    # For PRs: only if not from a fork
     # For comments: only if user types @gemini-cli and is OWNER/MEMBER/COLLABORATOR
     # For issues: only on open/reopen
     if: |-
-      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false) || (github.event.sender.type == 'User' && startsWith(github.event.comment.body || github.event.review.body || github.event.issue.body, '@gemini-cli') && ( (github.event.comment.author_association || github.event.review.author_association || github.event.issue.author_association) == 'OWNER' || (github.event.comment.author_association || github.event.review.author_association || github.event.issue.author_association) == 'MEMBER' || (github.event.comment.author_association || github.event.review.author_association || github.event.issue.author_association) == 'COLLABORATOR' )) || (github.event_name == 'issues' && contains(fromJSON('["opened", "reopened"]'), github.event.action))
+      (github.event.sender.type == 'User' && startsWith(github.event.comment.body || github.event.review.body || github.event.issue.body, '@gemini-cli') && ( (github.event.comment.author_association || github.event.review.author_association || github.event.issue.author_association) == 'OWNER' || (github.event.comment.author_association || github.event.review.author_association || github.event.issue.author_association) == 'MEMBER' || (github.event.comment.author_association || github.event.review.author_association || github.event.issue.author_association) == 'COLLABORATOR' )) || (github.event_name == 'issues' && contains(fromJSON('["opened", "reopened"]'), github.event.action))
     runs-on: 'ubuntu-latest'
     permissions:
       contents: 'read'
@@ -92,8 +88,6 @@ jobs:
               core.setOutput('command', 'review');
               const additionalContext = request.replace(/^@gemini-cli/, '').trim();
               core.setOutput('additional_context', additionalContext);
-            } else if (eventType === 'pull_request.opened') {
-              core.setOutput('command', 'review');
             } else {
               core.setOutput('command', 'fallthrough');
             }
