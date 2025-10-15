@@ -6,7 +6,7 @@ prompt = """
 以下の監査情報を確認してください:
 {{.script_output}}
 """
-command = "pnpm exec ts-node --transpile-only scripts/collect-audit-context.ts {{.project-name}}"
+command = "pnpm exec zx scripts/collect-audit-context.ts {{.project-name}}"
 
 [[argument]]
 name = "project-name"
