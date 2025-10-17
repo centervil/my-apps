@@ -14,11 +14,11 @@
     "@swc-node/register": "~1.11.1",
     "@swc/core": "~1.13.5",
     "@swc/helpers": "~0.5.17",
-    "@types/node": "^24.7.2",
-    "@typescript-eslint/eslint-plugin": "^8.46.0",
-    "@typescript-eslint/parser": "^8.46.0",
+    "@types/node": "^24.8.1",
+    "@typescript-eslint/eslint-plugin": "^8.46.1",
+    "@typescript-eslint/parser": "^8.46.1",
     "dotenv": "^17.2.3",
-    "eslint": "^9.37.0",
+    "eslint": "^9.38.0",
     "eslint-config-prettier": "^10.1.8",
     "nx": "21.6.4",
     "prettier": "^3.6.2",
@@ -26,7 +26,7 @@
     "tslib": "^2.8.1",
     "tsx": "^4.20.6",
     "typescript": "~5.9.3",
-    "typescript-eslint": "^8.46.0",
+    "typescript-eslint": "^8.46.1",
     "zx": "^8.8.4"
   }
 }
