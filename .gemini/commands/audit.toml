@@ -1,8 +1,10 @@
 name = "audit"
-description = "指定されたプロジェクトの監査情報を収集します。"
+description = "指定されたプロジェクトの監査情報を収集し、E2Eテストを実行します。"
 prompt = """
-まず、scripts/collect-audit-context.ts スクリプトを実行してください。
-スクリプトの出力結果を**分析の出発点**としてください。ただし、正確な判断を下すためには、**プロジェクト内の関連ファイルを直接読み込み、内容を深く理解する**必要があります。全ての情報を踏まえた上で、指定されたプロジェクトの現状と課題を特定してください。
+まず、scripts/collect-audit-context.ts スクリプトとE2Eテストを実行してください。
+スクリプトの出力結果とE2Eテストの結果を**分析の出発点**としてください。ただし、正確な判断を下すためには、**プロジェクト内の関連ファイルを直接読み込み、内容を深く理解する**必要があります。全ての情報を踏まえた上で、指定されたプロジェクトの現状と課題を特定してください。
+
+E2Eテストの結果も分析に含めてください。テストの失敗やスキップされたテストは、プロジェクトの現状や課題を特定するための重要な情報源となります。
 
 **重要：このコマンドは監査と分析のみを目的とします。ファイルは絶対に修正しないでください。**
 
@@ -11,7 +13,7 @@ prompt = """
 以下の監査情報を確認してください:
 {{stdout}}
 """
-command = "pnpm tsx scripts/collect-audit-context.ts {{.project-name}}"
+command = "pnpm tsx scripts/collect-audit-context.ts {{.project-name}} && (pnpm --filter {{.project-name}} test || true)"
 
 [[argument]]
 name = "project-name"
