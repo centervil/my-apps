@@ -3,7 +3,6 @@ import { type Page, type Locator, expect } from '@playwright/test';
 export class NewEpisodePage {
   private readonly page: Page;
   private readonly selectFileButton: Locator;
-  private readonly fileInput: Locator;
   private readonly titleInput: Locator;
   private readonly descriptionInput: Locator;
   private readonly seasonNumberInput: Locator;
@@ -19,7 +18,6 @@ export class NewEpisodePage {
     this.selectFileButton = page.locator('button', {
       hasText: 'Select a file',
     });
-    this.fileInput = page.locator('input[type="file"]');
     this.titleInput = page.getByRole('textbox', { name: 'Title (required)' });
     this.descriptionInput = page.locator(
       '[role="textbox"][name="description"]',
@@ -47,7 +45,14 @@ export class NewEpisodePage {
   }
 
   async uploadAudioFile(filePath: string) {
-    await this.fileInput.setInputFiles(filePath);
+    // Start waiting for the file chooser before clicking the button
+    const fileChooserPromise = this.page.waitForEvent('filechooser');
+    // Click the button that opens the file chooser
+    await this.selectFileButton.click();
+    // Get the file chooser
+    const fileChooser = await fileChooserPromise;
+    // Set the files
+    await fileChooser.setFiles(filePath);
   }
 
   async assertFileUploaded(fileName: string) {

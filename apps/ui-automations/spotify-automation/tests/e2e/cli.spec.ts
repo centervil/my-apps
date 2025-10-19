@@ -33,8 +33,9 @@ const runCli = (
     const envPath = path.join(projectRoot, '.env');
     const envConfig = fs.existsSync(envPath) ? dotenv.parse(fs.readFileSync(envPath)) : {};
 
-    const command = 'pnpm';
-    const fullArgs = ['--filter', '@my-apps/spotify-automation', 'run', 'upload', ...args];
+    const command = 'npx';
+    const scriptPath = path.resolve(__dirname, '../../scripts/upload.ts');
+    const fullArgs = ['ts-node', scriptPath, ...args];
 
 
     const childProcess = spawn(command, fullArgs, {
