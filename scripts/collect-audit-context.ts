@@ -99,7 +99,7 @@ ${issues.stdout}\
         console.log('GitHubリポジトリの情報を取得できませんでした。');
     }
   } catch (error) {
-    console.error('GitHub Issuesの取得中にエラーが発生しました:', (error as any).stderr);
+    console.error('GitHub Issuesの取得中にエラーが発生しました:', (error as { stderr: string }).stderr);
   }
 }
 

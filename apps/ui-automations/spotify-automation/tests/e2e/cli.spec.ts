@@ -83,7 +83,7 @@ const runCli = (
 
 test.describe('Spotify Automation CLI - E2E Tests', () => {
   test('should fail with an error if --showId is not provided', async () => {
-    const { stdout, stderr, code } = await runCli([]);
+    const { stderr, code } = await runCli([]);
 
     expect(code).not.toBe(0);
     // Check for the specific error message from the CLI's argument parser
@@ -97,7 +97,7 @@ test.describe('Spotify Automation CLI - E2E Tests', () => {
       '--audioPath', audioFilePath,
       '--dryRun'
     ];
-    const { stdout, stderr, code } = await runCli(args);
+    const { stdout } = await runCli(args);
 
     expect(stdout).toContain("Dry run would proceed with these values.");
   });
@@ -118,7 +118,7 @@ test.describe('Spotify Automation CLI - E2E Tests', () => {
     ];
 
     try {
-      const { stdout, stderr, code } = await runCli(args);
+      const { stdout, code } = await runCli(args);
 
       expect(code).toBe(0);
       expect(stdout).toContain('🎧 Audio path not provided, searching for the latest file in `tmp/downloads`...');
@@ -141,7 +141,7 @@ test.describe('Spotify Automation CLI - E2E Tests', () => {
       // No --dryRun, as we need the upload process to start to hit the file system error
     ];
 
-    const { stdout, stderr, code } = await runCli(args);
+    const { stderr, code } = await runCli(args);
 
     expect(code).not.toBe(0);
     expect(stderr).toContain(`The specified audio file does not exist: ${nonExistentFilePath}`);

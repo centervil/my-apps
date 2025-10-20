@@ -8,7 +8,8 @@ const run = async (command: string) => {
   try {
     const { stdout, stderr } = await execPromise(command);
     return { stdout, stderr, code: 0 };
-  } catch (error: any) {
+  } catch (e: unknown) {
+    const error = e as { stdout: string; stderr: string; code: number };
     return { stdout: error.stdout, stderr: error.stderr, code: error.code };
   }
 };
