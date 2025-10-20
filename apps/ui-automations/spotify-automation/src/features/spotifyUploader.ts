@@ -39,8 +39,13 @@ export async function uploadAndPublishEpisode(
  * Launches a browser, logs in, and uploads the episode.
  * @param options - Options for the upload, including showId and audioPath.
  */
-export async function runSpotifyUpload(options: { showId: string; audioPath: string; }) {
-  const { showId, audioPath } = options;
+export async function runSpotifyUpload(options: {
+  showId: string;
+  audioPath: string;
+  title: string;
+  description: string;
+}) {
+  const { showId, audioPath, title, description } = options;
   const baseUrl = 'https://podcasters.spotify.com';
 
   const authFilePath = path.resolve(
@@ -72,13 +77,12 @@ export async function runSpotifyUpload(options: { showId: string; audioPath: str
 
     // TODO: Replace placeholder details with actual data from a config file or filename parsing.
     const episodeDetails: EpisodeDetails = {
-      title: `Automated Upload: ${path.basename(audioPath)}`,
-      description: `This episode was uploaded automatically on ${new Date().toLocaleString()}.`,
+      title: title,
+      description: description,
       audioFilePath: audioPath,
       season: '1', // Placeholder
       episode: String(Math.floor(Date.now() / 1000)), // Placeholder, use timestamp for uniqueness
     };
-
     console.log(`Uploading episode with details:
 ${JSON.stringify(episodeDetails, null, 2)}`);
 

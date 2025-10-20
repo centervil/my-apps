@@ -96,15 +96,18 @@ GOOGLE_DRIVE_FOLDER_ID=your_folder_id_to_monitor
 
 **オプション:**
 - `--showId, -s`: **(必須)** アップロード先のPodcast番組ID。
+- `--title, -t`: **(必須)** エピソードのタイトル。
+- `--description, -d`: **(必須)** エピソードの説明。
 - `--audioPath, -a`: (オプション) アップロードする音声ファイルのローカルパス。指定しない場合、プロジェクトルートの `tmp/downloads` ディレクトリから最新のファイルが自動的に選択されます。
+- `--dryRun`: (オプション) 実際にアップロードせずに処理の流れを確認するドライランを実行します。
 - `--help, -h`: ヘルプメッセージを表示します。
 
 **例:**
 
 ```bash
-# ローカルの一時ディレクトリ（tmp/downloads）から最新の音声ファイルをアップロード
-pnpm --filter @my-apps/spotify-automation upload -- --showId "YOUR_SHOW_ID"
+# ローカルの一時ディレクトリから最新の音声ファイルをアップロード
+pnpm --filter @my-apps/spotify-automation upload -- --showId "YOUR_SHOW_ID" --title "エピソードのタイトル" --description "エピソードの説明文..."
 
 # 特定の音声ファイルを指定してアップロード
-pnpm --filter @my-apps/spotify-automation upload -- --showId "YOUR_SHOW_ID" --audioPath "./path/to/your/episode.mp3"
+pnpm --filter @my-apps/spotify-automation upload -- --showId "YOUR_SHOW_ID" --audioPath "./path/to/your/episode.mp3" --title "エピソードのタイトル" --description "エピソードの説明文..."
 ```

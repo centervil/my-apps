@@ -95,11 +95,15 @@ test.describe('Spotify Automation CLI - E2E Tests', () => {
     const args = [
       '--showId', process.env.SPOTIFY_PODCAST_ID as string,
       '--audioPath', audioFilePath,
+      '--title', 'Test Title',
+      '--description', 'Test Description',
       '--dryRun'
     ];
     const { stdout } = await runCli(args);
 
     expect(stdout).toContain("Dry run would proceed with these values.");
+    expect(stdout).toContain("Title: Test Title");
+    expect(stdout).toContain("Description: Test Description");
   });
 
   test.skip('should perform a successful dry run using the Google Drive fallback', async () => {

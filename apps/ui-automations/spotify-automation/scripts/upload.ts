@@ -43,6 +43,18 @@ const main = async () => {
       type: 'string',
       description: 'Local path of the audio file to upload. If not provided, searches for the latest file in `tmp/downloads`.',
     })
+    .option('title', {
+      alias: 't',
+      type: 'string',
+      description: 'Title of the episode',
+      demandOption: true,
+    })
+    .option('description', {
+      alias: 'd',
+      type: 'string',
+      description: 'Description of the episode',
+      demandOption: true,
+    })
     .option('dryRun', {
       type: 'boolean',
       description: 'Perform a dry run without actually uploading.',
@@ -52,7 +64,7 @@ const main = async () => {
     .parse();
 
   try {
-    const { showId, dryRun } = argv;
+    const { showId, dryRun, title, description } = argv;
     let audioPath = argv.audioPath;
 
     // 1. Resolve Audio Path
@@ -77,13 +89,15 @@ const main = async () => {
       console.log('\n--- Dry Run Mode ---');
       console.log(`Show ID: ${showId}`);
       console.log(`Audio File Path: ${audioPath}`);
+      console.log(`Title: ${title}`);
+      console.log(`Description: ${description}`);
       console.log('Dry run would proceed with these values.');
       // Exiting gracefully for dry run
       process.exit(0);
     }
 
     // 3. Execute Upload
-    await runSpotifyUpload({ showId, audioPath });
+    await runSpotifyUpload({ showId, audioPath, title, description });
 
   } catch (error) {
     console.error('\nCLI process failed.');
