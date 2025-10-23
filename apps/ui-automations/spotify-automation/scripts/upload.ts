@@ -19,12 +19,12 @@ const findLatestFile = (dir: string): string | undefined => {
   }
 
   const latestFile = files
-    .map(file => ({
+    .map((file) => ({
       name: file,
       path: path.join(dir, file),
       stats: fs.statSync(path.join(dir, file)),
     }))
-    .filter(file => file.stats.isFile())
+    .filter((file) => file.stats.isFile())
     .sort((a, b) => b.stats.mtime.getTime() - a.stats.mtime.getTime())[0];
 
   return latestFile ? latestFile.path : undefined;
@@ -41,7 +41,9 @@ const main = async () => {
     .option('audioPath', {
       alias: 'a',
       type: 'string',
-      description: 'Local path of the audio file to upload. If not provided, searches for the latest file in `tmp/downloads`.',
+      description:
+        'Path to the audio file or directory containing the audio file.',
+      demandOption: true,
     })
     .option('title', {
       alias: 't',
@@ -65,23 +67,32 @@ const main = async () => {
 
   try {
     const { showId, dryRun, title, description } = argv;
-    let audioPath = argv.audioPath;
 
     // 1. Resolve Audio Path
-    if (!audioPath) {
-      console.log('🎧 Audio path not provided, searching for the latest file in `tmp/downloads`...');
-      const fallbackDir = path.resolve(__dirname, '../../../../tmp/downloads');
-      audioPath = findLatestFile(fallbackDir);
+    let audioPath = path.resolve(argv.audioPath);
 
-      if (!audioPath) {
-        throw new Error('No audio file found in `tmp/downloads`. Please specify the audio path using the --audioPath option.');
+    if (!fs.existsSync(audioPath)) {
+      throw new Error(`The specified path does not exist: ${audioPath}`);
+    }
+
+    const stats = fs.statSync(audioPath);
+
+    if (stats.isDirectory()) {
+      console.log(
+        `🎧 Path is a directory, searching for the latest file in \`${audioPath}\`...`,
+      );
+      const latestFile = findLatestFile(audioPath);
+      if (!latestFile) {
+        throw new Error(
+          `No audio file found in the specified directory: ${audioPath}`,
+        );
       }
+      audioPath = latestFile;
       console.log(`✅ Found audio file: ${audioPath}`);
-    } else {
-      audioPath = path.resolve(audioPath);
-      if (!fs.existsSync(audioPath)) {
-        throw new Error(`The specified audio file does not exist: ${audioPath}`);
-      }
+    } else if (!stats.isFile()) {
+      throw new Error(
+        `The specified path is not a file or directory: ${audioPath}`,
+      );
     }
 
     // 2. Handle Dry Run
@@ -98,7 +109,6 @@ const main = async () => {
 
     // 3. Execute Upload
     await runSpotifyUpload({ showId, audioPath, title, description });
-
   } catch (error) {
     console.error('\nCLI process failed.');
     if (error instanceof Error) {

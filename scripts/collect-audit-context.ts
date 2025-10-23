@@ -18,10 +18,12 @@ async function main() {
     path.join('apps', projectName),
   ];
 
-  const projectPath = potentialPaths.find(p => fs.existsSync(p));
+  const projectPath = potentialPaths.find((p) => fs.existsSync(p));
 
   if (!projectPath) {
-    console.error(`エラー: プロジェクト "${projectName}" が見つかりませんでした。`);
+    console.error(
+      `エラー: プロジェクト "${projectName}" が見つかりませんでした。`,
+    );
     process.exit(1);
   }
 
@@ -61,7 +63,9 @@ ${content}\
 \
 `);
   } else {
-    console.log('package.json または pyproject.toml が見つかりませんでした。\n');
+    console.log(
+      'package.json または pyproject.toml が見つかりませんでした。\n',
+    );
   }
 
   // 3. Directory structure
@@ -89,17 +93,20 @@ ${tree.stdout}\
     const repo = `${owner}/${name}`;
 
     if (repo) {
-        const issues = await $`gh issue list --repo ${repo} --state open`;
-        console.log(`\
+      const issues = await $`gh issue list --repo ${repo} --state open`;
+      console.log(`\
 \
 ${issues.stdout}\
 \
 `);
     } else {
-        console.log('GitHubリポジトリの情報を取得できませんでした。');
+      console.log('GitHubリポジトリの情報を取得できませんでした。');
     }
   } catch (error) {
-    console.error('GitHub Issuesの取得中にエラーが発生しました:', (error as { stderr: string }).stderr);
+    console.error(
+      'GitHub Issuesの取得中にエラーが発生しました:',
+      (error as { stderr: string }).stderr,
+    );
   }
 }
 

@@ -31,12 +31,13 @@ const runCli = (
 
     const projectRoot = path.resolve(__dirname, '../../../../..');
     const envPath = path.join(projectRoot, '.env');
-    const envConfig = fs.existsSync(envPath) ? dotenv.parse(fs.readFileSync(envPath)) : {};
+    const envConfig = fs.existsSync(envPath)
+      ? dotenv.parse(fs.readFileSync(envPath))
+      : {};
 
     const command = 'npx';
     const scriptPath = path.resolve(__dirname, '../../scripts/upload.ts');
     const fullArgs = ['ts-node', scriptPath, ...args];
-
 
     const childProcess = spawn(command, fullArgs, {
       env: {
@@ -61,7 +62,13 @@ const runCli = (
           process.kill(-childProcess.pid, 'SIGKILL');
         }
         cleanup();
-        resolve({ stdout, stderr, code: null, signal: 'SIGKILL', timedOut: true });
+        resolve({
+          stdout,
+          stderr,
+          code: null,
+          signal: 'SIGKILL',
+          timedOut: true,
+        });
       }, timeout);
     }
 
@@ -87,67 +94,105 @@ test.describe('Spotify Automation CLI - E2E Tests', () => {
 
     expect(code).not.toBe(0);
     // Check for the specific error message from the CLI's argument parser
-    expect(stderr).toContain("必須の引数が見つかりません: showId");
+    expect(stderr).toContain('必須の引数が見つかりません: showId');
   });
 
   test('should perform a successful dry run with a local audio file', async () => {
     const audioFilePath = path.resolve(__dirname, 'fixtures/test-audio.mp3');
     const args = [
-      '--showId', process.env.SPOTIFY_PODCAST_ID as string,
-      '--audioPath', audioFilePath,
-      '--title', 'Test Title',
-      '--description', 'Test Description',
-      '--dryRun'
+      '--showId',
+      process.env.SPOTIFY_PODCAST_ID as string,
+      '--audioPath',
+      audioFilePath,
+      '--title',
+      'Test Title',
+      '--description',
+      'Test Description',
+      '--dryRun',
     ];
     const { stdout } = await runCli(args);
 
-    expect(stdout).toContain("Dry run would proceed with these values.");
-    expect(stdout).toContain("Title: Test Title");
-    expect(stdout).toContain("Description: Test Description");
+    expect(stdout).toContain('Dry run would proceed with these values.');
+    expect(stdout).toContain('Title: Test Title');
+    expect(stdout).toContain('Description: Test Description');
   });
 
-  test.skip('should perform a successful dry run using the Google Drive fallback', async () => {
 
-    // Setup: Create a dummy file in the fallback directory
-    const fallbackDir = path.resolve(__dirname, '../../../../../tmp/downloads');
-    const dummyFileName = `test-audio-${Date.now()}.mp3`;
-    const dummyFilePath = path.join(fallbackDir, dummyFileName);
 
-    if (!fs.existsSync(fallbackDir)) {
-      fs.mkdirSync(fallbackDir, { recursive: true });
-    }
-    const args = [
-      '--showId', process.env.SPOTIFY_PODCAST_ID as string,
-      '--dryRun'
-    ];
-
-    try {
-      const { stdout, code } = await runCli(args);
-
-      expect(code).toBe(0);
-      expect(stdout).toContain('🎧 Audio path not provided, searching for the latest file in `tmp/downloads`...');
-      expect(stdout).toContain(`✅ Found audio file: ${dummyFilePath}`);
-      expect(stdout).toContain("Dry run: Upload successful!");
-
-    } finally {
-      // Teardown: Clean up the dummy file
-      if (fs.existsSync(dummyFilePath)) {
-        fs.unlinkSync(dummyFilePath);
-      }
-    }
-  });
-
-  test.skip('should fail if the specified --audioPath does not exist', async () => {
+  test('should fail if the specified --audioPath does not exist', async () => {
     const nonExistentFilePath = '/tmp/non-existent-file-12345.mp3';
     const args = [
-      '--showId', process.env.SPOTIFY_PODCAST_ID as string,
-      '--audioPath', nonExistentFilePath,
-      // No --dryRun, as we need the upload process to start to hit the file system error
+      '--showId',
+      process.env.SPOTIFY_PODCAST_ID as string,
+      '--audioPath',
+      nonExistentFilePath,
+      '--title',
+      'Test Title',
+      '--description',
+      'Test Description',
+      '--dryRun',
     ];
 
     const { stderr, code } = await runCli(args);
 
     expect(code).not.toBe(0);
-    expect(stderr).toContain(`The specified audio file does not exist: ${nonExistentFilePath}`);
+    expect(stderr).toContain(
+      `The specified path does not exist: ${nonExistentFilePath}`,
+    );
+  });
+
+  test('should perform a successful dry run with a directory path and find the newest file', async () => {
+    const testDir = path.resolve(__dirname, 'temp_audio_dir');
+    const oldFile = path.join(testDir, 'old_audio.mp3');
+    const newFile = path.join(testDir, 'new_audio.mp3');
+
+    fs.mkdirSync(testDir, { recursive: true });
+    fs.writeFileSync(oldFile, 'old content');
+    await new Promise(resolve => setTimeout(resolve, 100)); // Ensure newFile is newer
+    fs.writeFileSync(newFile, 'new content');
+
+    const args = [
+      '--showId',
+      process.env.SPOTIFY_PODCAST_ID as string,
+      '--audioPath',
+      testDir,
+      '--title',
+      'Test Title Dir',
+      '--description',
+      'Test Description Dir',
+      '--dryRun',
+    ];
+    const { stdout, code } = await runCli(args);
+
+    expect(code).toBe(0);
+    expect(stdout).toContain('Dry run would proceed with these values.');
+    expect(stdout).toContain(`Audio File Path: ${newFile}`);
+    expect(stdout).toContain('Title: Test Title Dir');
+    expect(stdout).toContain('Description: Test Description Dir');
+
+    fs.rmSync(testDir, { recursive: true, force: true });
+  });
+
+  test('should fail if the specified --audioPath is an empty directory', async () => {
+    const emptyDir = path.resolve(__dirname, 'empty_audio_dir');
+    fs.mkdirSync(emptyDir, { recursive: true });
+
+    const args = [
+      '--showId',
+      process.env.SPOTIFY_PODCAST_ID as string,
+      '--audioPath',
+      emptyDir,
+      '--title',
+      'Test Title Empty',
+      '--description',
+      'Test Description Empty',
+      '--dryRun',
+    ];
+    const { stderr, code } = await runCli(args);
+
+    expect(code).not.toBe(0);
+    expect(stderr).toContain(`No audio file found in the specified directory: ${emptyDir}`);
+
+    fs.rmSync(emptyDir, { recursive: true, force: true });
   });
 });

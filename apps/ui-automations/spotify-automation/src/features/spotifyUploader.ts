@@ -54,7 +54,7 @@ export async function runSpotifyUpload(options: {
       // If the path from the environment variable doesn't exist, throw an error.
       if (!fs.existsSync(fromEnv)) {
         throw new Error(
-          `Authentication file not found at environment variable path: ${fromEnv}.`
+          `Authentication file not found at environment variable path: ${fromEnv}.`,
         );
       }
       return fromEnv;
@@ -62,11 +62,11 @@ export async function runSpotifyUpload(options: {
     // Fallback to the default path if the environment variable is not set.
     const defaultPath = path.resolve(
       __dirname,
-      '../../.auth/spotify-auth.json'
+      '../../.auth/spotify-auth.json',
     );
     if (!fs.existsSync(defaultPath)) {
       throw new Error(
-        `Authentication file not found at default path: ${defaultPath}. Please ensure you have a valid session file or set the SPOTIFY_AUTH_PATH environment variable.`
+        `Authentication file not found at default path: ${defaultPath}. Please ensure you have a valid session file or set the SPOTIFY_AUTH_PATH environment variable.`,
       );
     }
     return defaultPath;
@@ -105,9 +105,11 @@ ${JSON.stringify(episodeDetails, null, 2)}`);
     await uploadAndPublishEpisode(page, episodeDetails);
 
     console.log('✅ Episode uploaded and published successfully!');
-
   } catch (error) {
-    console.error('❌ An error occurred during the Spotify upload process:', error);
+    console.error(
+      '❌ An error occurred during the Spotify upload process:',
+      error,
+    );
     const screenshotPath = path.resolve(process.cwd(), 'error-screenshot.png');
     await page.screenshot({ path: screenshotPath, fullPage: true });
     console.error(`📸 Screenshot saved to ${screenshotPath}`);
