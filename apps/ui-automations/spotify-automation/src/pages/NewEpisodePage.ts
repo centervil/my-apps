@@ -12,6 +12,7 @@ export class NewEpisodePage {
   private readonly publishNowOption: Locator;
   private readonly publishButton: Locator;
   private readonly doneButton: Locator;
+  private readonly inAppMessageCloseButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -31,6 +32,7 @@ export class NewEpisodePage {
     this.publishNowOption = page.getByText('Now', { exact: true });
     this.publishButton = page.getByRole('button', { name: 'Publish' });
     this.doneButton = page.getByRole('button', { name: 'Done' });
+    this.inAppMessageCloseButton = page.locator('.ab-iam-root').getByRole('button').first();
   }
 
   async goto(baseUrl: string, podcastId: string) {
@@ -96,6 +98,12 @@ export class NewEpisodePage {
 
     // Click the final publish button
     await expect(this.publishButton).toBeEnabled({ timeout: 10000 });
+
+    // Handle potential in-app message overlay
+    if (await this.inAppMessageCloseButton.isVisible({ timeout: 5000 })) {
+      await this.inAppMessageCloseButton.click();
+    }
+
     await this.publishButton.click();
 
     // Wait for the confirmation and click 'Done'

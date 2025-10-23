@@ -48,18 +48,33 @@ export async function runSpotifyUpload(options: {
   const { showId, audioPath, title, description } = options;
   const baseUrl = 'https://podcasters.spotify.com';
 
-  const authFilePath = path.resolve(
-    __dirname,
-    '../../.auth/spotify-auth.json'
-  );
-
-  if (!fs.existsSync(authFilePath)) {
-    throw new Error(
-      `Authentication file not found at ${authFilePath}. Please ensure you have a valid session file.`
+  const getAuthPath = (): string => {
+    const fromEnv = process.env.SPOTIFY_AUTH_PATH;
+    if (fromEnv) {
+      // If the path from the environment variable doesn't exist, throw an error.
+      if (!fs.existsSync(fromEnv)) {
+        throw new Error(
+          `Authentication file not found at environment variable path: ${fromEnv}.`
+        );
+      }
+      return fromEnv;
+    }
+    // Fallback to the default path if the environment variable is not set.
+    const defaultPath = path.resolve(
+      __dirname,
+      '../../.auth/spotify-auth.json'
     );
-  }
+    if (!fs.existsSync(defaultPath)) {
+      throw new Error(
+        `Authentication file not found at default path: ${defaultPath}. Please ensure you have a valid session file or set the SPOTIFY_AUTH_PATH environment variable.`
+      );
+    }
+    return defaultPath;
+  };
 
-  const browser = await chromium.launch({ headless: false });
+  const authFilePath = getAuthPath();
+
+  const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
     storageState: authFilePath,
   });

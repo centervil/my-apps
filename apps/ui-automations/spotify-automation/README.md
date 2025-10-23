@@ -81,14 +81,29 @@ pnpm install
 プロジェクトのルートに`.env`ファイルを作成し、以下の情報を設定します。
 
 ```
-# Spotify
-SPOTIFY_EMAIL=your_email@example.com
-SPOTIFY_PASSWORD=your_password
-
 # Google Drive API
 GOOGLE_API_CREDENTIALS=...
 GOOGLE_DRIVE_FOLDER_ID=your_folder_id_to_monitor
 ```
+
+#### Spotify認証
+
+このツールは、Playwrightの認証状態を保存・再利用することで、実行のたびにログインする手間を省きます。
+
+- **認証ファイルの生成**:
+  初回実行時や認証が切れた場合は、以下のコマンドを実行して認証ファイルを生成する必要があります。ブラウザが起動するので、手動でログインを完了させてください。
+  ```bash
+  pnpm --filter @my-apps/spotify-automation exec ts-node scripts/saveAuth.ts
+  ```
+  成功すると、`.auth/spotify-auth.json` に認証情報が保存されます。
+
+- **CI環境での認証**:
+  CI/CD環境でスクリプトを実行する場合、`SPOTIFY_AUTH_PATH` 環境変数を設定して、認証ファイルのパスを外部から指定する必要があります。
+  ```bash
+  # 例: CIのワークフロー内
+  export SPOTIFY_AUTH_PATH=\"/path/to/your/spotify-auth.json\"
+  pnpm --filter @my-apps/spotify-automation upload -- ...
+  ```
 
 ### 実行
 
