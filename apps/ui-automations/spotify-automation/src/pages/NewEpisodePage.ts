@@ -32,7 +32,10 @@ export class NewEpisodePage {
     this.publishNowOption = page.getByText('Now', { exact: true });
     this.publishButton = page.getByRole('button', { name: 'Publish' });
     this.doneButton = page.getByRole('button', { name: 'Done' });
-    this.inAppMessageCloseButton = page.locator('.ab-iam-root').getByRole('button').first();
+    this.inAppMessageCloseButton = page
+      .locator('.ab-iam-root')
+      .getByRole('button')
+      .first();
   }
 
   async goto(baseUrl: string, podcastId: string) {

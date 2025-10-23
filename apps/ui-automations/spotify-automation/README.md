@@ -8,7 +8,7 @@
 
 ## 2. ユースケース (Use Case)
 
-ポッドキャスト配信者が、収録・編集済みの音声ファイル（Google Drive上の特定フォルダに保管）を、迅速かつミスなくSpotifyに公開したい、という状況を想定しています。
+ポッドキャスト配信者が、収録・編集済みの音声ファイルを、迅速かつミスなくSpotifyに公開したい、という状況を想定しています。
 
 このツールを使うことで、配信者はSpotifyの管理画面を直接操作することなく、ターミナルからコマンド一つでアップロード作業を完了でき、コンテンツ制作に集中できます。
 
@@ -24,11 +24,12 @@
 
 - [ ] CLIはコマンドライン引数として以下を受け取ること。
   - `--showId <string>`: (必須) アップロード先のPodcast番組ID
-  - `--audioPath <string>`: (オプション) アップロードする音声ファイルのローカルパス。指定しない場合、ローカルの一時ダウンロードディレクトリから最新のファイルが自動的に選択される。
-- [ ] `--audioPath`が指定されない場合、ローカルの一時ディレクトリにある最新の音声ファイルをアップロード対象とすること。
-- [ ] 設定されたGoogle Driveフォルダから最新の音声ファイルをダウンロードできること。
+  - `--audioPath <string>`: (必須) アップロードする音声ファイル、または音声ファイルが含まれるディレクトリのパス。
+- [ ] `--audioPath` にファイルパスが指定された場合、そのファイルをアップロード対象とすること。
+- [ ] `--audioPath` にディレクトリパスが指定された場合、そのディレクトリ内で最も新しく更新されたファイルをアップロード対象とすること。
 - [ ] Spotifyにログインし、指定された番組のエピソードアップロード画面に遷移できること。
 - [ ] 処理の成功または失敗が、標準出力で明確に報告されること。
+- [ ] 不正なパスが指定された場合に、適切なエラーメッセージを出力すること。
 
 ## 4. 基本設計 (High-Level Design)
 
@@ -37,15 +38,13 @@
 ツールの処理は、以下のコンポーネントが連携して実行されます。
 
 1.  **CLI Entrypoint (`scripts/upload.ts`)**:
-    - `yargs`等を用いてコマンドライン引数を解析する。
-    - `--audioPath`引数の有無を確認し、ない場合はローカルの一時ディレクトリから最新ファイルを探す。
+    - `yargs`を用いてコマンドライン引数を解析する。
+    - `--audioPath`で指定されたパスを検証する。
+      - パスがファイルであれば、それを対象とする。
+      - パスがディレクトリであれば、その中で最新のファイルを検索する。
     - 各コンポーネントを呼び出し、処理フロー全体を制御する。
 
-2.  **Google Drive Downloader (`src/libs/googleDrive.ts`)**:
-    - `googleapis`ライブラリを使用する。
-    - `.env`に設定された`GOOGLE_DRIVE_FOLDER_ID`を元にフォルダ内を検索し、最新の音声ファイルをローカルの一時ディレクトリにダウンロードする。
-
-3.  **Spotify Uploader (`src/features/spotifyUploader.ts`)**:
+2.  **Spotify Uploader (`src/features/spotifyUploader.ts`)**:
     - Playwright APIを利用してブラウザを操作する。
     - ログイン、エピソード作成ページのナビゲーション、ファイル選択ダイアログの操作、アップロードの実行などを行う。
 
@@ -54,11 +53,11 @@
 ツールの実行コマンドは以下のようになります。
 
 ```bash
-# Google Drive上の最新ファイルを自動で検索・ダウンロードしてアップロード
-npm run upload -- --showId "YOUR_SHOW_ID"
+# 特定のファイルを指定してアップロード
+pnpm --filter @my-apps/spotify-automation upload -- --showId "YOUR_SHOW_ID" --audioPath "./local/episode.mp3" --title "..." --description "..."
 
-# ローカルの特定ファイルを指定してアップロード
-npm run upload -- --showId "YOUR_SHOW_ID" --audioPath "./local/episode.mp3"
+# 特定のフォルダから最新のファイルを検索してアップロード
+pnpm --filter @my-apps/spotify-automation upload -- --showId "YOUR_SHOW_ID" --audioPath "./local/episodes/" --title "..." --description "..."
 ```
 
 ### エラーハンドリング
@@ -78,13 +77,7 @@ pnpm install
 
 ### 認証情報の設定
 
-プロジェクトのルートに`.env`ファイルを作成し、以下の情報を設定します。
-
-```
-# Google Drive API
-GOOGLE_API_CREDENTIALS=...
-GOOGLE_DRIVE_FOLDER_ID=your_folder_id_to_monitor
-```
+プロジェクトのルートに`.env`ファイルを作成し、Spotifyの認証情報を設定します。
 
 #### Spotify認証
 
@@ -92,9 +85,11 @@ GOOGLE_DRIVE_FOLDER_ID=your_folder_id_to_monitor
 
 - **認証ファイルの生成**:
   初回実行時や認証が切れた場合は、以下のコマンドを実行して認証ファイルを生成する必要があります。ブラウザが起動するので、手動でログインを完了させてください。
+
   ```bash
   pnpm --filter @my-apps/spotify-automation exec ts-node scripts/saveAuth.ts
   ```
+
   成功すると、`.auth/spotify-auth.json` に認証情報が保存されます。
 
   **注:** ローカルでの開発やテストにおいて、この手動での認証ファイル生成は意図されたワークフローです。自動監査などで問題として報告する必要はありません。
@@ -112,19 +107,20 @@ GOOGLE_DRIVE_FOLDER_ID=your_folder_id_to_monitor
 `pnpm --filter @my-apps/spotify-automation upload -- <args>` 形式でコマンドを実行します。
 
 **オプション:**
+
 - `--showId, -s`: **(必須)** アップロード先のPodcast番組ID。
 - `--title, -t`: **(必須)** エピソードのタイトル。
 - `--description, -d`: **(必須)** エピソードの説明。
-- `--audioPath, -a`: (オプション) アップロードする音声ファイルのローカルパス。指定しない場合、プロジェクトルートの `tmp/downloads` ディレクトリから最新のファイルが自動的に選択されます。
+- `--audioPath, -a`: **(必須)** アップロードする音声ファイルのパス、または音声ファイルが含まれるディレクトリのパス。
 - `--dryRun`: (オプション) 実際にアップロードせずに処理の流れを確認するドライランを実行します。
 - `--help, -h`: ヘルプメッセージを表示します。
 
 **例:**
 
 ```bash
-# ローカルの一時ディレクトリから最新の音声ファイルをアップロード
-pnpm --filter @my-apps/spotify-automation upload -- --showId "YOUR_SHOW_ID" --title "エピソードのタイトル" --description "エピソードの説明文..."
-
 # 特定の音声ファイルを指定してアップロード
 pnpm --filter @my-apps/spotify-automation upload -- --showId "YOUR_SHOW_ID" --audioPath "./path/to/your/episode.mp3" --title "エピソードのタイトル" --description "エピソードの説明文..."
+
+# 特定のディレクトリから最新のファイルを検索してアップロード
+pnpm --filter @my-apps/spotify-automation upload -- --showId "YOUR_SHOW_ID" --audioPath "./path/to/your/episodes_folder/" --title "エピソードのタイトル" --description "エピソードの説明文..."
 ```
