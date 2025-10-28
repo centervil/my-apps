@@ -11,14 +11,12 @@ const defaultAuthFilePath = path.resolve(
 
 interface SaveAuthOptions {
   headless?: boolean;
-  timeout?: number;
   outputPath?: string;
 }
 
 async function saveSpotifyAuth(options: SaveAuthOptions = {}): Promise<void> {
   const {
     headless = false,
-    timeout = 120000,
     outputPath = defaultAuthFilePath,
   } = options;
   const authManager = new AuthManager(outputPath);
@@ -35,21 +33,23 @@ async function saveSpotifyAuth(options: SaveAuthOptions = {}): Promise<void> {
   await page.goto('https://creators.spotify.com/pod/login');
 
   console.log(
-    `\nPlease log in to Spotify in the browser window. The script will automatically detect successful login.`,
+    `\n*** ACTION REQUIRED ***\nPlease log in to Spotify in the browser window.\nOnce you are successfully logged in, please CLOSE THE BROWSER WINDOW to continue.`,
   );
 
   try {
-    // Wait for navigation to the specific URL indicating successful login
-    await page.waitForURL(
-      'https://creators.spotify.com/pod/show/1ptW7cCcrt1Qb3QinuKHc5/home',
-      { timeout },
-    );
+    await new Promise<void>(resolve => {
+      page.on('close', async () => {
+        console.log('Browser window closed by user. Saving authentication state...');
+        try {
+          await authManager.saveAuthState(context);
+          console.log(`Authentication state saved to ${outputPath}`);
+        } catch (saveError) {
+          console.error('Failed to save authentication state:', saveError);
+        }
+        resolve();
+      });
+    });
 
-    console.log('Login successful. Saving authentication state...');
-
-    await authManager.saveAuthState(page);
-
-    console.log(`Authentication state saved to ${outputPath}`);
   } catch (error) {
     console.error(
       'Error during login or authentication saving process:',

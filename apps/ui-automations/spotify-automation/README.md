@@ -112,12 +112,17 @@ pnpm install
 - `--title, -t`: **(必須)** エピソードのタイトル。
 - `--description, -d`: **(必須)** エピソードの説明。
 - `--audioPath, -a`: **(必須)** アップロードする音声ファイルのパス、または音声ファイルが含まれるディレクトリのパス。
+- `--season`: (オプション) エピソードのシーズン番号。
+- `--episode`: (オプション) エピソードのエピソード番号。
 - `--dryRun`: (オプション) 実際にアップロードせずに処理の流れを確認するドライランを実行します。
 - `--help, -h`: ヘルプメッセージを表示します。
 
 **例:**
 
 ```bash
+# すべての引数を指定してアップロード
+pnpm --filter @my-apps/spotify-automation upload -- --showId "YOUR_SHOW_ID" --audioPath "./path/to/your/episode.mp3" --title "タイトル" --description "説明..." --season 2 --episode 10
+
 # 特定の音声ファイルを指定してアップロード
 pnpm --filter @my-apps/spotify-automation upload -- --showId "YOUR_SHOW_ID" --audioPath "./path/to/your/episode.mp3" --title "エピソードのタイトル" --description "エピソードの説明文..."
 

@@ -65,24 +65,43 @@ export class NewEpisodePage {
     await expect(fileLocator).toBeVisible();
   }
 
-  async fillEpisodeDetails(details: { title: string; description: string }) {
+  async fillEpisodeDetails(details: {
+    title: string;
+    description: string;
+    season?: string;
+    episode?: string;
+  }) {
     await this.titleInput.waitFor({ state: 'visible', timeout: 10000 });
     await this.titleInput.fill(details.title);
     await this.descriptionInput.fill(details.description);
+    if (details.season) {
+      await this.seasonNumberInput.fill(details.season);
+    }
+    if (details.episode) {
+      await this.episodeNumberInput.fill(details.episode);
+    }
   }
 
-  async assertEpisodeDetails(details: { title: string; description: string }) {
+  async assertEpisodeDetails(details: {
+    title: string;
+    description: string;
+    season?: string;
+    episode?: string;
+  }) {
     await expect(this.titleInput).toHaveValue(details.title);
     await expect(this.descriptionInput).toHaveText(details.description);
+    if (details.season) {
+      await expect(this.seasonNumberInput).toHaveValue(details.season);
+    }
+    if (details.episode) {
+      await expect(this.episodeNumberInput).toHaveValue(details.episode);
+    }
   }
 
-  async publishEpisode(season: string, episode: string) {
+  async publishEpisode() {
     // Wait for the Next button to be enabled after file upload, indicating processing is done.
-    await expect(this.nextButton).toBeEnabled({ timeout: 15000 });
-
-    // Fill in season and episode numbers
-    await this.seasonNumberInput.fill(season);
-    await this.episodeNumberInput.fill(episode);
+    await expect(this.nextButton).toBeEnabled({ timeout: 30000 });
+    await this.nextButton.waitFor({ state: 'visible', timeout: 10000 });
 
     // The privacy banner might obscure the 'Next' button. Close it if it's visible.
     if (await this.privacyBannerCloseButton.isVisible()) {

@@ -77,7 +77,20 @@ const runCli = (
 
     childProcess.on('close', (code, signal) => {
       cleanup();
-      resolve({ stdout, stderr, code, signal, timedOut: false });
+      const lines = stdout.split('\n');
+      let jsonStartIndex = -1;
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].trim().startsWith('{')) {
+          jsonStartIndex = i;
+          break;
+        }
+      }
+
+      let filteredStdout = '';
+      if (jsonStartIndex !== -1) {
+        filteredStdout = lines.slice(jsonStartIndex).join('\n');
+      }
+      resolve({ stdout: filteredStdout, stderr, code, signal, timedOut: false });
     });
 
     childProcess.on('error', (err) => {
@@ -110,11 +123,41 @@ test.describe('Spotify Automation CLI - E2E Tests', () => {
       'Test Description',
       '--dryRun',
     ];
-    const { stdout } = await runCli(args);
+    const { stdout, code } = await runCli(args);
 
-    expect(stdout).toContain('Dry run would proceed with these values.');
-    expect(stdout).toContain('Title: Test Title');
-    expect(stdout).toContain('Description: Test Description');
+    expect(code).toBe(0);
+    const output = JSON.parse(stdout);
+    expect(output).toHaveProperty('title', 'Test Title');
+    expect(output).toHaveProperty('description', 'Test Description');
+  });
+
+  test('should perform a successful dry run with season and episode numbers', async () => {
+    const audioFilePath = path.resolve(__dirname, 'fixtures/test-audio.mp3');
+    const args = [
+      '--showId',
+      process.env.SPOTIFY_PODCAST_ID as string,
+      '--audioPath',
+      audioFilePath,
+      '--title',
+      'Test Title',
+      '--description',
+      'Test Description',
+      '--season',
+      '2',
+      '--episode',
+      '10',
+      '--dryRun',
+    ];
+    const { stdout, code } = await runCli(args);
+
+    expect(code).toBe(0);
+    const output = JSON.parse(stdout);
+    expect(output).toMatchObject({
+      title: 'Test Title',
+      description: 'Test Description',
+      season: 2,
+      episode: 10,
+    });
   });
 
 
@@ -165,10 +208,12 @@ test.describe('Spotify Automation CLI - E2E Tests', () => {
     const { stdout, code } = await runCli(args);
 
     expect(code).toBe(0);
-    expect(stdout).toContain('Dry run would proceed with these values.');
-    expect(stdout).toContain(`Audio File Path: ${newFile}`);
-    expect(stdout).toContain('Title: Test Title Dir');
-    expect(stdout).toContain('Description: Test Description Dir');
+    const output = JSON.parse(stdout);
+    expect(output).toMatchObject({
+      audioPath: newFile,
+      title: 'Test Title Dir',
+      description: 'Test Description Dir',
+    });
 
     fs.rmSync(testDir, { recursive: true, force: true });
   });

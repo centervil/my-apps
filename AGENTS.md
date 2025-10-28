@@ -76,6 +76,18 @@ To ensure high-quality software development, the following three specification d
 
 This project adopts a Test-Driven Development (TDD) approach.
 
+#### 3.3.1. Test Coverage for All Changes
+
+In addition to following the TDD cycle, the following principles must be strictly adhered to.
+
+Any feature addition or modification to the project's source code (e.g., files in `src/` or `scripts/`) must be accompanied by the addition or modification of corresponding test code. To avoid creating redundant tests, **modifying an existing test should be prioritized over creating a new one.** A new test should only be created when modification is not appropriate.
+
+-   **Feature Additions**: Must be accompanied by new tests that verify the feature works as expected.
+-   **Bug Fixes**: Must include a test that reproduces the bug (fails before the fix and passes after the fix). This ensures the fix is correct and prevents future regressions.
+-   **Refactoring**: All existing tests must continue to pass. If the refactoring allows for better testing, tests should be improved as well.
+
+**A task is not considered complete if code changes are not accompanied by corresponding test changes.**
+
 #### Red-Green-Refactor Cycle
 
 1.  **Red**: Write a failing test in `tests/`.

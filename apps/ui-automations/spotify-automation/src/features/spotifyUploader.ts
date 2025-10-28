@@ -31,7 +31,7 @@ export async function uploadAndPublishEpisode(
   await newEpisodePage.fillEpisodeDetails(details);
 
   // 3. Publish the episode
-  await newEpisodePage.publishEpisode(details.season, details.episode);
+  await newEpisodePage.publishEpisode();
 }
 
 /**
@@ -44,8 +44,10 @@ export async function runSpotifyUpload(options: {
   audioPath: string;
   title: string;
   description: string;
+  season?: number;
+  episode?: number;
 }) {
-  const { showId, audioPath, title, description } = options;
+  const { showId, audioPath, title, description, season, episode } = options;
   const baseUrl = 'https://podcasters.spotify.com';
 
   const getAuthPath = (): string => {
@@ -95,11 +97,18 @@ export async function runSpotifyUpload(options: {
       title: title,
       description: description,
       audioFilePath: audioPath,
-      season: '1', // Placeholder
-      episode: String(Math.floor(Date.now() / 1000)), // Placeholder, use timestamp for uniqueness
+      season: season ? String(season) : '1', // Use provided season or placeholder
+      episode:
+        episode
+          ? String(episode)
+          : String(Math.floor(Date.now() / 1000)), // Use provided episode or placeholder
     };
     console.log(`Uploading episode with details:
-${JSON.stringify(episodeDetails, null, 2)}`);
+${JSON.stringify(
+      episodeDetails,
+      null,
+      2,
+    )}`);
 
     // Call the modular upload function
     await uploadAndPublishEpisode(page, episodeDetails);

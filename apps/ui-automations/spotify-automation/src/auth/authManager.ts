@@ -1,4 +1,4 @@
-import { type Page, type BrowserContext, type Cookie } from '@playwright/test';
+import { type BrowserContext, type Cookie } from '@playwright/test';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { AuthError, ErrorHandler } from './authErrors';
@@ -23,41 +23,12 @@ export class AuthManager {
     this.authFilePath = authFilePath;
   }
 
-  public async saveAuthState(page: Page): Promise<void> {
-    const cookies = await page.context().cookies();
+  public async saveAuthState(context: BrowserContext): Promise<void> {
+    const cookies = await context.cookies();
 
-    const localStorage = await page.evaluate(() => {
-      const data: Record<string, string> = {};
-      for (let i = 0; i < window.localStorage.length; i++) {
-        const key = window.localStorage.key(i);
-        if (key) {
-          data[key] = window.localStorage.getItem(key)!;
-        }
-      }
-      return data;
-    });
-
-    const sessionStorage = await page.evaluate(() => {
-      const data: Record<string, string> = {};
-      for (let i = 0; i < window.sessionStorage.length; i++) {
-        const key = window.sessionStorage.key(i);
-        if (key) {
-          data[key] = window.sessionStorage.getItem(key)!;
-        }
-      }
-      return data;
-    });
-
-    const userAgent = await page.evaluate(() => navigator.userAgent);
-    const viewport = page.viewportSize();
-
-    const authState: AuthState = {
+    const authState: Partial<AuthState> = {
       cookies,
-      localStorage,
-      sessionStorage,
       timestamp: Date.now(),
-      userAgent,
-      viewport: viewport || undefined,
     };
 
     try {
@@ -92,17 +63,6 @@ export class AuthManager {
       const authState: AuthState = JSON.parse(content);
 
       await context.addCookies(authState.cookies);
-      await context.addInitScript((storage) => {
-        for (const [key, value] of Object.entries(storage)) {
-          window.localStorage.setItem(key, value);
-        }
-      }, authState.localStorage);
-
-      await context.addInitScript((storage) => {
-        for (const [key, value] of Object.entries(storage)) {
-          window.sessionStorage.setItem(key, value);
-        }
-      }, authState.sessionStorage);
 
       console.log('Successfully loaded authentication state.');
       return true;
@@ -160,7 +120,7 @@ export class AuthManager {
     try {
       const content = await fs.readFile(this.authFilePath, 'utf-8');
       const data = JSON.parse(content);
-      if (!data.cookies || !data.localStorage || !data.timestamp) {
+      if (!data.cookies || !data.timestamp) {
         throw new Error('Missing essential properties in auth file.');
       }
       return true;

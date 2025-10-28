@@ -18,6 +18,7 @@ test.describe('Spotify for Creators - New Episode Wizard', () => {
 
     const newEpisodePage = new NewEpisodePage(page);
     await newEpisodePage.goto(BASE_URL, SPOTIFY_PODCAST_ID);
+    await page.waitForLoadState('networkidle');
     await newEpisodePage.assertPageIsVisible();
   });
 
@@ -35,6 +36,8 @@ test.describe('Spotify for Creators - New Episode Wizard', () => {
     const episodeDetails = {
       title: 'My Test Episode Title',
       description: 'This is the description for my test episode.',
+      season: '2',
+      episode: '10',
     };
     await newEpisodePage.fillEpisodeDetails(episodeDetails);
 
@@ -52,8 +55,8 @@ test.describe('Spotify for Creators - New Episode Wizard', () => {
       title: `My Published Episode ${new Date().getTime()}`,
       description: 'This episode should be published.',
       audioFilePath: path.resolve(__dirname, 'fixtures/test-audio.mp3'),
-      season: '1',
-      episode: '1',
+      season: '3',
+      episode: '12',
     };
 
     // 2. Execute the upload and publish feature
