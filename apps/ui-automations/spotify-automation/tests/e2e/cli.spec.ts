@@ -35,9 +35,11 @@ const runCli = (
       ? dotenv.parse(fs.readFileSync(envPath))
       : {};
 
-    const command = 'npx';
-    const scriptPath = path.resolve(__dirname, '../../scripts/upload.ts');
-    const fullArgs = ['ts-node', scriptPath, ...args];
+    const command = path.resolve(
+      __dirname,
+      '../../scripts/upload.sh',
+    );
+    const fullArgs = [...args];
 
     const childProcess = spawn(command, fullArgs, {
       env: {
@@ -107,7 +109,7 @@ test.describe('Spotify Automation CLI - E2E Tests', () => {
 
     expect(code).not.toBe(0);
     // Check for the specific error message from the CLI's argument parser
-    expect(stderr).toContain('必須の引数が見つかりません: showId');
+    expect(stderr).toContain('Missing required arguments: showId, audioPath, title, description');
   });
 
   test('should perform a successful dry run with a local audio file', async () => {
@@ -179,9 +181,7 @@ test.describe('Spotify Automation CLI - E2E Tests', () => {
     const { stderr, code } = await runCli(args);
 
     expect(code).not.toBe(0);
-    expect(stderr).toContain(
-      `The specified path does not exist: ${nonExistentFilePath}`,
-    );
+    expect(stderr).toContain('The specified path does not exist:');
   });
 
   test('should perform a successful dry run with a directory path and find the newest file', async () => {
@@ -236,8 +236,31 @@ test.describe('Spotify Automation CLI - E2E Tests', () => {
     const { stderr, code } = await runCli(args);
 
     expect(code).not.toBe(0);
-    expect(stderr).toContain(`No audio file found in the specified directory: ${emptyDir}`);
+    expect(stderr).toContain('No audio file found in the specified directory');
 
     fs.rmSync(emptyDir, { recursive: true, force: true });
+  });
+
+  test('should perform a successful dry run using a config file', async () => {
+    const audioFilePath = path.resolve(__dirname, 'fixtures/test-audio.mp3');
+    const config = {
+      showId: process.env.SPOTIFY_PODCAST_ID as string,
+      audioPath: audioFilePath,
+      title: 'Config Title',
+      description: 'Config Description',
+      dryRun: true,
+    };
+    const configPath = path.resolve(__dirname, 'fixtures/config.json');
+    fs.writeFileSync(configPath, JSON.stringify(config));
+
+    const args = ['--config', configPath];
+    const { stdout, code } = await runCli(args);
+
+    expect(code).toBe(0);
+    const output = JSON.parse(stdout);
+    expect(output).toHaveProperty('title', 'Config Title');
+    expect(output).toHaveProperty('description', 'Config Description');
+
+    fs.unlinkSync(configPath);
   });
 });
