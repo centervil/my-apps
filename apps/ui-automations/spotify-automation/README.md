@@ -37,32 +37,31 @@
 
 ツールの処理は、以下のコンポーネントが連携して実行されます。
 
-1.  **CLI Entrypoint (`scripts/upload.ts`)**:
-    - `yargs`を用いてコマンドライン引数を解析する。
-    - `--audioPath`で指定されたパスを検証する。
-      - パスがファイルであれば、それを対象とする。
-      - パスがディレクトリであれば、その中で最新のファイルを検索する。
-    - 各コンポーネントを呼び出し、処理フロー全体を制御する。
-
-2.  **Spotify Uploader (`src/features/spotifyUploader.ts`)**:
-    - Playwright APIを利用してブラウザを操作する。
-    - ログイン、エピソード作成ページのナビゲーション、ファイル選択ダイアログの操作、アップロードの実行などを行う。
+1.  **CLI Entrypoint (`scripts/upload.sh`)**:
+    -   ユーザーが直接実行するシンプルなシェルスクリプト。
+    -   内部で `ts-node` を呼び出し、引数を `spotifyUploader.ts` に渡す。
+2.  **Argument Parser (`spotifyUploader.ts`)**:
+    -   `yargs` を用いてコマンドライン引数 (`--config` を含む) を解析する。
+    -   設定ファイルが指定された場合は読み込み、コマンドライン引数とマージする。
+3.  **Spotify Uploader (`spotifyUploader.ts`)**:
+    -   Playwright APIを利用してブラウザを操作する。
+    -   ログイン、エピソード作成ページのナビゲーション、ファイル選択ダイアログの操作、アップロードの実行などを行う。
 
 ### CLIインターフェース
 
-ツールの実行コマンドは以下のようになります。
+`./scripts/upload.sh` スクリプトを使用してツールを実行します。
 
 ```bash
-# 特定のファイルを指定してアップロード
-pnpm --filter @my-apps/spotify-automation upload -- --showId "YOUR_SHOW_ID" --audioPath "./local/episode.mp3" --title "..." --description "..."
+# 引数を直接指定して実行
+./scripts/upload.sh --showId "YOUR_SHOW_ID" --audioPath "./local/episode.mp3" --title "..." --description "..."
 
-# 特定のフォルダから最新のファイルを検索してアップロード
-pnpm --filter @my-apps/spotify-automation upload -- --showId "YOUR_SHOW_ID" --audioPath "./local/episodes/" --title "..." --description "..."
+# 設定ファイルを使用して実行
+./scripts/upload.sh --config "./config.json"
 ```
 
 ### エラーハンドリング
 
-- **認証エラー**: SpotifyまたはGoogle Driveの認証に失敗した場合、エラーメッセージを表示して処理を中断する。
+- **認証エラー**: Spotifyの認証に失敗した場合、エラーメッセージを表示して処理を中断する。
 - **ファイル取得エラー**: 対象ファイルが見つからない場合、エラーメッセージを表示して処理を中断する。
 - **アップロードエラー**: Playwrightによる操作中にUIの変更などで要素が見つからなかった場合、エラーメッセージと可能であればスクリーンショットを保存して処理を中断する。
 
@@ -99,33 +98,48 @@ pnpm install
   ```bash
   # 例: CIのワークフロー内
   export SPOTIFY_AUTH_PATH=\"/path/to/your/spotify-auth.json\"
-  pnpm --filter @my-apps/spotify-automation upload -- ...
+  ./scripts/upload.sh -- ...
   ```
 
 ### 実行
 
-`pnpm --filter @my-apps/spotify-automation upload -- <args>` 形式でコマンドを実行します。
+`./scripts/upload.sh` スクリプトを使用してツールを実行します。
 
-**オプション:**
+#### オプション
 
 - `--showId, -s`: **(必須)** アップロード先のPodcast番組ID。
 - `--title, -t`: **(必須)** エピソードのタイトル。
 - `--description, -d`: **(必須)** エピソードの説明。
 - `--audioPath, -a`: **(必須)** アップロードする音声ファイルのパス、または音声ファイルが含まれるディレクトリのパス。
+- `--config`: (オプション) 引数を定義したJSON設定ファイルのパス。コマンドライン引数は設定ファイルより優先されます。
 - `--season`: (オプション) エピソードのシーズン番号。
 - `--episode`: (オプション) エピソードのエピソード番号。
 - `--dryRun`: (オプション) 実際にアップロードせずに処理の流れを確認するドライランを実行します。
 - `--help, -h`: ヘルプメッセージを表示します。
 
-**例:**
+#### 設定ファイル
+
+引数をJSONファイルにまとめて管理することができます。
+
+**`config.json` の例:**
+```json
+{
+  "showId": "YOUR_SHOW_ID",
+  "audioPath": "/path/to/your/episode.mp3",
+  "title": "エピソードのタイトル",
+  "description": "エピソードの説明"
+}
+```
+
+#### 実行例
 
 ```bash
-# すべての引数を指定してアップロード
-pnpm --filter @my-apps/spotify-automation upload -- --showId "YOUR_SHOW_ID" --audioPath "./path/to/your/episode.mp3" --title "タイトル" --description "説明..." --season 2 --episode 10
+# すべての引数をコマンドラインで指定してアップロード
+./scripts/upload.sh --showId "YOUR_SHOW_ID" --audioPath "./path/to/your/episode.mp3" --title "タイトル" --description "説明..." --season 2 --episode 10
 
-# 特定の音声ファイルを指定してアップロード
-pnpm --filter @my-apps/spotify-automation upload -- --showId "YOUR_SHOW_ID" --audioPath "./path/to/your/episode.mp3" --title "エピソードのタイトル" --description "エピソードの説明文..."
+# 設定ファイルを使用してアップロード
+./scripts/upload.sh --config "./config.json"
 
-# 特定のディレクトリから最新のファイルを検索してアップロード
-pnpm --filter @my-apps/spotify-automation upload -- --showId "YOUR_SHOW_ID" --audioPath "./path/to/your/episodes_folder/" --title "エピソードのタイトル" --description "エピソードの説明文..."
+# 設定ファイルを使用しつつ、一部の引数を上書き
+./scripts/upload.sh --config "./config.json" --title "新しいタイトル"
 ```
