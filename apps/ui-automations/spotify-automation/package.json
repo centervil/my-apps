@@ -4,7 +4,9 @@
   "description": "Automates podcast distribution on Spotify for Creators.",
   "main": "index.js",
   "scripts": {
-    "test": "playwright test",
+    "test": "playwright test --quiet",
+    "lint": "eslint .",
+
     "upload": "ts-node ./scripts/upload.ts",
     "test:cli": "ts-node ./scripts/test-cli.ts"
   },

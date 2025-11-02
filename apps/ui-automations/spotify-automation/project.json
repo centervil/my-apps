@@ -1,0 +1,21 @@
+{
+  "name": "spotify-automation",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/ui-automations/spotify-automation/src",
+  "projectType": "application",
+  "targets": {
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm --filter @my-apps/spotify-automation test > /dev/null 2>&1"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm --filter @my-apps/spotify-automation lint"
+      }
+    }
+  },
+  "tags": ["scope:ui-automation", "type:app"]
+}
