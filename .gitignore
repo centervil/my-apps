@@ -89,3 +89,6 @@ apps/ui-automations/spotify-automation/.auth/
 # Playwright error screenshots
 apps/ui-automations/spotify-automation/error-screenshot.png
 .gemini/
+
+# Self-hosted runner files
+/self-hosted-runner/actions-runner/
