@@ -1,0 +1,38 @@
+name: Spotify Episode Upload
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # 毎日 00:00 (UTC)
+  workflow_dispatch:
+
+jobs:
+  upload:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run upload script
+        env:
+          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+          SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
+        run: |
+          bash apps/ui-automations/spotify-automation/scripts/upload.sh \
+            --show-id "your_show_id" \
+            --audio-path "/path/to/your/audio.mp3" \
+            --title "Episode Title" \
+            --description "Episode Description"
