@@ -1,8 +1,6 @@
 name: Spotify Episode Upload
 
 on:
-  schedule:
-    - cron: '0 0 * * *' # 毎日 00:00 (UTC)
   workflow_dispatch:
 
 jobs:
