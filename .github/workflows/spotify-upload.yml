@@ -1,4 +1,4 @@
-name: Spotify Episode Upload
+name: Spotify Episode Upload (Parameterized)
 
 on:
   workflow_dispatch:
@@ -6,14 +6,30 @@ on:
 jobs:
   upload:
     runs-on: self-hosted
+    # =====================================================================================
+    # ==番組固有の設定 (ここを複製時に変更します)==
+    # =====================================================================================
+    env:
+      # 設定ファイルが格納されているPublicリポジトリのURL
+      CONFIG_REPO_URL: 'https://github.com/your-username/your-repo'
+      # リポジトリ内の設定ファイルへのパス
+      CONFIG_FILE_PATH: 'config.json'
+    # =====================================================================================
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Checkout config repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.CONFIG_REPO_URL }}
+          path: ./.config
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v2
@@ -23,14 +39,19 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Parse config and set episode variables
+        id: set_vars
+        run: |
+          CONFIG_PATH="./.config/${{ env.CONFIG_FILE_PATH }}"
+          echo "EPISODE_TITLE=$(jq -r .title "$CONFIG_PATH")" >> $GITHUB_ENV
+          echo "EPISODE_DESCRIPTION=$(jq -r .description "$CONFIG_PATH")" >> $GITHUB_ENV
+          echo "AUDIO_FILE_PATH=$(jq -r .audio_file_path "$CONFIG_PATH")" >> $GITHUB_ENV
+          echo "SHOW_ID=$(jq -r .show_id "$CONFIG_PATH")" >> $GITHUB_ENV
+
       - name: Run upload script
-        env:
-          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
-          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
-          SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
         run: |
           bash apps/ui-automations/spotify-automation/scripts/upload.sh \
-            --show-id "your_show_id" \
-            --audio-path "/path/to/your/audio.mp3" \
-            --title "Episode Title" \
-            --description "Episode Description"
+            --show-id "${SHOW_ID}" \
+            --audio-path "${AUDIO_FILE_PATH}" \
+            --title "${EPISODE_TITLE}" \
+            --description "${EPISODE_DESCRIPTION}"
