@@ -82,9 +82,9 @@ In addition to following the TDD cycle, the following principles must be strictl
 
 Any feature addition or modification to the project's source code (e.g., files in `src/` or `scripts/`) must be accompanied by the addition or modification of corresponding test code. To avoid creating redundant tests, **modifying an existing test should be prioritized over creating a new one.** A new test should only be created when modification is not appropriate.
 
--   **Feature Additions**: Must be accompanied by new tests that verify the feature works as expected.
--   **Bug Fixes**: Must include a test that reproduces the bug (fails before the fix and passes after the fix). This ensures the fix is correct and prevents future regressions.
--   **Refactoring**: All existing tests must continue to pass. If the refactoring allows for better testing, tests should be improved as well.
+- **Feature Additions**: Must be accompanied by new tests that verify the feature works as expected.
+- **Bug Fixes**: Must include a test that reproduces the bug (fails before the fix and passes after the fix). This ensures the fix is correct and prevents future regressions.
+- **Refactoring**: All existing tests must continue to pass. If the refactoring allows for better testing, tests should be improved as well.
 
 **A task is not considered complete if code changes are not accompanied by corresponding test changes.**
 
@@ -198,7 +198,6 @@ Agents must critically evaluate their own work to ensure high quality.
 - **Process**: Record your thought process, use objective criteria to evaluate your work, and repeat the "Plan → Execute → Evaluate → Revise" cycle.
 - **Approaches**: Use internal rubrics, "chain of thought" reasoning, and iterative improvement.
 
-
 <!-- nx configuration start-->
 <!-- Leave the start & end comments to automatically receive updates. -->
 
@@ -210,14 +209,5 @@ Agents must critically evaluate their own work to ensure high quality.
 - When working in individual projects, use the `nx_project_details` mcp tool to analyze and understand the specific project structure and dependencies
 - For questions around nx configuration, best practices or if you're unsure, use the `nx_docs` tool to get relevant, up-to-date docs. Always use this instead of assuming things about nx configuration
 - If the user needs help with an Nx configuration or project graph error, use the `nx_workspace` tool to get any errors
-
-# CI Error Guidelines
-
-If the user wants help with fixing an error in their CI pipeline, use the following flow:
-- Retrieve the list of current CI Pipeline Executions (CIPEs) using the `nx_cloud_cipe_details` tool
-- If there are any errors, use the `nx_cloud_fix_cipe_failure` tool to retrieve the logs for a specific task
-- Use the task logs to see what's wrong and help the user fix their problem. Use the appropriate tools if necessary
-- Make sure that the problem is fixed by running the task that you passed into the `nx_cloud_fix_cipe_failure` tool
-
 
 <!-- nx configuration end-->
