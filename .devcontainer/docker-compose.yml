@@ -1,0 +1,36 @@
+services:
+  dev-container:
+    # Dockerfileがあるディレクトリを指定して、イメージをビルドします
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    # コンテナ名を固定します
+    container_name: dev-container
+    # .envファイルから環境変数を読み込みます
+    env_file:
+      - ./.env.example
+    # ボリュームをマウントします
+    volumes:
+      # Tailscaleの状態を永続化するための名前付きボリューム
+      - vnc-container-state:/var/lib/tailscale
+      # ホストのカレントディレクトリをコンテナのワークスペースにマウントします
+      - .:/home/devuser/workspace:cached
+      # gemini-cliの認証情報を、リポジトリ内の.geminiディレクトリにマウントします
+      - /root/.gemini/oauth_creds.json:/home/devuser/workspace/.gemini/oauth_creds.json:ro
+    # ポートを公開します
+    ports:
+      - "5000:5000"
+    # Tailscaleの動作に必要な権限を付与します
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    # Tailscaleに必要なTUNデバイスをマウントします
+    devices:
+      - /dev/net/tun
+    # コンテナを常に起動させておくための設定
+    tty: true
+    stdin_open: true
+
+volumes:
+  # Tailscaleの状態を保存する名前付きボリュームを定義します
+  vnc-container-state:

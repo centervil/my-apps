@@ -92,3 +92,6 @@ apps/ui-automations/spotify-automation/error-screenshot.png
 
 # Self-hosted runner files
 /actions-runner/
+.gitsecret/keys/random_seed
+!*.secret
+.devcontainer/.env.example
