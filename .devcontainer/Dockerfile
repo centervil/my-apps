@@ -44,6 +44,7 @@ RUN apt-get install -y --no-install-recommends \
     tigervnc-standalone-server \
     xfce4 \
     xfce4-goodies \
+    tmux \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
