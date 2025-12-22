@@ -53,7 +53,10 @@ RUN npm install -g @google/gemini-cli pnpm \
     && python3.9 -m pip install --upgrade pip
 
 # ==> 5. Create a non-root user
-RUN useradd -m -s /bin/bash devuser && \
+ARG USER_UID=1000
+ARG USER_GID=1000
+RUN groupadd --gid $USER_GID devuser && \
+    useradd --uid $USER_UID --gid $USER_GID -m -s /bin/bash devuser && \
     echo "devuser:devuser" | chpasswd && \
     adduser devuser sudo
 

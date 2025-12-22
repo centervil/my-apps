@@ -4,6 +4,9 @@ services:
     build:
       context: ..
       dockerfile: .devcontainer/Dockerfile
+      args:
+        USER_UID: ${UID:-1000}
+        USER_GID: ${GID:-1000}
     # コンテナ名を固定します
     container_name: dev-container
     # .envファイルから環境変数を読み込みます
@@ -14,7 +17,7 @@ services:
       # Tailscaleの状態を永続化するための名前付きボリューム
       - vnc-container-state:/var/lib/tailscale
       # ホストのカレントディレクトリをコンテナのワークスペースにマウントします
-      - .:/home/devuser/workspace:cached
+      - ..:/home/devuser/workspace:cached
       # gemini-cliの認証情報を、リポジトリ内の.geminiディレクトリにマウントします
       - /root/.gemini/oauth_creds.json:/home/devuser/workspace/.gemini/oauth_creds.json:ro
     # ポートを公開します
