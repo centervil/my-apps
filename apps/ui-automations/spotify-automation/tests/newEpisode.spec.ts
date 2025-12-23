@@ -1,10 +1,14 @@
 import { test, expect } from '@playwright/test';
 import path from 'path';
+import dotenv from 'dotenv';
 import { NewEpisodePage } from '../src/pages/NewEpisodePage';
 import {
   uploadAndPublishEpisode,
   type EpisodeDetails,
 } from '../src/features/spotifyUploader';
+
+// Load env vars explicitly
+dotenv.config();
 
 test.describe('Spotify for Creators - New Episode Wizard', () => {
   test.beforeEach(async ({ page }) => {

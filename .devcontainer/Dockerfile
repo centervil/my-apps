@@ -39,12 +39,70 @@ RUN apt-get install -y --no-install-recommends \
     nodejs \
     tailscale
 
-# Install desktop environment separately as it's large
+# Install desktop environment (Fluxbox) and VNC
 RUN apt-get install -y --no-install-recommends \
     tigervnc-standalone-server \
-    xfce4 \
-    xfce4-goodies \
-    tmux \
+    tigervnc-common \
+    fluxbox \
+    xvfb \
+    dbus-x11 \
+    x11-utils \
+    x11-xserver-utils \
+    xdg-utils \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Playwright system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgstreamer-gl1.0-0 \
+    libgstreamer-plugins-bad1.0-0 \
+    gstreamer1.0-plugins-base \
+    gstreamer1.0-plugins-good \
+    gstreamer1.0-plugins-bad \
+    gstreamer1.0-plugins-ugly \
+    gstreamer1.0-libav \
+    gstreamer1.0-doc \
+    gstreamer1.0-tools \
+    gstreamer1.0-x \
+    gstreamer1.0-alsa \
+    gstreamer1.0-gl \
+    gstreamer1.0-gtk3 \
+    gstreamer1.0-qt5 \
+    gstreamer1.0-pulseaudio \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libc6 \
+    libcairo2 \
+    libcups2 \
+    libdbus-1-3 \
+    libexpat1 \
+    libfontconfig1 \
+    libgbm1 \
+    libgcc1 \
+    libglib2.0-0 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libstdc++6 \
+    libx11-6 \
+    libx11-xcb1 \
+    libxcb1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxdamage1 \
+    libxext6 \
+    libxfixes3 \
+    libxi6 \
+    libxrandr2 \
+    libxrender1 \
+    libxss1 \
+    libxtst6 \
+    fonts-liberation \
+    fonts-noto-color-emoji \
+    fonts-ubuntu \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -55,10 +113,22 @@ RUN npm install -g @google/gemini-cli pnpm \
 # ==> 5. Create a non-root user
 ARG USER_UID=1000
 ARG USER_GID=1000
-RUN groupadd --gid $USER_GID devuser && \
-    useradd --uid $USER_UID --gid $USER_GID -m -s /bin/bash devuser && \
-    echo "devuser:devuser" | chpasswd && \
-    adduser devuser sudo
+RUN if [ "$USER_UID" -eq 0 ]; then \
+        echo "Host user UID is 0. Creating a standard 'devuser' for compatibility, but workspace files will be owned by root."; \
+        useradd -m -s /bin/bash devuser; \
+        echo "devuser:devuser" | chpasswd; \
+        adduser devuser sudo; \
+    else \
+        echo "Creating user 'devuser' with UID=${USER_UID} and GID=${USER_GID}"; \
+        if ! getent group "${USER_GID}" >/dev/null; then \
+            groupadd --gid "${USER_GID}" devuser; \
+        else \
+            echo "Group with GID ${USER_GID} already exists. Using existing group."; \
+        fi; \
+        useradd --uid "${USER_UID}" --gid "${USER_GID}" -m -s /bin/bash devuser; \
+        echo "devuser:devuser" | chpasswd; \
+        adduser devuser sudo; \
+    fi
 
 # ==> 6. Install Poetry for devuser
 USER devuser

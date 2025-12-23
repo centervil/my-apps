@@ -95,3 +95,4 @@ apps/ui-automations/spotify-automation/error-screenshot.png
 .gitsecret/keys/random_seed
 !*.secret
 .devcontainer/.env.example
+.pnpm-store/

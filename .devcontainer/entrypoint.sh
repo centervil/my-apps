@@ -15,6 +15,11 @@ echo "Setting .vnc ownership..."
 chown -R devuser:devuser /home/devuser/.vnc
 echo "Ownership set."
 
+# Fix workspace permissions (current directory)
+echo "Fixing workspace permissions..."
+chown -R devuser:devuser .
+echo "Workspace permissions fixed."
+
 # Set VNC password
 echo "Setting VNC password..."
 sudo -u devuser /bin/bash -c "
@@ -38,6 +43,8 @@ echo "tailscale up initiated in background"
 # Start VNC server if requested
 if [ "${START_VNC_SERVER}" = "true" ]; then
   echo "Starting VNC server in background..."
+  # Start fluxbox window manager
+  ( sleep 8 && sudo -u devuser sh -c "export DISPLAY=:1 && fluxbox" ) &
   ( sleep 10 && sudo -u devuser vncserver :1 -localhost no ) &
   echo "VNC server initiated in background"
 else
