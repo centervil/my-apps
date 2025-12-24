@@ -27,7 +27,8 @@ RUN apt-get install -y --no-install-recommends \
     git \
     git-secret \
     build-essential \
-    gh
+    gh \
+    tmux
 
 RUN apt-get install -y --no-install-recommends \
     python3.9 \

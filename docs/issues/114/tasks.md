@@ -1,0 +1,22 @@
+# Tasks: Refactor CLI entry points and consolidate logic
+
+- [x] **Analyze existing CLI logic**
+    - [x] Compare `scripts/upload.ts` and `src/features/spotifyUploader.ts` argument parsing.
+    - [x] Identify all supported arguments and environment variables.
+- [x] **Refactor `src/features/spotifyUploader.ts`**
+    - [x] Extract `SpotifyUploadOptions` interface.
+    - [x] Create `runSpotifyUpload` function encapsulating the main logic.
+    - [x] Remove `yargs` dependency and `main` execution block from this file.
+    - [x] Ensure it uses arguments passed to the function instead of `process.argv` or `process.env` directly (where applicable for config).
+- [x] **Create/Update Entry Point (`src/cli.ts`)**
+    - [x] specific: Create `src/cli.ts` (or decide to use `scripts/upload.ts` as the canonical CLI wrapper).
+    - [x] Implement `yargs` configuration matching the superset of features.
+    - [x] Implement `--config` loading logic (reading JSON and merging with defaults/args).
+    - [x] Call `runSpotifyUpload` with resolved options.
+- [x] **Update Scripts**
+    - [x] Update `package.json` -> `scripts.upload` to point to the new entry point.
+    - [x] Update `scripts/upload.sh` to point to the new entry point.
+- [x] **Verification**
+    - [x] Run `npm run upload -- --help` to verify options.
+    - [x] Test with a dummy upload (dry-run if available) or valid config.
+    - [x] Verify `--config` is respected.

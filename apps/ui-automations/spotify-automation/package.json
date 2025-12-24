@@ -7,7 +7,7 @@
     "test": "playwright test --quiet",
     "lint": "eslint .",
 
-    "upload": "ts-node ./scripts/upload.ts",
+    "upload": "ts-node ./src/cli.ts",
     "test:cli": "ts-node ./scripts/test-cli.ts"
   },
   "keywords": [
