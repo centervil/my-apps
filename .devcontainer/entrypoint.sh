@@ -15,9 +15,9 @@ echo "Setting .vnc ownership..."
 chown -R devuser:devuser /home/devuser/.vnc
 echo "Ownership set."
 
-# Fix workspace permissions (current directory)
+# Fix workspace permissions
 echo "Fixing workspace permissions..."
-chown -R devuser:devuser .
+chown -R devuser:devuser /home/devuser/workspace || echo "Warning: chown failed for some files (likely read-only mounts)"
 echo "Workspace permissions fixed."
 
 # Set VNC password

@@ -4,4 +4,4 @@
 cd "$(dirname "$0")/.."
 
 # ts-nodeコマンドを実行
-npx ts-node --require tsconfig-paths/register src/features/spotifyUploader.ts "$@"
+npx ts-node --require tsconfig-paths/register src/cli.ts "$@"
