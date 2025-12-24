@@ -101,6 +101,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxrender1 \
     libxss1 \
     libxtst6 \
+    libxslt1.1 \
+    libwoff1 \
+    libwebpdemux2 \
+    libharfbuzz-icu0 \
+    libenchant-2-2 \
+    libsecret-1-0 \
+    libhyphen0 \
+    libgles2 \
     fonts-liberation \
     fonts-noto-color-emoji \
     fonts-ubuntu \
