@@ -263,4 +263,34 @@ test.describe('Spotify Automation CLI - E2E Tests', () => {
 
     fs.unlinkSync(configPath);
   });
+
+  test('should attempt a real upload process', async () => {
+    // Skip if no authentication file exists
+    const authFilePath = path.resolve(__dirname, '../../.auth/spotify-auth.json');
+    if (!fs.existsSync(authFilePath)) {
+      test.skip(true, 'Authentication file not found. Skipping real upload test.');
+    }
+
+    const audioFilePath = path.resolve(__dirname, 'fixtures/test-audio.mp3');
+    const args = [
+      '--showId',
+      process.env.SPOTIFY_PODCAST_ID as string,
+      '--audioPath',
+      audioFilePath,
+      '--title',
+      `E2E Test ${new Date().getTime()}`,
+      '--description',
+      'This is a real E2E test upload.',
+    ];
+
+    // Note: This will actually launch a browser and attempt to upload.
+    const { code, stdout, stderr } = await runCli(args, {}, { timeout: 120000 });
+
+    if (code !== 0) {
+      console.error('Real Upload Stderr:', stderr);
+    }
+
+    expect(code).toBe(0);
+    expect(stdout).toContain('Episode uploaded and published successfully!');
+  });
 });
