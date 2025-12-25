@@ -16,24 +16,22 @@ export class NewEpisodePage {
 
   constructor(page: Page) {
     this.page = page;
-    this.selectFileButton = page.locator('button', {
-      hasText: 'Select a file',
+    this.selectFileButton = page.getByRole('button', {
+      name: /select a file/i,
     });
-    this.titleInput = page.getByRole('textbox', { name: 'Title (required)' });
-    this.descriptionInput = page.locator(
-      '[role="textbox"][name="description"]',
-    );
-    this.seasonNumberInput = page.locator('#season-number');
-    this.episodeNumberInput = page.locator('#episode-number');
+    this.titleInput = page.getByRole('textbox', { name: /title/i });
+    this.descriptionInput = page.getByRole('textbox', { name: /description/i });
+    this.seasonNumberInput = page.locator('input[name="seasonNumber"]');
+    this.episodeNumberInput = page.locator('input[name="episodeNumber"]');
     this.privacyBannerCloseButton = page
-      .getByRole('dialog', { name: 'Privacy' })
-      .getByLabel('Close');
-    this.nextButton = page.getByRole('button', { name: 'Next' });
-    this.publishNowOption = page.getByText('Now', { exact: true });
-    this.publishButton = page.getByRole('button', { name: 'Publish' });
-    this.doneButton = page.getByRole('button', { name: 'Done' });
+      .getByRole('dialog', { name: /privacy/i })
+      .getByRole('button', { name: /close/i });
+    this.nextButton = page.getByRole('button', { name: /next/i });
+    this.publishNowOption = page.getByText(/publish now/i, { exact: false });
+    this.publishButton = page.getByRole('button', { name: /publish/i });
+    this.doneButton = page.getByRole('button', { name: /done/i });
     this.inAppMessageCloseButton = page
-      .locator('.ab-iam-root')
+      .locator('[class*="ab-iam"]')
       .getByRole('button')
       .first();
   }

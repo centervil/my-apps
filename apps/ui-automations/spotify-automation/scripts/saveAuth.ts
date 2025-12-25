@@ -59,6 +59,7 @@ async function saveSpotifyAuth(options: SaveAuthOptions = {}): Promise<void> {
     if (browser.isConnected()) {
       await browser.close();
     }
+    process.stdin.pause(); // Stop listening for input
   }
 }
 

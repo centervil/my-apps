@@ -50,7 +50,7 @@ export async function uploadAndPublishEpisode(
  */
 export async function runSpotifyUpload(options: SpotifyUploadOptions) {
   const { showId, audioPath, title, description, season, episode } = options;
-  const baseUrl = 'https://podcasters.spotify.com';
+  const baseUrl = 'https://creators.spotify.com';
 
   const getAuthPath = (): string => {
     const fromEnv = process.env.SPOTIFY_AUTH_PATH;

@@ -1,0 +1,21 @@
+{
+  "name": "my-apps-dev-container",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "dev-container",
+  "workspaceFolder": "/home/devuser/workspace",
+  "remoteUser": "devuser",
+  "postCreateCommand": "pnpm install && npx playwright install --with-deps",
+  "mounts": [
+    "source=${localEnv:HOME}/.config/gh,target=/home/devuser/.config/gh,type=bind"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.vscode-typescript-next",
+        "ms-playwright.playwright",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint"
+      ]
+    }
+  }
+}

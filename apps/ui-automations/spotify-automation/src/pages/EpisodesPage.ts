@@ -11,10 +11,7 @@ export class EpisodesPage {
     await this.page.goto(`${baseUrl}/pod/show/${podcastId}/episodes`);
     // Wait for the main heading to be visible to ensure the page is loaded
     await this.page.getByRole('heading', { name: 'Episodes' }).waitFor();
-    // Wait for the loading skeleton to disappear before proceeding
-    await this.page
-      .locator('.indexstyled__PulsatingLine-sc-15ud9mm-0')
-      .first()
-      .waitFor({ state: 'hidden', timeout: 15000 });
+    // Wait for the network to be idle to ensure dynamic content is loaded
+    await this.page.waitForLoadState('networkidle');
   }
 }

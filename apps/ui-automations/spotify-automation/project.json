@@ -15,6 +15,13 @@
       "options": {
         "command": "pnpm --filter @my-apps/spotify-automation lint"
       }
+    },
+    "e2e": {
+      "executor": "@nx/playwright:playwright",
+      "outputs": ["{workspaceRoot}/dist/.playwright/apps/ui-automations/spotify-automation/playwright-report"],
+      "options": {
+        "config": "apps/ui-automations/spotify-automation/playwright.config.ts"
+      }
     }
   },
   "tags": ["scope:ui-automation", "type:app"]
