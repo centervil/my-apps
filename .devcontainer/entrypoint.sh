@@ -20,6 +20,21 @@ echo "Fixing workspace permissions..."
 chown -R devuser:devuser /home/devuser/workspace || echo "Warning: chown failed for some files (likely read-only mounts)"
 echo "Workspace permissions fixed."
 
+# Set up the development environment for devuser
+echo "Setting up Node.js environment..."
+sudo -u devuser /bin/bash -c "
+    # Add node_modules/.bin to PATH in .bashrc if it's not already there
+    if ! grep -q 'node_modules/.bin' /home/devuser/.bashrc; then
+        echo 'export PATH=\"\$PATH:/home/devuser/workspace/node_modules/.bin\"' >> /home/devuser/.bashrc
+    fi
+
+    # Navigate to workspace and install dependencies and Playwright browsers
+    cd /home/devuser/workspace
+    pnpm install
+    pnpm exec playwright install --with-deps
+"
+echo "Node.js environment setup complete."
+
 # Set VNC password
 echo "Setting VNC password..."
 sudo -u devuser /bin/bash -c "

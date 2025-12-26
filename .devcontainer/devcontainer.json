@@ -4,7 +4,6 @@
   "service": "dev-container",
   "workspaceFolder": "/home/devuser/workspace",
   "remoteUser": "devuser",
-  "postCreateCommand": "pnpm install && npx playwright install --with-deps",
   "mounts": [
     "source=${localEnv:HOME}/.config/gh,target=/home/devuser/.config/gh,type=bind"
   ],
