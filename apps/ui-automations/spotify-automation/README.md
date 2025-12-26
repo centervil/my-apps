@@ -72,6 +72,9 @@
 ```bash
 # 依存関係のインストール
 pnpm install
+
+# Playwrightのブラウザをインストール
+pnpm exec playwright install
 ```
 
 ### 認証情報の設定
