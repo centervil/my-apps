@@ -10,6 +10,17 @@ if [ -z "${VNC_PASSWORD}" ]; then
   exit 1
 fi
 
+# Start tailscaled in the background
+echo "Starting tailscaled in background..."
+/usr/sbin/tailscaled --state=/var/lib/tailscale/tailscaled.state --socket=/var/run/tailscale/tailscaled.sock &
+echo "tailscaled started (PID: $!)"
+
+# Connect to tailnet
+echo "Bringing Tailscale up..."
+echo "If you are running this for the first time, please open the URL that appears in the logs to authenticate."
+( sleep 5 && /usr/bin/tailscale up --hostname="vnc-docker-container" --advertise-tags="tag:vnc-container" --accept-routes --accept-dns --advertise-exit-node --netfilter-mode=off --ssh ) &
+echo "tailscale up initiated in background"
+
 # Change ownership of .vnc directory for devuser
 echo "Setting .vnc ownership..."
 chown -R devuser:devuser /home/devuser/.vnc
@@ -23,6 +34,7 @@ echo "Workspace permissions fixed."
 # Set up the development environment for devuser
 echo "Setting up Node.js environment..."
 sudo -u devuser /bin/bash -c "
+    export DEBIAN_FRONTEND=noninteractive
     # Add node_modules/.bin to PATH in .bashrc if it's not already there
     if ! grep -q 'node_modules/.bin' /home/devuser/.bashrc; then
         echo 'export PATH=\"\$PATH:/home/devuser/workspace/node_modules/.bin\"' >> /home/devuser/.bashrc
@@ -43,17 +55,6 @@ sudo -u devuser /bin/bash -c "
     chmod 600 /home/devuser/.vnc/passwd
 "
 echo "VNC password set."
-
-# Start tailscaled in the background
-echo "Starting tailscaled in background..."
-/usr/sbin/tailscaled --state=/var/lib/tailscale/tailscaled.state --socket=/var/run/tailscale/tailscaled.sock &
-echo "tailscaled started (PID: $!)"
-
-# Connect to tailnet
-echo "Bringing Tailscale up..."
-echo "If you are running this for the first time, please open the URL that appears in the logs to authenticate."
-( sleep 5 && /usr/bin/tailscale up --hostname="vnc-docker-container" --advertise-tags="tag:vnc-container" --accept-routes --accept-dns --advertise-exit-node --netfilter-mode=off --ssh ) &
-echo "tailscale up initiated in background"
 
 # Start VNC server if requested
 if [ "${START_VNC_SERVER}" = "true" ]; then

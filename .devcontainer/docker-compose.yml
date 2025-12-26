@@ -16,6 +16,8 @@ services:
     volumes:
       # Tailscaleの状態を永続化するための名前付きボリューム
       - vnc-container-state:/var/lib/tailscale
+      # Geminiの設定と認証情報を永続化するための名前付きボリューム
+      - gemini-data:/home/devuser/.gemini
       # ホストのカレントディレクトリをコンテナのワークスペースにマウントします
       - ..:/home/devuser/workspace:cached
       # gemini-cliの認証情報を、リポジトリ内の.geminiディレクトリにマウントします
@@ -37,3 +39,5 @@ services:
 volumes:
   # Tailscaleの状態を保存する名前付きボリュームを定義します
   vnc-container-state:
+  # Geminiのデータを保存する名前付きボリューム
+  gemini-data:

@@ -155,8 +155,9 @@ RUN git clone https://github.com/awslabs/git-secrets.git /tmp/git-secrets \
 # ==> 8. Copy and prepare entrypoint and VNC startup scripts
 COPY .devcontainer/entrypoint.sh /home/devuser/entrypoint.sh
 COPY .devcontainer/xstartup /home/devuser/.vnc/xstartup
+COPY .devcontainer/.tmux.conf /home/devuser/.tmux.conf
 RUN chmod +x /home/devuser/entrypoint.sh /home/devuser/.vnc/xstartup \
-    && chown devuser:devuser /home/devuser/entrypoint.sh /home/devuser/.vnc/xstartup
+    && chown devuser:devuser /home/devuser/entrypoint.sh /home/devuser/.vnc/xstartup /home/devuser/.tmux.conf
 
 # Set USER to root so entrypoint.sh can run privileged commands
 USER root
