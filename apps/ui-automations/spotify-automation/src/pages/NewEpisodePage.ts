@@ -16,20 +16,21 @@ export class NewEpisodePage {
 
   constructor(page: Page) {
     this.page = page;
-    this.selectFileButton = page.getByRole('button', {
-      name: /select a file/i,
-    });
-    this.titleInput = page.getByRole('textbox', { name: /title/i });
-    this.descriptionInput = page.getByRole('textbox', { name: /description/i });
-    this.seasonNumberInput = page.locator('input[name="seasonNumber"]');
-    this.episodeNumberInput = page.locator('input[name="episodeNumber"]');
+    this.selectFileButton = page
+      .getByRole('button')
+      .filter({ hasText: /select a file/i })
+      .first();
+    this.titleInput = page.locator('#title-input');
+    this.descriptionInput = page.locator('[contenteditable="true"]');
+    this.seasonNumberInput = page.locator('input[name="podcastSeasonNumber"]');
+    this.episodeNumberInput = page.locator('input[name="podcastEpisodeNumber"]');
     this.privacyBannerCloseButton = page
       .getByRole('dialog', { name: /privacy/i })
       .getByRole('button', { name: /close/i });
     this.nextButton = page.getByRole('button', { name: /next/i });
-    this.publishNowOption = page.getByText(/publish now/i, { exact: false });
-    this.publishButton = page.getByRole('button', { name: /publish/i });
-    this.doneButton = page.getByRole('button', { name: /done/i });
+    this.publishNowOption = page.locator('#publish-date-now');
+    this.publishButton = page.getByRole('button', { name: 'Publish', exact: true });
+    this.doneButton = page.getByRole('button', { name: /done|close/i });
     this.inAppMessageCloseButton = page
       .locator('[class*="ab-iam"]')
       .getByRole('button')
@@ -37,14 +38,17 @@ export class NewEpisodePage {
   }
 
   async goto(baseUrl: string, podcastId: string) {
-    await this.page.goto(
-      `${baseUrl}/pod/show/${podcastId}/episode/wizard`,
-      { timeout: 60000 }, // Increase timeout to 60s
-    );
+    await this.page.goto(`${baseUrl}/pod/show/${podcastId}/episode/wizard`, {
+      timeout: 60000,
+    });
+    // Wait for network to be somewhat idle as Spotify is a heavy SPA
+    await this.page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {
+      console.log('Timeout waiting for networkidle, proceeding anyway...');
+    });
   }
 
   async assertPageIsVisible() {
-    await expect(this.selectFileButton).toBeVisible();
+    await expect(this.selectFileButton).toBeVisible({ timeout: 30000 });
   }
 
   async uploadAudioFile(filePath: string) {
@@ -69,13 +73,21 @@ export class NewEpisodePage {
     season?: string;
     episode?: string;
   }) {
-    await this.titleInput.waitFor({ state: 'visible', timeout: 10000 });
+    // Wait for the form to be ready after upload
+    await this.titleInput.waitFor({ state: 'visible', timeout: 30000 });
+    await this.page.waitForTimeout(2000); // Give it a moment to stabilize
+
     await this.titleInput.fill(details.title);
+    
+    await this.descriptionInput.waitFor({ state: 'visible', timeout: 10000 });
     await this.descriptionInput.fill(details.description);
+
     if (details.season) {
+      await this.seasonNumberInput.waitFor({ state: 'visible', timeout: 5000 });
       await this.seasonNumberInput.fill(details.season);
     }
     if (details.episode) {
+      await this.episodeNumberInput.waitFor({ state: 'visible', timeout: 5000 });
       await this.episodeNumberInput.fill(details.episode);
     }
   }
@@ -110,13 +122,13 @@ export class NewEpisodePage {
     await this.nextButton.click();
 
     // On the next screen, select to publish immediately
-    await this.publishNowOption.click();
+    await this.publishNowOption.click({ force: true });
 
     // Add a small strategic delay to wait for UI updates after clicking 'Publish Now'.
-    // This can help prevent flakiness in dynamic UIs.
-    await this.page.waitForTimeout(1000);
+    await this.page.waitForTimeout(2000);
 
     // Click the final publish button
+    await this.publishButton.waitFor({ state: 'visible', timeout: 10000 });
     await expect(this.publishButton).toBeEnabled({ timeout: 10000 });
 
     // Handle potential in-app message overlay

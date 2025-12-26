@@ -46,6 +46,7 @@ const runCli = (
         ...process.env,
         ...envConfig,
         ...env,
+        LANG: 'en_US.UTF-8',
       },
       cwd: projectRoot,
       detached: true, // Important for killing the process tree
@@ -265,6 +266,7 @@ test.describe('Spotify Automation CLI - E2E Tests', () => {
   });
 
   test('should attempt a real upload process', async () => {
+    test.slow(); // Mark this test as slow to increase timeout
     // Skip if no authentication file exists
     const authFilePath = path.resolve(__dirname, '../../.auth/spotify-auth.json');
     if (!fs.existsSync(authFilePath)) {

@@ -31,61 +31,27 @@ const findLatestFile = (dir: string): string | undefined => {
 };
 
 const main = async () => {
-  const argv = await yargs(hideBin(process.argv))
-    .option('config', {
-      alias: 'c',
-      type: 'string',
-      description: 'Path to a JSON configuration file',
-    })
-    .option('showId', {
-      alias: 's',
-      type: 'string',
-      description: 'ID of the Podcast show to upload to',
-    })
-    .option('audioPath', {
-      alias: 'a',
-      type: 'string',
-      description: 'Path to the audio file or directory containing the audio file.',
-    })
-    .option('title', {
-      alias: 't',
-      type: 'string',
-      description: 'Title of the episode',
-    })
-    .option('description', {
-      alias: 'd',
-      type: 'string',
-      description: 'Description of the episode',
-    })
-    .option('season', {
-      type: 'number',
-      description: 'Season number of the episode',
-    })
-    .option('episode', {
-      type: 'number',
-      description: 'Episode number of the episode',
-    })
-    .option('dryRun', {
-      type: 'boolean',
-      description: 'Perform a dry run without actually uploading.',
-    })
-    .help()
-    .alias('help', 'h')
-    .argv;
+    const argv = await yargs(hideBin(process.argv))
+      .option('config', {
+        alias: 'c',
+        type: 'string',
+        description: 'Path to a JSON config file',
+      })
+      .argv;
 
   try {
     // 1. Load Config
-    let options: Partial<SpotifyUploadOptions & { dryRun?: boolean }> = {};
+    let uploadOptions: Partial<SpotifyUploadOptions & { dryRun?: boolean }> = {};
 
     if (argv.config) {
-      const configPath = path.resolve(argv.config);
+      const configPath = path.resolve(argv.config as string);
       if (!fs.existsSync(configPath)) {
         throw new Error(`Configuration file not found at: ${configPath}`);
       }
       const configContent = fs.readFileSync(configPath, 'utf-8');
       try {
         const configFromFile = JSON.parse(configContent);
-        options = { ...configFromFile };
+        uploadOptions = { ...configFromFile };
       } catch (e) {
         throw new Error(`Failed to parse configuration file: ${(e as Error).message}`);
       }
@@ -97,20 +63,20 @@ const main = async () => {
     // So we can just merge argv. But argv has extra yargs stuff ($0, _).
     // We should explicitly pick the known options.
     
-    const cliOptions: Partial<typeof options> = {};
-    if (argv.showId) cliOptions.showId = argv.showId;
-    if (argv.audioPath) cliOptions.audioPath = argv.audioPath;
-    if (argv.title) cliOptions.title = argv.title;
-    if (argv.description) cliOptions.description = argv.description;
-    if (argv.season !== undefined) cliOptions.season = argv.season;
-    if (argv.episode !== undefined) cliOptions.episode = argv.episode;
-    if (argv.dryRun !== undefined) cliOptions.dryRun = argv.dryRun;
+    const cliOptions: Partial<typeof uploadOptions> = {};
+    if (argv.showId) cliOptions.showId = argv.showId as string;
+    if (argv.audioPath) cliOptions.audioPath = argv.audioPath as string;
+    if (argv.title) cliOptions.title = argv.title as string;
+    if (argv.description) cliOptions.description = argv.description as string;
+    if (argv.season !== undefined) cliOptions.season = argv.season as number;
+    if (argv.episode !== undefined) cliOptions.episode = argv.episode as number;
+    if (argv.dryRun !== undefined) cliOptions.dryRun = argv.dryRun as boolean;
 
-    options = { ...options, ...cliOptions };
+    uploadOptions = { ...uploadOptions, ...cliOptions };
 
     // Validation
-    const { showId, title, description, season, episode, dryRun } = options;
-    let { audioPath } = options;
+    const { showId, title, description, season, episode, dryRun } = uploadOptions;
+    let { audioPath } = uploadOptions;
 
     if (!showId || !audioPath || !title || !description) {
       // Check if we are in dryRun? Even in dryRun we might want to validate required fields exist.
@@ -172,12 +138,12 @@ ${resolvedAudioPath}\
 
     // 4. Execute Upload
     await runSpotifyUpload({
-      showId,
-      audioPath,
-      title,
-      description,
-      season,
-      episode,
+      showId: showId as string,
+      audioPath: audioPath as string,
+      title: title as string,
+      description: description as string,
+      season: season as number,
+      episode: episode as number,
     });
   } catch (error) {
     console.error('\n❌ CLI process failed.');

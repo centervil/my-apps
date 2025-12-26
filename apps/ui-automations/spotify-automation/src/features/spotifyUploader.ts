@@ -81,6 +81,7 @@ export async function runSpotifyUpload(options: SpotifyUploadOptions) {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
     storageState: authFilePath,
+    locale: 'en-US',
   });
   const page = await context.newPage();
 
