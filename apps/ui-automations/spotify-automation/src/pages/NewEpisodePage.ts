@@ -20,15 +20,15 @@ export class NewEpisodePage {
       .getByRole('button')
       .filter({ hasText: /select a file/i })
       .first();
-    this.titleInput = page.locator('#title-input');
-    this.descriptionInput = page.locator('[contenteditable="true"]');
+    this.titleInput = page.getByLabel(/title/i);
+    this.descriptionInput = page.locator('[contenteditable="true"], [aria-label*="description" i], #description-input').first();
     this.seasonNumberInput = page.locator('input[name="podcastSeasonNumber"]');
     this.episodeNumberInput = page.locator('input[name="podcastEpisodeNumber"]');
     this.privacyBannerCloseButton = page
       .getByRole('dialog', { name: /privacy/i })
       .getByRole('button', { name: /close/i });
     this.nextButton = page.getByRole('button', { name: /next/i });
-    this.publishNowOption = page.locator('#publish-date-now');
+    this.publishNowOption = page.getByRole('radio', { name: /publish now/i }).or(page.locator('#publish-date-now'));
     this.publishButton = page.getByRole('button', { name: 'Publish', exact: true });
     this.doneButton = page.getByRole('button', { name: /done|close/i });
     this.inAppMessageCloseButton = page
@@ -75,7 +75,6 @@ export class NewEpisodePage {
   }) {
     // Wait for the form to be ready after upload
     await this.titleInput.waitFor({ state: 'visible', timeout: 30000 });
-    await this.page.waitForTimeout(2000); // Give it a moment to stabilize
 
     await this.titleInput.fill(details.title);
     
@@ -123,9 +122,6 @@ export class NewEpisodePage {
 
     // On the next screen, select to publish immediately
     await this.publishNowOption.click({ force: true });
-
-    // Add a small strategic delay to wait for UI updates after clicking 'Publish Now'.
-    await this.page.waitForTimeout(2000);
 
     // Click the final publish button
     await this.publishButton.waitFor({ state: 'visible', timeout: 10000 });
