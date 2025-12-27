@@ -17,19 +17,22 @@ export class NewEpisodePage {
   constructor(page: Page) {
     this.page = page;
     this.selectFileButton = page
-      .getByRole('button')
-      .filter({ hasText: /select a file/i })
-      .first();
+      .getByTestId('uploadAreaWrapper')
+      .getByRole('button', { name: /select a file/i });
     this.titleInput = page.locator('#title-input');
-    this.descriptionInput = page.locator('[contenteditable="true"]');
-    this.seasonNumberInput = page.locator('input[name="podcastSeasonNumber"]');
-    this.episodeNumberInput = page.locator('input[name="podcastEpisodeNumber"]');
+    this.descriptionInput = page.locator('div[name="description"]');
+    this.seasonNumberInput = page.locator('#season-number');
+    this.episodeNumberInput = page.locator('#episode-number');
     this.privacyBannerCloseButton = page
       .getByRole('dialog', { name: /privacy/i })
       .getByRole('button', { name: /close/i });
-    this.nextButton = page.getByRole('button', { name: /next/i });
+    this.nextButton = page
+      .getByTestId('dialog-footer')
+      .getByRole('button', { name: /next/i });
     this.publishNowOption = page.locator('#publish-date-now');
-    this.publishButton = page.getByRole('button', { name: 'Publish', exact: true });
+    this.publishButton = page
+      .getByTestId('dialog-footer')
+      .getByRole('button', { name: /publish/i });
     this.doneButton = page.getByRole('button', { name: /done|close/i });
     this.inAppMessageCloseButton = page
       .locator('[class*="ab-iam"]')
