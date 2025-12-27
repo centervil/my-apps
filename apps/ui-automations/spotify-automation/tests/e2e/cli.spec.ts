@@ -105,12 +105,36 @@ const runCli = (
 };
 
 test.describe('Spotify Automation CLI - E2E Tests', () => {
-  test('should fail with an error if --showId is not provided', async () => {
+  test('should fail with an error if required arguments are missing', async () => {
     const { stderr, code } = await runCli([]);
 
     expect(code).not.toBe(0);
     // Check for the specific error message from the CLI's argument parser
     expect(stderr).toContain('Missing required arguments: showId, audioPath, title, description');
+  });
+
+  test('should fail if --showId is missing', async () => {
+    const { stderr, code } = await runCli([
+      '--audioPath', 'dummy.mp3',
+      '--title', 't',
+      '--description', 'd',
+      '--dryRun'
+    ]);
+    expect(code).not.toBe(0);
+    expect(stderr).toContain('Missing required arguments');
+    expect(stderr).toContain('showId');
+  });
+
+  test('should fail if --audioPath is missing', async () => {
+    const { stderr, code } = await runCli([
+      '--showId', 'test-id',
+      '--title', 't',
+      '--description', 'd',
+      '--dryRun'
+    ]);
+    expect(code).not.toBe(0);
+    expect(stderr).toContain('Missing required arguments');
+    expect(stderr).toContain('audioPath');
   });
 
   test('should perform a successful dry run with a local audio file', async () => {
