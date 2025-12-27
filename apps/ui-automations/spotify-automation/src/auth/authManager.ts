@@ -25,9 +25,27 @@ export class AuthManager {
 
   public async saveAuthState(context: BrowserContext): Promise<void> {
     const cookies = await context.cookies();
+    const pages = context.pages();
+    
+    let localStorage: Record<string, string> = {};
+    let sessionStorage: Record<string, string> = {};
+
+    if (pages.length > 0) {
+      const page = pages[0];
+      const storage = await page.evaluate(() => {
+        return {
+          localStorage: { ...window.localStorage },
+          sessionStorage: { ...window.sessionStorage },
+        };
+      });
+      localStorage = storage.localStorage;
+      sessionStorage = storage.sessionStorage;
+    }
 
     const authState: Partial<AuthState> = {
       cookies,
+      localStorage,
+      sessionStorage,
       timestamp: Date.now(),
     };
 
@@ -63,6 +81,23 @@ export class AuthManager {
       const authState: AuthState = JSON.parse(content);
 
       await context.addCookies(authState.cookies);
+
+      const pages = context.pages();
+      if (pages.length > 0) {
+        const page = pages[0];
+        await page.evaluate((data) => {
+          if (data.localStorage) {
+            Object.entries(data.localStorage).forEach(([key, value]) => {
+              window.localStorage.setItem(key, value as string);
+            });
+          }
+          if (data.sessionStorage) {
+            Object.entries(data.sessionStorage).forEach(([key, value]) => {
+              window.sessionStorage.setItem(key, value as string);
+            });
+          }
+        }, { localStorage: authState.localStorage, sessionStorage: authState.sessionStorage });
+      }
 
       console.log('Successfully loaded authentication state.');
       return true;

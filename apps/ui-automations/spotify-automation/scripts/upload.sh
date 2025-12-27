@@ -3,5 +3,5 @@
 # スクリプトのディレクトリに移動して実行
 cd "$(dirname "$0")/.."
 
-# ts-nodeコマンドを実行
-npx ts-node --require tsconfig-paths/register src/cli.ts "$@"
+# tsxコマンドを実行
+npx tsx src/cli.ts "$@"

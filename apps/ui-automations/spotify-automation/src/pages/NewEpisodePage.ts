@@ -78,7 +78,6 @@ export class NewEpisodePage {
   }) {
     // Wait for the form to be ready after upload
     await this.titleInput.waitFor({ state: 'visible', timeout: 30000 });
-    await this.page.waitForTimeout(2000); // Give it a moment to stabilize
 
     await this.titleInput.fill(details.title);
     
@@ -126,9 +125,6 @@ export class NewEpisodePage {
 
     // On the next screen, select to publish immediately
     await this.publishNowOption.click({ force: true });
-
-    // Add a small strategic delay to wait for UI updates after clicking 'Publish Now'.
-    await this.page.waitForTimeout(2000);
 
     // Click the final publish button
     await this.publishButton.waitFor({ state: 'visible', timeout: 10000 });
