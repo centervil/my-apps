@@ -48,10 +48,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     x11-utils \
     x11-xserver-utils \
     xdg-utils \
+    xterm \
     novnc \
     websockify \
+    openssh-server \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir /var/run/sshd
 
 # Install Playwright system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -128,8 +131,8 @@ COPY xstartup /home/devuser/.vnc/xstartup
 RUN chmod +x /home/devuser/entrypoint.sh /home/devuser/.vnc/xstartup \
     && chown -R devuser:devuser /home/devuser/entrypoint.sh /home/devuser/.vnc
 
-# Expose VNC and noVNC ports
-EXPOSE 5901 6080
+# Expose VNC, noVNC, and SSH ports
+EXPOSE 5901 6080 22
 
 USER devuser
 WORKDIR /home/devuser

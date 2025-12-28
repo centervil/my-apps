@@ -12,6 +12,7 @@ services:
     ports:
       - "6080:6080" # noVNC
       - "5901:5901" # VNC (Optional, if using VNC client)
+      - "2222:22"   # SSH
     # Tailscale needs these capabilities for userspace networking if using certain features,
     # but for pure userspace it's often not required. Including just in case.
     cap_add:
