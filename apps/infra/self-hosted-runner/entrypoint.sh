@@ -19,12 +19,23 @@ else
     echo "TS_AUTHKEY not provided. Tailscale will not connect automatically."
 fi
 
+# --- SSH Setup ---
+echo "Starting SSH server..."
+sudo /usr/sbin/sshd
+
 # --- VNC Setup ---
 mkdir -p /home/devuser/.vnc
 echo "$VNC_PASSWORD" | vncpasswd -f > /home/devuser/.vnc/passwd
 chmod 600 /home/devuser/.vnc/passwd
 
+# Clean up stale VNC locks (Force remove all X locks)
+echo "Cleaning up VNC locks..."
+rm -rf /tmp/.X1-lock /tmp/.X11-unix /tmp/.X* || true
+mkdir -p /tmp/.X11-unix
+chmod 1777 /tmp/.X11-unix
+
 # Start VNC server
+echo "Starting VNC server..."
 vncserver :1 -geometry 1280x800 -depth 24
 
 # Start noVNC
@@ -64,6 +75,9 @@ fi
 cd my-apps
 echo "Installing dependencies..."
 pnpm install
+
+echo "Installing Playwright browsers..."
+pnpm exec playwright install chromium
 
 # --- Start Runner ---
 echo "Starting GitHub Runner Agent..."
