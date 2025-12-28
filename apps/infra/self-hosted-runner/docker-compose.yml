@@ -1,0 +1,21 @@
+services:
+  spotify-runner:
+    build:
+      context: .
+      args:
+        USER_UID: 1000
+        USER_GID: 1000
+    image: spotify-self-hosted-runner:latest
+    container_name: spotify-runner
+    env_file:
+      - runner.env
+    ports:
+      - "6080:6080" # noVNC
+      - "5901:5901" # VNC (Optional, if using VNC client)
+    # Tailscale needs these capabilities for userspace networking if using certain features,
+    # but for pure userspace it's often not required. Including just in case.
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    restart: unless-stopped
