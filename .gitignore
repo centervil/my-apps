@@ -96,3 +96,5 @@ apps/ui-automations/spotify-automation/error-screenshot.png
 !*.secret
 .devcontainer/.env.example
 .pnpm-store/
+apps/infra/self-hosted-runner/runner.env
+test-results/
