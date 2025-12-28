@@ -123,9 +123,10 @@ RUN mkdir /home/devuser/actions-runner && cd /home/devuser/actions-runner \
 
 # ==> 7. Prepare scripts
 COPY entrypoint.sh /home/devuser/entrypoint.sh
+RUN mkdir -p /home/devuser/.vnc
 COPY xstartup /home/devuser/.vnc/xstartup
 RUN chmod +x /home/devuser/entrypoint.sh /home/devuser/.vnc/xstartup \
-    && chown devuser:devuser /home/devuser/entrypoint.sh /home/devuser/.vnc/xstartup
+    && chown -R devuser:devuser /home/devuser/entrypoint.sh /home/devuser/.vnc
 
 # Expose VNC and noVNC ports
 EXPOSE 5901 6080

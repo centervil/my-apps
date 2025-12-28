@@ -53,9 +53,12 @@ WORKSPACE_DIR="/home/devuser/workspace"
 mkdir -p "$WORKSPACE_DIR"
 cd "$WORKSPACE_DIR"
 
+# TOOL_REPO_URL が指定されていない場合は REPO_URL を使用（後方互換性）
+CLONE_URL=${TOOL_REPO_URL:-$REPO_URL}
+
 if [ ! -d "my-apps" ]; then
-    echo "Cloning repository ${REPO_URL}..."
-    git clone "${REPO_URL}" my-apps
+    echo "Cloning repository ${CLONE_URL}..."
+    git clone "${CLONE_URL}" my-apps
 fi
 
 cd my-apps
