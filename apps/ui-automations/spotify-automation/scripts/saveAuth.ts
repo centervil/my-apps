@@ -10,6 +10,7 @@ const defaultAuthFilePath = path.resolve(
   '..',
   '..',
   '..',
+  '..',
   'credentials',
   'spotify-auth.json',
 );
