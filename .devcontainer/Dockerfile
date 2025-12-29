@@ -28,7 +28,9 @@ RUN apt-get install -y --no-install-recommends \
     git-secret \
     build-essential \
     gh \
-    tmux
+    tmux \
+    jq \
+    nano
 
 RUN apt-get install -y --no-install-recommends \
     python3.9 \
@@ -50,6 +52,7 @@ RUN apt-get install -y --no-install-recommends \
     x11-utils \
     x11-xserver-utils \
     xdg-utils \
+    xterm \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

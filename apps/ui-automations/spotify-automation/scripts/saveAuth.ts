@@ -7,7 +7,10 @@ import { AuthManager } from '../src/auth/authManager';
 const defaultAuthFilePath = path.resolve(
   __dirname,
   '..',
-  '.auth',
+  '..',
+  '..',
+  '..',
+  'credentials',
   'spotify-auth.json',
 );
 
@@ -26,7 +29,12 @@ async function saveSpotifyAuth(options: SaveAuthOptions = {}): Promise<void> {
   console.log('launching browser...');
   const browser = await chromium.launch({
     headless,
-    args: ['--no-sandbox', '--disable-gpu'],
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-gpu',
+      '--disable-dev-shm-usage',
+    ],
   });
   const context = await browser.newContext();
   const page = await context.newPage();

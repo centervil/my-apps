@@ -23,6 +23,7 @@ echo "tailscale up initiated in background"
 
 # Change ownership of .vnc directory for devuser
 echo "Setting .vnc ownership..."
+mkdir -p /home/devuser/.vnc
 chown -R devuser:devuser /home/devuser/.vnc
 echo "Ownership set."
 
@@ -35,7 +36,15 @@ echo "GitHub CLI config permissions fixed."
 # Fix workspace permissions
 echo "Fixing workspace permissions..."
 chown -R devuser:devuser /home/devuser/workspace || echo "Warning: chown failed for some files (likely read-only mounts)"
+chown -R devuser:devuser /home/devuser/.local /home/devuser/.cache || true
 echo "Workspace permissions fixed."
+
+# Clean up stale VNC locks (Force remove all X locks)
+echo "Cleaning up VNC locks..."
+rm -rf /tmp/.X1-lock /tmp/.X11-unix /tmp/.X* || true
+mkdir -p /tmp/.X11-unix
+chown root:root /tmp/.X11-unix
+chmod 1777 /tmp/.X11-unix
 
 # Set up the development environment for devuser
 echo "Setting up Node.js environment..."
@@ -65,9 +74,7 @@ echo "VNC password set."
 # Start VNC server if requested
 if [ "${START_VNC_SERVER}" = "true" ]; then
   echo "Starting VNC server in background..."
-  # Start fluxbox window manager
-  ( sleep 8 && sudo -u devuser sh -c "export DISPLAY=:1 && fluxbox" ) &
-  ( sleep 10 && sudo -u devuser vncserver :1 -localhost no ) &
+  sudo -u devuser vncserver :1 -localhost no -geometry 1280x800 -depth 24
   echo "VNC server initiated in background"
 else
   echo "VNC server will not be started. To start it, set START_VNC_SERVER=true"
