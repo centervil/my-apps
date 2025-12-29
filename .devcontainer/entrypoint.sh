@@ -26,6 +26,12 @@ echo "Setting .vnc ownership..."
 chown -R devuser:devuser /home/devuser/.vnc
 echo "Ownership set."
 
+# Fix permissions for GitHub CLI config
+echo "Fixing GitHub CLI config permissions..."
+mkdir -p /home/devuser/.config/gh
+chown -R devuser:devuser /home/devuser/.config/gh
+echo "GitHub CLI config permissions fixed."
+
 # Fix workspace permissions
 echo "Fixing workspace permissions..."
 chown -R devuser:devuser /home/devuser/workspace || echo "Warning: chown failed for some files (likely read-only mounts)"
