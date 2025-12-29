@@ -1,5 +1,7 @@
 import { chromium } from '@playwright/test';
 import * as path from 'path';
+import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
 import { AuthManager } from '../src/auth/authManager';
 
 const defaultAuthFilePath = path.resolve(
@@ -63,5 +65,26 @@ async function saveSpotifyAuth(options: SaveAuthOptions = {}): Promise<void> {
   }
 }
 
-// Execute the script
-saveSpotifyAuth().catch(console.error);
+// Parse command line arguments and execute the script
+async function main() {
+  const argv = await yargs(hideBin(process.argv))
+    .option('headless', {
+      type: 'boolean',
+      description: 'Run browser in headless mode',
+      default: false,
+    })
+    .option('outputPath', {
+      type: 'string',
+      description: 'Path to save the authentication file',
+      default: defaultAuthFilePath,
+    })
+    .help()
+    .parse();
+
+  await saveSpotifyAuth({
+    headless: argv.headless,
+    outputPath: argv.outputPath,
+  });
+}
+
+main().catch(console.error);
