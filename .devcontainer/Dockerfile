@@ -165,6 +165,9 @@ RUN chmod +x /home/devuser/entrypoint.sh /home/devuser/.vnc/xstartup \
 # Set USER to root so entrypoint.sh can run privileged commands
 USER root
 
+# Set VNC password environment variable
+ENV VNC_PASSWORD=password
+
 # Expose VNC port
 EXPOSE 5901
 

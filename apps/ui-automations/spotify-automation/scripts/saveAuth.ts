@@ -4,7 +4,7 @@ import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { AuthManager } from '../src/auth/authManager';
 
-const defaultAuthFilePath = path.resolve(
+const defaultAuthFilePath = process.env.SPOTIFY_AUTH_PATH || path.resolve(
   __dirname,
   '..',
   '..',

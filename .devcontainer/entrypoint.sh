@@ -66,7 +66,7 @@ echo "Node.js environment setup complete."
 echo "Setting VNC password..."
 sudo -u devuser /bin/bash -c "
     mkdir -p /home/devuser/.vnc
-    printf '%s\n' "${VNC_PASSWORD}" | vncpasswd -f > /home/devuser/.vnc/passwd
+    echo \"\${VNC_PASSWORD:-password}\" | vncpasswd -f > /home/devuser/.vnc/passwd
     chmod 600 /home/devuser/.vnc/passwd
 "
 echo "VNC password set."
