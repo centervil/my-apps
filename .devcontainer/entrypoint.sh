@@ -46,8 +46,27 @@ mkdir -p /tmp/.X11-unix
 chown root:root /tmp/.X11-unix
 chmod 1777 /tmp/.X11-unix
 
+# Setup GitHub CLI and Git user info synchronously
+echo "Configuring Git credentials and user info..."
+sudo -u devuser /bin/bash -c "
+    # Ensure .gitconfig exists
+    touch /home/devuser/.gitconfig
+
+    # Setup GitHub CLI as git credential helper
+    gh auth setup-git
+
+    # Set default git user info if not already set
+    if ! git config --global user.name > /dev/null; then
+        git config --global user.name \"devuser\"
+    fi
+    if ! git config --global user.email > /dev/null; then
+        git config --global user.email \"devuser@example.com\"
+    fi
+"
+echo "Git configuration complete."
+
 # Set up the development environment for devuser in background
-echo "Starting Node.js and Git environment setup in background..."
+echo "Starting Node.js environment setup in background..."
 sudo -u devuser /bin/bash -c "
     export DEBIAN_FRONTEND=noninteractive
     # Add node_modules/.bin to PATH in .bashrc if it's not already there
@@ -59,20 +78,8 @@ sudo -u devuser /bin/bash -c "
     cd /home/devuser/workspace
     pnpm install || echo 'Warning: pnpm install failed'
     pnpm exec playwright install --with-deps || echo 'Warning: playwright install failed'
-
-    # Setup GitHub CLI as git credential helper
-    echo \"Configuring Git credentials via GitHub CLI...\"
-    gh auth setup-git || echo 'Warning: gh auth setup-git failed'
-
-    # Set default git user info if not already set
-    if ! git config --global user.name > /dev/null; then
-        git config --global user.name \"devuser\"
-    fi
-    if ! git config --global user.email > /dev/null; then
-        git config --global user.email \"devuser@example.com\"
-    fi
 " &
-echo "Node.js and Git environment setup initiated."
+echo "Node.js environment setup initiated."
 
 # Prepare xstartup
 cp /home/devuser/workspace/.devcontainer/xstartup /home/devuser/.vnc/xstartup
