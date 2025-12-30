@@ -46,8 +46,8 @@ mkdir -p /tmp/.X11-unix
 chown root:root /tmp/.X11-unix
 chmod 1777 /tmp/.X11-unix
 
-# Set up the development environment for devuser
-echo "Setting up Node.js environment..."
+# Set up the development environment for devuser in background
+echo "Starting Node.js and Git environment setup in background..."
 sudo -u devuser /bin/bash -c "
     export DEBIAN_FRONTEND=noninteractive
     # Add node_modules/.bin to PATH in .bashrc if it's not already there
@@ -57,12 +57,12 @@ sudo -u devuser /bin/bash -c "
 
     # Navigate to workspace and install dependencies and Playwright browsers
     cd /home/devuser/workspace
-    pnpm install
-    pnpm exec playwright install --with-deps
+    pnpm install || echo 'Warning: pnpm install failed'
+    pnpm exec playwright install --with-deps || echo 'Warning: playwright install failed'
 
     # Setup GitHub CLI as git credential helper
     echo \"Configuring Git credentials via GitHub CLI...\"
-    gh auth setup-git
+    gh auth setup-git || echo 'Warning: gh auth setup-git failed'
 
     # Set default git user info if not already set
     if ! git config --global user.name > /dev/null; then
@@ -71,8 +71,13 @@ sudo -u devuser /bin/bash -c "
     if ! git config --global user.email > /dev/null; then
         git config --global user.email \"devuser@example.com\"
     fi
-"
-echo "Node.js and Git environment setup complete."
+" &
+echo "Node.js and Git environment setup initiated."
+
+# Prepare xstartup
+cp /home/devuser/workspace/.devcontainer/xstartup /home/devuser/.vnc/xstartup
+chmod +x /home/devuser/.vnc/xstartup
+chown devuser:devuser /home/devuser/.vnc/xstartup
 
 # Set VNC password
 echo "Setting VNC password..."
