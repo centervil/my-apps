@@ -59,8 +59,20 @@ sudo -u devuser /bin/bash -c "
     cd /home/devuser/workspace
     pnpm install
     pnpm exec playwright install --with-deps
+
+    # Setup GitHub CLI as git credential helper
+    echo \"Configuring Git credentials via GitHub CLI...\"
+    gh auth setup-git
+
+    # Set default git user info if not already set
+    if ! git config --global user.name > /dev/null; then
+        git config --global user.name \"devuser\"
+    fi
+    if ! git config --global user.email > /dev/null; then
+        git config --global user.email \"devuser@example.com\"
+    fi
 "
-echo "Node.js environment setup complete."
+echo "Node.js and Git environment setup complete."
 
 # Set VNC password
 echo "Setting VNC password..."
