@@ -17,6 +17,7 @@ echo "tailscaled started (PID: $!)"
 
 # Connect to tailnet
 echo "Bringing Tailscale up..."
+export PLAYWRIGHT_BROWSERS_PATH=/home/devuser/.cache/ms-playwright
 echo "If you are running this for the first time, please open the URL that appears in the logs to authenticate."
 ( sleep 5 && /usr/bin/tailscale up --hostname="vnc-docker-container" --advertise-tags="tag:vnc-container" --accept-routes --accept-dns --advertise-exit-node --netfilter-mode=off --ssh ) &
 echo "tailscale up initiated in background"

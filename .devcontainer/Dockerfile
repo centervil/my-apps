@@ -122,11 +122,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN npm install -g @google/gemini-cli pnpm \
     && python3.9 -m pip install --upgrade pip
 
-# ==> 5. Install Playwright browsers and dependencies during build
-# This ensures the browser is ready immediately after container launch.
-RUN npx playwright install chromium --with-deps
-
-# ==> 6. Create a non-root user
+# ==> 5. Create a non-root user
 ARG USER_UID=1000
 ARG USER_GID=1000
 RUN if [ "$USER_UID" -eq 0 ]; then \
@@ -146,7 +142,13 @@ RUN if [ "$USER_UID" -eq 0 ]; then \
         adduser devuser sudo; \
     fi
 
-# ==> 6. Install Poetry for devuser
+# ==> 6. Install Playwright browsers and dependencies during build
+# Use a specific version to match package.json and ensure correct location.
+ENV PLAYWRIGHT_BROWSERS_PATH=/home/devuser/.cache/ms-playwright
+RUN npx playwright@1.54.1 install chromium --with-deps \
+    && chown -R devuser:devuser /home/devuser/.cache
+
+# ==> 7. Install Poetry for devuser
 USER devuser
 RUN curl -sSL https://install.python-poetry.org | python3.9 -
 ENV PATH="/home/devuser/.local/bin:${PATH}"

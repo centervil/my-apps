@@ -35,6 +35,7 @@ async function saveSpotifyAuth(options: SaveAuthOptions = {}): Promise<void> {
       '--disable-setuid-sandbox',
       '--disable-gpu',
       '--disable-dev-shm-usage',
+      '--disable-breakpad',
     ],
   });
   const context = await browser.newContext();
