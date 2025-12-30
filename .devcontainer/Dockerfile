@@ -143,10 +143,11 @@ RUN if [ "$USER_UID" -eq 0 ]; then \
     fi
 
 # ==> 6. Install Playwright browsers and dependencies during build
-# Use a specific version to match package.json and ensure correct location.
-ENV PLAYWRIGHT_BROWSERS_PATH=/home/devuser/.cache/ms-playwright
-RUN npx playwright@1.54.1 install firefox --with-deps \
-    && chown -R devuser:devuser /home/devuser/.cache
+# Use a specific version to match package.json and ensure correct location outside home.
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN mkdir -p $PLAYWRIGHT_BROWSERS_PATH \
+    && npx playwright@1.54.1 install firefox --with-deps \
+    && chmod -R 777 $PLAYWRIGHT_BROWSERS_PATH
 
 # ==> 7. Install Poetry for devuser
 USER devuser

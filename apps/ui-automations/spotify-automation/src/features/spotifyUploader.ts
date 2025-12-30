@@ -1,4 +1,4 @@
-import { chromium, type Page } from '@playwright/test';
+import { firefox, type Page } from '@playwright/test';
 import fs from 'fs';
 import { NewEpisodePage } from '../pages/NewEpisodePage';
 import path from 'path';
@@ -78,7 +78,13 @@ export async function runSpotifyUpload(options: SpotifyUploadOptions) {
 
   const authFilePath = getAuthPath();
 
-  const browser = await chromium.launch({ headless: true });
+  // Set browsers path if it exists but is not set in env
+  const expectedBrowsersPath = '/ms-playwright';
+  if (!process.env.PLAYWRIGHT_BROWSERS_PATH && fs.existsSync(expectedBrowsersPath)) {
+    process.env.PLAYWRIGHT_BROWSERS_PATH = expectedBrowsersPath;
+  }
+
+  const browser = await firefox.launch({ headless: true });
   const context = await browser.newContext({
     storageState: authFilePath,
     locale: 'en-US',
