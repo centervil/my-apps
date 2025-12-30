@@ -83,6 +83,8 @@ echo "VNC password set."
 # Start VNC server if requested
 if [ "${START_VNC_SERVER}" = "true" ]; then
   echo "Starting VNC server in background..."
+  # Kill existing session if any
+  sudo -u devuser vncserver -kill :1 || true
   sudo -u devuser vncserver :1 -localhost no -geometry 1280x800 -depth 24
   echo "VNC server initiated in background"
 else
