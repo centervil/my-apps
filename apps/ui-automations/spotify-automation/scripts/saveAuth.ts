@@ -1,4 +1,4 @@
-import { chromium } from '@playwright/test';
+import { firefox } from '@playwright/test';
 import * as path from 'path';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
@@ -28,15 +28,8 @@ async function saveSpotifyAuth(options: SaveAuthOptions = {}): Promise<void> {
   const authManager = new AuthManager(outputPath);
 
   console.log('launching browser...');
-  const browser = await chromium.launch({
+  const browser = await firefox.launch({
     headless,
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-gpu',
-      '--disable-dev-shm-usage',
-      '--disable-breakpad',
-    ],
   });
   const context = await browser.newContext();
   const page = await context.newPage();
