@@ -65,22 +65,6 @@ sudo -u devuser /bin/bash -c "
 "
 echo "Git configuration complete."
 
-# Set up the development environment for devuser in background
-echo "Starting Node.js environment setup in background..."
-sudo -u devuser /bin/bash -c "
-    export DEBIAN_FRONTEND=noninteractive
-    # Add node_modules/.bin to PATH in .bashrc if it's not already there
-    if ! grep -q 'node_modules/.bin' /home/devuser/.bashrc; then
-        echo 'export PATH=\"\$PATH:/home/devuser/workspace/node_modules/.bin\"' >> /home/devuser/.bashrc
-    fi
-
-    # Navigate to workspace and install dependencies and Playwright browsers
-    cd /home/devuser/workspace
-    pnpm install || echo 'Warning: pnpm install failed'
-    pnpm exec playwright install --with-deps || echo 'Warning: playwright install failed'
-" &
-echo "Node.js environment setup initiated."
-
 # Prepare xstartup
 cp /home/devuser/workspace/.devcontainer/xstartup /home/devuser/.vnc/xstartup
 chmod +x /home/devuser/.vnc/xstartup

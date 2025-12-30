@@ -122,7 +122,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN npm install -g @google/gemini-cli pnpm \
     && python3.9 -m pip install --upgrade pip
 
-# ==> 5. Create a non-root user
+# ==> 5. Install Playwright browsers and dependencies during build
+# This ensures the browser is ready immediately after container launch.
+RUN npx playwright install chromium --with-deps
+
+# ==> 6. Create a non-root user
 ARG USER_UID=1000
 ARG USER_GID=1000
 RUN if [ "$USER_UID" -eq 0 ]; then \
