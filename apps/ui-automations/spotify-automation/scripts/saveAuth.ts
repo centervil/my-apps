@@ -30,6 +30,7 @@ async function saveSpotifyAuth(options: SaveAuthOptions = {}): Promise<void> {
   console.log('launching browser...');
   const browser = await firefox.launch({
     headless,
+    timeout: 60000,
   });
   const context = await browser.newContext();
   const page = await context.newPage();

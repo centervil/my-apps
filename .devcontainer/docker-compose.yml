@@ -28,14 +28,11 @@ services:
       - ..:/home/devuser/workspace:cached
       # gemini-cliの認証情報を、リポジトリ内の.geminiディレクトリにマウントします
       - /root/.gemini/oauth_creds.json:/home/devuser/workspace/.gemini/oauth_creds.json:ro
-    # ポートを公開します
-    ports:
-      - "5000:5000"
-      - "5901:5901"
     # Tailscaleの動作に必要な権限を付与します
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
+      - SYS_ADMIN
     # Tailscaleに必要なTUNデバイスをマウントします
     devices:
       - /dev/net/tun
