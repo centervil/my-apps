@@ -14,5 +14,11 @@ fi
 mkdir -p "$CREDENTIALS_DIR"
 export SPOTIFY_AUTH_PATH="$CREDENTIALS_DIR/spotify-auth.json"
 
+# Node.jsのメモリ制限を緩和（8GB）
+export NODE_OPTIONS="--max-old-space-size=8192"
+
+# DISPLAYが未設定の場合はデフォルトでVNCの :1 を使用する
+export DISPLAY="${DISPLAY:-:1}"
+
 echo "Using auth path: $SPOTIFY_AUTH_PATH"
 pnpm --filter @my-apps/spotify-automation exec ts-node scripts/saveAuth.ts
