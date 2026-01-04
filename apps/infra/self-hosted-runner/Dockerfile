@@ -106,7 +106,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # ==> 4. Install pnpm globally
 RUN npm install -g pnpm
 
-# ==> 5. Create a non-root user
+# ==> 5. Install Playwright browsers (Firefox) and dependencies
+# Use a specific version to match package.json and ensure correct location outside home.
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN mkdir -p $PLAYWRIGHT_BROWSERS_PATH \
+    && npx playwright@1.54.1 install firefox --with-deps \
+    && chmod -R 777 $PLAYWRIGHT_BROWSERS_PATH
+
+# ==> 6. Create a non-root user
 ARG USER_UID=1000
 ARG USER_GID=1000
 RUN groupadd --gid "${USER_GID}" devuser \

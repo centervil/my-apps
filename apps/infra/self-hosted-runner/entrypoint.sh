@@ -10,6 +10,12 @@ RUNNER_LABELS=${RUNNER_LABELS:-"self-hosted,linux,docker"}
 
 # --- Tailscale Setup ---
 echo "Starting Tailscale..."
+# Ensure PLAYWRIGHT_BROWSERS_PATH is set
+export PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+if ! grep -q "PLAYWRIGHT_BROWSERS_PATH" /home/devuser/.bashrc; then
+    echo "export PLAYWRIGHT_BROWSERS_PATH=/ms-playwright" >> /home/devuser/.bashrc
+fi
+
 sudo tailscaled --tun=userspace-networking --socks5-server=localhost:1055 --outbound-http-proxy-listen=localhost:1055 &
 
 if [ -n "$TS_AUTHKEY" ]; then
@@ -36,7 +42,7 @@ chmod 1777 /tmp/.X11-unix
 
 # Start VNC server
 echo "Starting VNC server..."
-vncserver :1 -geometry 1280x800 -depth 24
+vncserver :1 -localhost no -geometry 1280x800 -depth 24
 
 # Start noVNC
 /usr/share/novnc/utils/launch.sh --vnc localhost:5901 --listen 6080 &
@@ -75,9 +81,6 @@ fi
 cd my-apps
 echo "Installing dependencies..."
 pnpm install
-
-echo "Installing Playwright browsers..."
-pnpm exec playwright install chromium
 
 # --- Start Runner ---
 echo "Starting GitHub Runner Agent..."
