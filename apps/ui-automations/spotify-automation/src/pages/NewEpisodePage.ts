@@ -13,6 +13,8 @@ export class NewEpisodePage {
   private readonly publishButton: Locator;
   private readonly doneButton: Locator;
   private readonly inAppMessageCloseButton: Locator;
+  private readonly oneTrustAcceptButton: Locator;
+  private readonly oneTrustCloseButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -38,6 +40,8 @@ export class NewEpisodePage {
       .locator('[class*="ab-iam"]')
       .getByRole('button')
       .first();
+    this.oneTrustAcceptButton = page.locator('#onetrust-accept-btn-handler');
+    this.oneTrustCloseButton = page.locator('#onetrust-close-btn-container button');
   }
 
   async goto(baseUrl: string, podcastId: string) {
@@ -48,6 +52,27 @@ export class NewEpisodePage {
     await this.page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {
       console.log('Timeout waiting for networkidle, proceeding anyway...');
     });
+    await this.handleCookieConsent();
+  }
+
+  async handleCookieConsent() {
+    try {
+      // Use JavaScript to hide the dialog immediately if it exists, 
+      // as it often blocks interactions even if it's being closed.
+      await this.page.evaluate(() => {
+        const ids = ['onetrust-banner-sdk', 'onetrust-consent-sdk', 'onetrust-pc-sdk'];
+        ids.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = 'none';
+        });
+      });
+
+      if (await this.oneTrustAcceptButton.isVisible({ timeout: 2000 })) {
+        await this.oneTrustAcceptButton.click().catch(() => {});
+      }
+    } catch {
+      // Ignore errors
+    }
   }
 
   async assertPageIsVisible() {
@@ -82,7 +107,11 @@ export class NewEpisodePage {
     await this.titleInput.fill(details.title);
     
     await this.descriptionInput.waitFor({ state: 'visible', timeout: 10000 });
-    await this.descriptionInput.fill(details.description);
+    // For Slate.js rich text editors, click and type is more reliable than fill
+    await this.descriptionInput.click();
+    await this.page.keyboard.press('Control+A');
+    await this.page.keyboard.press('Backspace');
+    await this.page.keyboard.type(details.description);
 
     if (details.season) {
       await this.seasonNumberInput.waitFor({ state: 'visible', timeout: 5000 });
@@ -111,6 +140,9 @@ export class NewEpisodePage {
   }
 
   async publishEpisode() {
+    // Check for cookie consent again before interacting with footer buttons
+    await this.handleCookieConsent();
+
     // Wait for the Next button to be enabled after file upload, indicating processing is done.
     await expect(this.nextButton).toBeEnabled({ timeout: 30000 });
     await this.nextButton.waitFor({ state: 'visible', timeout: 10000 });
@@ -120,8 +152,11 @@ export class NewEpisodePage {
       await this.privacyBannerCloseButton.click();
     }
 
-    // Proceed to the next step in the wizard
-    await this.nextButton.click();
+    // Proceed to the next step in the wizard with retry logic
+    await expect(async () => {
+      await this.nextButton.click({ force: true });
+      await this.publishNowOption.waitFor({ state: 'visible', timeout: 5000 });
+    }).toPass({ timeout: 30000 });
 
     // On the next screen, select to publish immediately
     await this.publishNowOption.click({ force: true });

@@ -163,6 +163,14 @@ This section outlines general best practices and considerations for development 
 - **Update on Change**: The "Quick Reference" section at the top of this document must be updated whenever new top-level sections or significant subsections are added, removed, or renamed.
 - **Maintain Link Integrity**: Ensure that all links within the quick reference accurately point to the correct sections.
 
+### 9.4. DOM Snapshot Debugging for UI Automation
+
+When UI element identification or interaction fails in a headless or remote environment (like VNC where visual inspection is limited), use DOM snapshots to diagnose the issue.
+
+- **Capture Page Content**: In the `catch` block of a failing interaction, use `await page.content()` and save it to an HTML file (e.g., `error-page.html`).
+- **Analyze DOM Structure**: Read the saved HTML to verify the actual state of the page, checking for unexpected dialogs, overlays, or validation errors that might be blocking the automation.
+- **Robustness via expect().toPass()**: For interactions that frequently fail due to timing or flaky UI state, use Playwright's `expect().toPass()` to wrap the interaction and the subsequent state check, enabling automatic retries until the operation succeeds.
+
 ## 10. Playwright Browser Automation Tasks
 
 This section describes specific guidelines and best practices for browser automation tasks using Playwright.

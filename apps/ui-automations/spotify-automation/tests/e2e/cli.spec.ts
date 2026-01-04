@@ -47,6 +47,7 @@ const runCli = (
         ...envConfig,
         ...env,
         LANG: 'en_US.UTF-8',
+        PLAYWRIGHT_BROWSERS_PATH: '/ms-playwright', // Explicitly set for CI/Test env
       },
       cwd: projectRoot,
       detached: true, // Important for killing the process tree
@@ -292,7 +293,7 @@ test.describe('Spotify Automation CLI - E2E Tests', () => {
   test('should attempt a real upload process', async () => {
     test.slow(); // Mark this test as slow to increase timeout
     // Skip if no authentication file exists
-    const authFilePath = path.resolve(__dirname, '../../.auth/spotify-auth.json');
+    const authFilePath = process.env.SPOTIFY_AUTH_PATH || path.resolve(__dirname, '../../.auth/spotify-auth.json');
     if (!fs.existsSync(authFilePath)) {
       test.skip(true, 'Authentication file not found. Skipping real upload test.');
     }

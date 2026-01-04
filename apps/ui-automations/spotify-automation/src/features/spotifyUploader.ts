@@ -63,14 +63,22 @@ export async function runSpotifyUpload(options: SpotifyUploadOptions) {
       }
       return fromEnv;
     }
-    // Fallback to the default path if the environment variable is not set.
+
+    // Check shared credentials in workspace root
+    // src/features (2) + spotify-automation (1) + ui-automations (1) + apps (1) = 5 levels up to workspace root
+    const sharedCredsPath = path.resolve(__dirname, '../../../../..', 'credentials', 'spotify-auth.json');
+    if (fs.existsSync(sharedCredsPath)) {
+      return sharedCredsPath;
+    }
+
+    // Fallback to the default path if the environment variable is not set and shared creds not found.
     const defaultPath = path.resolve(
       __dirname,
       '../../.auth/spotify-auth.json',
     );
     if (!fs.existsSync(defaultPath)) {
       throw new Error(
-        `Authentication file not found at default path: ${defaultPath}. Please ensure you have a valid session file or set the SPOTIFY_AUTH_PATH environment variable.`,
+        `Authentication file not found at default path: ${defaultPath} or shared path: ${sharedCredsPath}. Please ensure you have a valid session file or set the SPOTIFY_AUTH_PATH environment variable.`,
       );
     }
     return defaultPath;
@@ -84,10 +92,14 @@ export async function runSpotifyUpload(options: SpotifyUploadOptions) {
     process.env.PLAYWRIGHT_BROWSERS_PATH = expectedBrowsersPath;
   }
 
-  const browser = await firefox.launch({ headless: true });
+  const browser = await firefox.launch({
+    headless: true,
+    args: ['--width=1920', '--height=1080'],
+  });
   const context = await browser.newContext({
     storageState: authFilePath,
     locale: 'en-US',
+    viewport: { width: 1920, height: 1080 },
   });
   const page = await context.newPage();
 

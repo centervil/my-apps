@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
 import * as path from 'path';
+import * as fs from 'fs';
 
 // Load environment variables from the root .env file
 dotenv.config({ path: path.resolve(__dirname, '../../..', '.env') });
@@ -12,7 +13,16 @@ const PORT = process.env.PORT || 3000;
 const baseURL = `http://localhost:${PORT}`;
 
 // Path to the authentication file
-const authFile = path.resolve(__dirname, '.auth', 'spotify-auth.json');
+const resolveAuthFile = () => {
+  if (process.env.SPOTIFY_AUTH_PATH) return process.env.SPOTIFY_AUTH_PATH;
+  
+  const sharedCreds = path.resolve(__dirname, '../../..', 'credentials', 'spotify-auth.json');
+  if (fs.existsSync(sharedCreds)) return sharedCreds;
+
+  return path.resolve(__dirname, '.auth', 'spotify-auth.json');
+};
+
+const authFile = resolveAuthFile();
 
 export default defineConfig({
   testDir: './tests',
@@ -34,9 +44,9 @@ export default defineConfig({
   projects: [
     // Main project for authenticated tests
     {
-      name: 'chromium',
+      name: 'firefox',
       use: {
-        ...devices['Desktop Chrome'],
+        ...devices['Desktop Firefox'],
         // Use the saved authentication state
         storageState: authFile,
       },
