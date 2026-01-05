@@ -14,7 +14,6 @@ export class NewEpisodePage {
   private readonly doneButton: Locator;
   private readonly inAppMessageCloseButton: Locator;
   private readonly oneTrustAcceptButton: Locator;
-  private readonly oneTrustCloseButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -41,7 +40,6 @@ export class NewEpisodePage {
       .getByRole('button')
       .first();
     this.oneTrustAcceptButton = page.locator('#onetrust-accept-btn-handler');
-    this.oneTrustCloseButton = page.locator('#onetrust-close-btn-container button');
   }
 
   async goto(baseUrl: string, podcastId: string) {
