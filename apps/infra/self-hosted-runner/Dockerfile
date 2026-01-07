@@ -35,6 +35,7 @@ RUN apt-get install -y --no-install-recommends \
     python3-pip \
     nodejs \
     tailscale \
+    net-tools \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

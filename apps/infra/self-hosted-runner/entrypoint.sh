@@ -16,7 +16,13 @@ if ! grep -q "PLAYWRIGHT_BROWSERS_PATH" /home/devuser/.bashrc; then
     echo "export PLAYWRIGHT_BROWSERS_PATH=/ms-playwright" >> /home/devuser/.bashrc
 fi
 
-sudo tailscaled --tun=userspace-networking --socks5-server=localhost:1055 --outbound-http-proxy-listen=localhost:1055 &
+# Start tailscaled in background. 
+# We remove --tun=userspace-networking to try and use the kernel device mapped in docker-compose
+sudo tailscaled --socks5-server=localhost:1055 --outbound-http-proxy-listen=localhost:1055 &
+
+# Wait for tailscaled to start
+echo "Waiting for tailscaled socket..."
+sleep 5
 
 if [ -n "$TS_AUTHKEY" ]; then
     echo "Connecting to Tailscale..."
@@ -27,6 +33,7 @@ fi
 
 # --- SSH Setup ---
 echo "Starting SSH server..."
+sudo mkdir -p /var/run/sshd
 sudo /usr/sbin/sshd
 
 # --- VNC Setup ---
