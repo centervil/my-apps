@@ -15,7 +15,7 @@ jobs:
       - name: Trigger Regression Test
         uses: peter-evans/repository-dispatch@v3
         with:
-          token: ${{ secrets.G_ACCESS_TOKEN }}
+          token: ${{ secrets.GH_PAT_PRIVATE_OPS }}
           repository: centervil/private-ops
           event-type: spotify-regression
           client-payload: >-
