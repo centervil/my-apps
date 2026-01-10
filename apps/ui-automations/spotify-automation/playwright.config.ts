@@ -1,7 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
 import * as path from 'path';
-import * as fs from 'fs';
 import { getSpotifyAuthPath } from './src/utils/paths';
 
 // Load environment variables from the root .env file

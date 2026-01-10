@@ -1,9 +1,8 @@
 import { firefox } from '@playwright/test';
-import * as path from 'path';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { AuthManager } from '../src/auth/authManager';
-import { getSpotifyAuthPath, ensureAuthDir } from '../src/utils/paths';
+import { getSpotifyAuthPath } from '../src/utils/paths';
 
 const defaultAuthFilePath = getSpotifyAuthPath();
 

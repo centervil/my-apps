@@ -1,5 +1,3 @@
-import * as path from 'path';
-import * as fs from 'fs';
 import { AuthManager } from '../src/auth/authManager';
 import { AuthSetup } from '../src/auth/authSetup';
 import { getSpotifyAuthPath } from '../src/utils/paths';
