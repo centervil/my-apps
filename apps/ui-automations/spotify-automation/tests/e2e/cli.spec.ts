@@ -3,6 +3,7 @@ import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import * as dotenv from 'dotenv';
+import { getSpotifyAuthPath } from '../../src/utils/paths';
 
 // Load environment variables from the root .env file
 dotenv.config({ path: path.resolve(__dirname, '../../../../..', '.env') });
@@ -293,7 +294,7 @@ test.describe('Spotify Automation CLI - E2E Tests', () => {
   test('should attempt a real upload process', async () => {
     test.slow(); // Mark this test as slow to increase timeout
     // Skip if no authentication file exists
-    const authFilePath = process.env.SPOTIFY_AUTH_PATH || path.resolve(__dirname, '../../.auth/spotify-auth.json');
+    const authFilePath = getSpotifyAuthPath();
     if (!fs.existsSync(authFilePath)) {
       test.skip(true, 'Authentication file not found. Skipping real upload test.');
     }

@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
 import * as path from 'path';
 import * as fs from 'fs';
+import { getSpotifyAuthPath } from './src/utils/paths';
 
 // Load environment variables from the root .env file
 dotenv.config({ path: path.resolve(__dirname, '../../..', '.env') });
@@ -12,17 +13,7 @@ const PORT = process.env.PORT || 3000;
 // Set webServer.url and use.baseURL with the location of the WebServer respecting the PORT variable.
 const baseURL = `http://localhost:${PORT}`;
 
-// Path to the authentication file
-const resolveAuthFile = () => {
-  if (process.env.SPOTIFY_AUTH_PATH) return process.env.SPOTIFY_AUTH_PATH;
-  
-  const sharedCreds = path.resolve(__dirname, '../../..', 'credentials', 'spotify-auth.json');
-  if (fs.existsSync(sharedCreds)) return sharedCreds;
-
-  return path.resolve(__dirname, '.auth', 'spotify-auth.json');
-};
-
-const authFile = resolveAuthFile();
+const authFile = getSpotifyAuthPath();
 
 export default defineConfig({
   testDir: './tests',

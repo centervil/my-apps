@@ -2,6 +2,7 @@ import { firefox, type Page } from '@playwright/test';
 import fs from 'fs';
 import { NewEpisodePage } from '../pages/NewEpisodePage';
 import path from 'path';
+import { getSpotifyAuthPath } from '../utils/paths';
 
 // エピソード詳細のデータ構造を定義
 export interface EpisodeDetails {
@@ -52,39 +53,12 @@ export async function runSpotifyUpload(options: SpotifyUploadOptions) {
   const { showId, audioPath, title, description, season, episode } = options;
   const baseUrl = 'https://creators.spotify.com';
 
-  const getAuthPath = (): string => {
-    const fromEnv = process.env.SPOTIFY_AUTH_PATH;
-    if (fromEnv) {
-      // If the path from the environment variable doesn't exist, throw an error.
-      if (!fs.existsSync(fromEnv)) {
-        throw new Error(
-          `Authentication file not found at environment variable path: ${fromEnv}.`,
-        );
-      }
-      return fromEnv;
-    }
-
-    // Check shared credentials in workspace root
-    // src/features (2) + spotify-automation (1) + ui-automations (1) + apps (1) = 5 levels up to workspace root
-    const sharedCredsPath = path.resolve(__dirname, '../../../../..', 'credentials', 'spotify-auth.json');
-    if (fs.existsSync(sharedCredsPath)) {
-      return sharedCredsPath;
-    }
-
-    // Fallback to the default path if the environment variable is not set and shared creds not found.
-    const defaultPath = path.resolve(
-      __dirname,
-      '../../.auth/spotify-auth.json',
+  const authFilePath = getSpotifyAuthPath();
+  if (!fs.existsSync(authFilePath)) {
+    throw new Error(
+      `Authentication file not found at: ${authFilePath}. Please ensure you have a valid session file or set the SPOTIFY_AUTH_PATH environment variable.`,
     );
-    if (!fs.existsSync(defaultPath)) {
-      throw new Error(
-        `Authentication file not found at default path: ${defaultPath} or shared path: ${sharedCredsPath}. Please ensure you have a valid session file or set the SPOTIFY_AUTH_PATH environment variable.`,
-      );
-    }
-    return defaultPath;
-  };
-
-  const authFilePath = getAuthPath();
+  }
 
   // Set browsers path if it exists but is not set in env
   const expectedBrowsersPath = '/ms-playwright';
