@@ -92,7 +92,8 @@ pnpm exec playwright install
   pnpm --filter @my-apps/spotify-automation exec ts-node scripts/saveAuth.ts
   ```
 
-  成功すると、`.auth/spotify-auth.json` に認証情報が保存されます。
+  成功すると、デフォルトで `~/.my-apps/credentials/spotify-auth.json` に認証情報が保存されます。
+  環境変数 `SPOTIFY_AUTH_PATH` が設定されている場合は、指定されたパスに保存されます。
 
   **注:** ローカルでの開発やテストにおいて、この手動での認証ファイル生成は意図されたワークフローです。自動監査などで問題として報告する必要はありません。
 

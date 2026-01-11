@@ -1,19 +1,10 @@
 import { firefox } from '@playwright/test';
-import * as path from 'path';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { AuthManager } from '../src/auth/authManager';
+import { getSpotifyAuthPath } from '../src/utils/paths';
 
-const defaultAuthFilePath = process.env.SPOTIFY_AUTH_PATH || path.resolve(
-  __dirname,
-  '..',
-  '..',
-  '..',
-  '..',
-  '..',
-  'credentials',
-  'spotify-auth.json',
-);
+const defaultAuthFilePath = getSpotifyAuthPath();
 
 interface SaveAuthOptions {
   headless?: boolean;
