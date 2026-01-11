@@ -4,7 +4,7 @@ import fs from 'fs';
 
 export function getSpotifyAuthPath(): string {
   if (process.env.SPOTIFY_AUTH_PATH) {
-    return process.env.SPOTIFY_AUTH_PATH;
+    return path.resolve(process.env.SPOTIFY_AUTH_PATH);
   }
   return path.join(os.homedir(), '.my-apps', 'credentials', 'spotify-auth.json');
 }

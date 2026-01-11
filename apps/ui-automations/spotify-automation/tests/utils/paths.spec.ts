@@ -23,6 +23,13 @@ test.describe('paths utils', () => {
       expect(getSpotifyAuthPath()).toBe(customPath);
     });
 
+    test('should resolve relative SPOTIFY_AUTH_PATH to absolute', () => {
+      process.env.SPOTIFY_AUTH_PATH = './relative/path.json';
+      const resolved = getSpotifyAuthPath();
+      expect(path.isAbsolute(resolved)).toBe(true);
+      expect(resolved).toBe(path.resolve('./relative/path.json'));
+    });
+
     test('should return default path if SPOTIFY_AUTH_PATH is not set', () => {
       const expectedPath = path.join(os.homedir(), '.my-apps/credentials/spotify-auth.json');
       expect(getSpotifyAuthPath()).toBe(expectedPath);
