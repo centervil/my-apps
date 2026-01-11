@@ -3,7 +3,7 @@ import { hideBin } from 'yargs/helpers';
 import fs from 'fs';
 import path from 'path';
 import * as dotenv from 'dotenv';
-import { runSpotifyUpload, SpotifyUploadOptions } from './features/spotifyUploader';
+import { runSpotifyUpload } from './features/spotifyUploader';
 
 // Load .env file from the root of the monorepo
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
@@ -31,58 +31,64 @@ const findLatestFile = (dir: string): string | undefined => {
 };
 
 const main = async () => {
-    const argv = await yargs(hideBin(process.argv))
-      .option('config', {
-        alias: 'c',
-        type: 'string',
-        description: 'Path to a JSON config file',
-      })
-      .argv;
+  const parser = yargs(hideBin(process.argv))
+    .option('showId', {
+      alias: 's',
+      type: 'string',
+      description: 'Spotify Show ID',
+    })
+    .option('audioPath', {
+      alias: 'a',
+      type: 'string',
+      description: 'Path to audio file or directory',
+    })
+    .option('title', {
+      alias: 't',
+      type: 'string',
+      description: 'Episode title',
+    })
+    .option('description', {
+      alias: 'd',
+      type: 'string',
+      description: 'Episode description',
+    })
+    .option('season', {
+      type: 'number',
+      description: 'Season number',
+    })
+    .option('episode', {
+      type: 'number',
+      description: 'Episode number',
+    })
+    .option('dryRun', {
+      type: 'boolean',
+      description: 'Perform a dry run without uploading',
+      default: false,
+    })
+    .option('config', {
+      alias: 'c',
+      type: 'string',
+      description: 'Path to a JSON config file',
+    })
+    .config('config', (configPath) => {
+      const resolvedPath = path.resolve(configPath);
+      if (!fs.existsSync(resolvedPath)) {
+        throw new Error(`Configuration file not found at: ${resolvedPath}`);
+      }
+      return JSON.parse(fs.readFileSync(resolvedPath, 'utf-8'));
+    })
+    .help();
+
+  const argv = await parser.argv;
 
   try {
-    // 1. Load Config
-    let uploadOptions: Partial<SpotifyUploadOptions & { dryRun?: boolean }> = {};
-
-    if (argv.config) {
-      const configPath = path.resolve(argv.config as string);
-      if (!fs.existsSync(configPath)) {
-        throw new Error(`Configuration file not found at: ${configPath}`);
-      }
-      const configContent = fs.readFileSync(configPath, 'utf-8');
-      try {
-        const configFromFile = JSON.parse(configContent);
-        uploadOptions = { ...configFromFile };
-      } catch (e) {
-        throw new Error(`Failed to parse configuration file: ${(e as Error).message}`);
-      }
-    }
-
-    // Merge CLI args over config (excluding undefined/null)
-    // We only take values that are explicitly set in argv
-    // However, yargs sets undefined for missing options unless defaults are set.
-    // So we can just merge argv. But argv has extra yargs stuff ($0, _).
-    // We should explicitly pick the known options.
-    
-    const cliOptions: Partial<typeof uploadOptions> = {};
-    if (argv.showId) cliOptions.showId = argv.showId as string;
-    if (argv.audioPath) cliOptions.audioPath = argv.audioPath as string;
-    if (argv.title) cliOptions.title = argv.title as string;
-    if (argv.description) cliOptions.description = argv.description as string;
-    if (argv.season !== undefined) cliOptions.season = argv.season as number;
-    if (argv.episode !== undefined) cliOptions.episode = argv.episode as number;
-    if (argv.dryRun !== undefined) cliOptions.dryRun = argv.dryRun as boolean;
-
-    uploadOptions = { ...uploadOptions, ...cliOptions };
-
-    // Validation
-    const { showId, title, description, season, episode, dryRun } = uploadOptions;
-    let { audioPath } = uploadOptions;
+    const { showId, title, description, season, episode, dryRun } = argv;
+    let { audioPath } = argv;
 
     if (!showId || !audioPath || !title || !description) {
-      // Check if we are in dryRun? Even in dryRun we might want to validate required fields exist.
-      // But maybe not all?
-      // Let's enforce them.
-      throw new Error('Missing required arguments: showId, audioPath, title, description');
+      throw new Error(
+        'Missing required arguments: showId, audioPath, title, description',
+      );
     }
 
     // 2. Resolve Audio Path
