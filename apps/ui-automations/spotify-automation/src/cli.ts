@@ -36,21 +36,25 @@ const main = async () => {
       alias: 's',
       type: 'string',
       description: 'Spotify Show ID',
+      demandOption: true,
     })
     .option('audioPath', {
       alias: 'a',
       type: 'string',
       description: 'Path to audio file or directory',
+      demandOption: true,
     })
     .option('title', {
       alias: 't',
       type: 'string',
       description: 'Episode title',
+      demandOption: true,
     })
     .option('description', {
       alias: 'd',
       type: 'string',
       description: 'Episode description',
+      demandOption: true,
     })
     .option('season', {
       type: 'number',
@@ -77,19 +81,14 @@ const main = async () => {
       }
       return JSON.parse(fs.readFileSync(resolvedPath, 'utf-8'));
     })
-    .help();
+    .help()
+    .strict();
 
   const argv = await parser.argv;
 
   try {
     const { showId, title, description, season, episode, dryRun } = argv;
     let { audioPath } = argv;
-
-    if (!showId || !audioPath || !title || !description) {
-      throw new Error(
-        'Missing required arguments: showId, audioPath, title, description',
-      );
-    }
 
     // 2. Resolve Audio Path
     const resolvedAudioPath = path.resolve(audioPath);

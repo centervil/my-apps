@@ -39,8 +39,8 @@
 
 1.  **CLI Entrypoint (`scripts/upload.sh`)**:
     -   ユーザーが直接実行するシンプルなシェルスクリプト。
-    -   内部で `ts-node` を呼び出し、引数を `spotifyUploader.ts` に渡す。
-2.  **Argument Parser (`spotifyUploader.ts`)**:
+    -   内部で `npx tsx` を呼び出し、引数を `src/cli.ts` に渡す。
+2.  **Argument Parser (`src/cli.ts`)**:
     -   `yargs` を用いてコマンドライン引数 (`--config` を含む) を解析する。
     -   設定ファイルが指定された場合は読み込み、コマンドライン引数とマージする。
 3.  **Spotify Uploader (`spotifyUploader.ts`)**:
@@ -89,7 +89,9 @@ pnpm exec playwright install
   初回実行時や認証が切れた場合は、以下のコマンドを実行して認証ファイルを生成する必要があります。ブラウザが起動するので、手動でログインを完了させてください。
 
   ```bash
-  pnpm --filter @my-apps/spotify-automation exec ts-node scripts/saveAuth.ts
+  pnpm --filter @my-apps/spotify-automation run login
+  # または
+  pnpm --filter @my-apps/spotify-automation exec tsx scripts/saveAuth.ts
   ```
 
   成功すると、デフォルトで `~/.my-apps/credentials/spotify-auth.json` に認証情報が保存されます。

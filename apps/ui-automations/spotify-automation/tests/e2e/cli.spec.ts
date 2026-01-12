@@ -112,7 +112,7 @@ test.describe('Spotify Automation CLI - E2E Tests', () => {
 
     expect(code).not.toBe(0);
     // Check for the specific error message from the CLI's argument parser
-    expect(stderr).toContain('Missing required arguments: showId, audioPath, title, description');
+    expect(stderr).toContain('Missing required argument');
   });
 
   test('should fail if --showId is missing', async () => {
@@ -123,8 +123,7 @@ test.describe('Spotify Automation CLI - E2E Tests', () => {
       '--dryRun'
     ]);
     expect(code).not.toBe(0);
-    expect(stderr).toContain('Missing required arguments');
-    expect(stderr).toContain('showId');
+    expect(stderr).toContain('Missing required argument: showId');
   });
 
   test('should fail if --audioPath is missing', async () => {
@@ -135,8 +134,7 @@ test.describe('Spotify Automation CLI - E2E Tests', () => {
       '--dryRun'
     ]);
     expect(code).not.toBe(0);
-    expect(stderr).toContain('Missing required arguments');
-    expect(stderr).toContain('audioPath');
+    expect(stderr).toContain('Missing required argument: audioPath');
   });
 
   test('should perform a successful dry run with a local audio file', async () => {

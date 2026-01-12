@@ -6,8 +6,8 @@
   "scripts": {
     "test": "playwright test --quiet",
     "lint": "eslint .",
-    "login": "ts-node ./scripts/saveAuth.ts",
-    "upload": "ts-node ./src/cli.ts"
+    "login": "tsx ./scripts/saveAuth.ts",
+    "upload": "tsx ./src/cli.ts"
   },
   "keywords": [
     "playwright",
