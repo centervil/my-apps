@@ -7,7 +7,7 @@
     "test": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "pnpm --filter @my-apps/spotify-automation test > /dev/null 2>&1"
+        "command": "pnpm --filter @my-apps/spotify-automation test"
       }
     },
     "lint": {
