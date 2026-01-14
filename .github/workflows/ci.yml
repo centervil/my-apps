@@ -22,7 +22,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
-          version: 10
+          version: 9
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -37,7 +37,7 @@ jobs:
         run: pnpm exec playwright install --with-deps
 
       - name: Create auth file from secret
-        if: ${{ secrets.SPOTIFY_AUTH_JSON_BASE64 != '' }}
+        if: secrets.SPOTIFY_AUTH_JSON_BASE64 != ''
         run: |
           echo "${{ secrets.SPOTIFY_AUTH_JSON_BASE64 }}" | base64 --decode > /tmp/spotify-auth.json
 
