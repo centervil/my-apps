@@ -25,6 +25,9 @@ export default defineConfig({
   // Global setup for authentication
   globalSetup: require.resolve('./tests/auth.setup.ts'),
 
+  // Ignore unit tests and setup file for standard runs
+  testIgnore: ['**/tests/unit/**', '**/auth.setup.ts'],
+
   use: {
     baseURL,
     trace: 'on-first-retry',

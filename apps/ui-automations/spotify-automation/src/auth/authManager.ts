@@ -130,6 +130,17 @@ export class AuthManager {
         );
       }
 
+      // Check for expired cookies
+      const now = Date.now();
+      for (const cookie of authState.cookies) {
+        if (cookie.expires && cookie.expires !== -1 && cookie.expires * 1000 < now) {
+           throw new AuthError(
+            `Cookie '${cookie.name}' has expired.`,
+            'EXPIRED_AUTH',
+          );
+        }
+      }
+
       return true;
     } catch (error) {
       if (error instanceof AuthError) {

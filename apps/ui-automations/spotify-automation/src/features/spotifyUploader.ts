@@ -2,6 +2,7 @@ import { firefox, type Page } from '@playwright/test';
 import fs from 'fs';
 import { NewEpisodePage } from '../pages/NewEpisodePage';
 import { getSpotifyAuthPath, getScreenshotPath } from '../utils/paths';
+import { AuthManager } from '../auth/authManager';
 
 // エピソード詳細のデータ構造を定義
 export interface EpisodeDetails {
@@ -57,6 +58,16 @@ export async function runSpotifyUpload(options: SpotifyUploadOptions) {
     throw new Error(
       `Authentication file not found at: ${authFilePath}. Please ensure you have a valid session file or set the SPOTIFY_AUTH_PATH environment variable.`,
     );
+  }
+
+  // Validate authentication before launching browser
+  const authManager = new AuthManager(authFilePath);
+  try {
+    await authManager.isAuthValid();
+    console.log('Authentication state is valid.');
+  } catch (error) {
+    console.error('❌ Authentication check failed. Please login again.');
+    throw error;
   }
 
   // Set browsers path if it exists but is not set in env
@@ -122,5 +133,3 @@ ${JSON.stringify(
     await browser.close();
   }
 }
-
-
