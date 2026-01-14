@@ -36,10 +36,13 @@ jobs:
       - name: Install Playwright Browsers
         run: pnpm exec playwright install --with-deps
 
-#      - name: Create auth file from secret
-#        if: "${{ secrets.SPOTIFY_AUTH_JSON_BASE64 != '' }}"
-#        run: |
-#          echo "${{ secrets.SPOTIFY_AUTH_JSON_BASE64 }}" | base64 --decode > /tmp/spotify-auth.json
+      - name: Create auth file from secret
+        run: |
+          if [ -n "${{ secrets.SPOTIFY_AUTH_JSON_BASE64 }}" ]; then
+            echo "${{ secrets.SPOTIFY_AUTH_JSON_BASE64 }}" | base64 --decode > /tmp/spotify-auth.json
+          else
+            echo "Spotify auth secret is empty"
+          fi
 
       - name: Run lint
         run: npx nx affected --target=lint --parallel=3
