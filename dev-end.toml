@@ -1,0 +1,9 @@
+# Development End Configuration
+
+[post_process]
+merge_pr = true
+delete_branch = true
+update_main = true
+
+[instructions]
+description = "プルリクエストが承認され、CIが成功した場合は、自動的にマージを行いブランチを削除してください。その後、ローカルのmainブランチを最新の状態に更新してください。"
