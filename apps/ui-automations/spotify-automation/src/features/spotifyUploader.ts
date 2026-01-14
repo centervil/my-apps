@@ -1,8 +1,7 @@
 import { firefox, type Page } from '@playwright/test';
 import fs from 'fs';
 import { NewEpisodePage } from '../pages/NewEpisodePage';
-import path from 'path';
-import { getSpotifyAuthPath } from '../utils/paths';
+import { getSpotifyAuthPath, getScreenshotPath } from '../utils/paths';
 import { AuthManager } from '../auth/authManager';
 
 // エピソード詳細のデータ構造を定義
@@ -125,7 +124,7 @@ ${JSON.stringify(
       '❌ An error occurred during the Spotify upload process:',
       error,
     );
-    const screenshotPath = path.resolve(process.cwd(), 'error-screenshot.png');
+    const screenshotPath = getScreenshotPath();
     await page.screenshot({ path: screenshotPath, fullPage: true });
     console.error(`📸 Screenshot saved to ${screenshotPath}`);
     // Re-throw the error to be caught by the CLI script
@@ -134,5 +133,3 @@ ${JSON.stringify(
     await browser.close();
   }
 }
-
-

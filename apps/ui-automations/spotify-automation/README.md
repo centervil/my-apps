@@ -103,9 +103,18 @@ pnpm exec playwright install
   CI/CD環境でスクリプトを実行する場合、`SPOTIFY_AUTH_PATH` 環境変数を設定して、認証ファイルのパスを外部から指定する必要があります。
   ```bash
   # 例: CIのワークフロー内
-  export SPOTIFY_AUTH_PATH=\"/path/to/your/spotify-auth.json\"
+  export SPOTIFY_AUTH_PATH="/path/to/your/spotify-auth.json"
   ./scripts/upload.sh -- ...
   ```
+
+#### スクリーンショットの保存先
+
+アップロード中にエラーが発生した場合、デバッグ用にスクリーンショットが保存されます。
+
+- **デフォルトの保存先**: `dist/apps/ui-automations/spotify-automation/screenshots/`
+- **環境変数での指定**: `SPOTIFY_AUTOMATION_OUTPUT_DIR` 環境変数を設定することで、保存先ディレクトリを任意に変更できます。
+
+ファイル名には実行時のタイムスタンプが含まれ、上書きされることなく保存されます（例: `error-2026-01-13T23-11-39-803Z.png`）。
 
 ### 実行
 
