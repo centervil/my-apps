@@ -15,3 +15,27 @@ export function ensureAuthDir(filePath: string): void {
     fs.mkdirSync(dir, { recursive: true });
   }
 }
+
+export function getScreenshotPath(): string {
+  let dir = process.env.SPOTIFY_AUTOMATION_OUTPUT_DIR;
+
+  if (!dir) {
+    dir = path.join(
+      process.cwd(),
+      'dist',
+      'apps',
+      'ui-automations',
+      'spotify-automation',
+      'screenshots',
+    );
+  }
+
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const filename = `error-${timestamp}.png`;
+
+  return path.join(dir, filename);
+}

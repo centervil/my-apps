@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { getSpotifyAuthPath, ensureAuthDir } from '../../src/utils/paths';
+import { getSpotifyAuthPath, ensureAuthDir, getScreenshotPath } from '../../src/utils/paths';
 import path from 'path';
 import os from 'os';
 import fs from 'fs';
@@ -59,6 +59,44 @@ test.describe('paths utils', () => {
         expect(fs.existsSync(tempDir)).toBe(true);
       } finally {
         fs.rmSync(tempDir, { recursive: true, force: true });
+      }
+    });
+  });
+
+  test.describe('getScreenshotPath', () => {
+    test('should use SPOTIFY_AUTOMATION_OUTPUT_DIR if set', () => {
+      const customDir = path.resolve(os.tmpdir(), 'custom-screens-' + Date.now());
+      process.env.SPOTIFY_AUTOMATION_OUTPUT_DIR = customDir;
+
+      try {
+        const screenshotPath = getScreenshotPath();
+        expect(path.dirname(screenshotPath)).toBe(customDir);
+        // Check filename format: error-YYYY-MM-DDTHH-mm-ss-mssZ.png
+        // Simplified regex check
+        expect(path.basename(screenshotPath)).toMatch(/^error-.*\.png$/);
+        expect(fs.existsSync(customDir)).toBe(true);
+      } finally {
+        if (fs.existsSync(customDir)) fs.rmSync(customDir, { recursive: true, force: true });
+      }
+    });
+
+    test('should use default dist path if env var is not set', () => {
+      const screenshotPath = getScreenshotPath();
+      const expectedDir = path.resolve(process.cwd(), 'dist/apps/ui-automations/spotify-automation/screenshots');
+      expect(path.dirname(screenshotPath)).toBe(expectedDir);
+    });
+
+    test('should create the directory if it does not exist', () => {
+      const tempDir = path.resolve(os.tmpdir(), 'test-screenshot-creation-' + Date.now());
+      process.env.SPOTIFY_AUTOMATION_OUTPUT_DIR = tempDir;
+
+      if (fs.existsSync(tempDir)) fs.rmSync(tempDir, { recursive: true, force: true });
+
+      try {
+        getScreenshotPath();
+        expect(fs.existsSync(tempDir)).toBe(true);
+      } finally {
+        if (fs.existsSync(tempDir)) fs.rmSync(tempDir, { recursive: true, force: true });
       }
     });
   });
