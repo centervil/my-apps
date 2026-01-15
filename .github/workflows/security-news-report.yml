@@ -15,8 +15,6 @@ on:
         required: false
         default: 'Daily Cybersecurity Threat Briefing'
         type: string
-  schedule:
-    - cron: '0 0 * * *' # Runs every day at midnight UTC
 
 jobs:
   test:
