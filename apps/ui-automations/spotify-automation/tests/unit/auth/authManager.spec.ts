@@ -3,7 +3,6 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 import { AuthManager, AuthState } from '../../../src/auth/authManager';
-import { AuthError } from '../../../src/auth/authErrors';
 
 test.describe('AuthManager Unit Tests', () => {
   let tempDir: string;
@@ -42,7 +41,7 @@ test.describe('AuthManager Unit Tests', () => {
     expect(await authManager.isAuthValid()).toBe(true);
   });
 
-  test('isAuthValid should throw EXPIRED_AUTH error if a cookie is expired', async () => {
+  test('isAuthValid should return true and log warning if a cookie is expired', async () => {
     const expiredState: AuthState = {
       cookies: [
         {
@@ -64,12 +63,17 @@ test.describe('AuthManager Unit Tests', () => {
     await fs.writeFile(authFilePath, JSON.stringify(expiredState));
     const authManager = new AuthManager(authFilePath);
 
+    // Spy on console.warn
+    let warnMessage = '';
+    const originalWarn = console.warn;
+    console.warn = (msg: unknown) => { warnMessage = String(msg); };
+
     try {
-      await authManager.isAuthValid();
-      throw new Error('Should have thrown AuthError');
-    } catch (error) {
-      expect(error).toBeInstanceOf(AuthError);
-      expect((error as AuthError).code).toBe('EXPIRED_AUTH');
+      const isValid = await authManager.isAuthValid();
+      expect(isValid).toBe(true);
+      expect(warnMessage).toContain("Cookie 'sp_t' has expired");
+    } finally {
+      console.warn = originalWarn;
     }
   });
 

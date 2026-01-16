@@ -134,10 +134,7 @@ export class AuthManager {
       const now = Date.now();
       for (const cookie of authState.cookies) {
         if (cookie.expires && cookie.expires !== -1 && cookie.expires * 1000 < now) {
-           throw new AuthError(
-            `Cookie '${cookie.name}' has expired.`,
-            'EXPIRED_AUTH',
-          );
+          console.warn(`[WARN] Cookie '${cookie.name}' has expired and will be ignored.`);
         }
       }
 
