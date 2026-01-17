@@ -5,9 +5,10 @@
   "projectType": "application",
   "targets": {
     "test": {
-      "executor": "nx:run-commands",
+      "executor": "@nx/playwright:playwright",
+      "outputs": ["{workspaceRoot}/dist/.playwright/apps/ui-automations/spotify-automation/playwright-report-unit"],
       "options": {
-        "command": "pnpm --filter @my-apps/spotify-automation test"
+        "config": "apps/ui-automations/spotify-automation/playwright.unit.config.ts"
       }
     },
     "lint": {
@@ -21,13 +22,6 @@
       "outputs": ["{workspaceRoot}/dist/.playwright/apps/ui-automations/spotify-automation/playwright-report"],
       "options": {
         "config": "apps/ui-automations/spotify-automation/playwright.config.ts"
-      }
-    },
-    "test-unit": {
-      "executor": "@nx/playwright:playwright",
-      "outputs": ["{workspaceRoot}/dist/.playwright/apps/ui-automations/spotify-automation/playwright-report-unit"],
-      "options": {
-        "config": "apps/ui-automations/spotify-automation/playwright.unit.config.ts"
       }
     }
   },
