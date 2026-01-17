@@ -31,7 +31,8 @@ test.describe('paths utils', () => {
     });
 
     test('should return default path if SPOTIFY_AUTH_PATH is not set', () => {
-      const expectedPath = path.join(os.homedir(), '.my-apps/credentials/spotify-auth.json');
+      // Expect the path to be relative to the source file, which resolves to workspace/credentials
+      const expectedPath = path.resolve(__dirname, '../../../../../credentials/spotify-auth.json');
       expect(getSpotifyAuthPath()).toBe(expectedPath);
     });
   });

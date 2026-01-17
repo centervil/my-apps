@@ -6,7 +6,9 @@ export function getSpotifyAuthPath(): string {
   if (process.env.SPOTIFY_AUTH_PATH) {
     return path.resolve(process.env.SPOTIFY_AUTH_PATH);
   }
-  return path.join(os.homedir(), '.my-apps', 'credentials', 'spotify-auth.json');
+  // Resolve path relative to this file to find the workspace root credentials
+  // apps/ui-automations/spotify-automation/src/utils/paths.ts -> workspace/credentials/spotify-auth.json
+  return path.resolve(__dirname, '../../../../../credentials/spotify-auth.json');
 }
 
 export function ensureAuthDir(filePath: string): void {
