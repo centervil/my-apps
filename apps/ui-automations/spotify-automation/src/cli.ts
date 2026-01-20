@@ -30,7 +30,7 @@ const findLatestFile = (dir: string): string | undefined => {
   return latestFile ? latestFile.path : undefined;
 };
 
-const main = async () => {
+export const main = async () => {
   const parser = yargs(hideBin(process.argv))
     .option('showId', {
       alias: 's',
@@ -159,4 +159,6 @@ ${resolvedAudioPath}\
   }
 };
 
-main();
+if (require.main === module) {
+  main();
+}
