@@ -179,4 +179,28 @@ ENV VNC_PASSWORD=password
 EXPOSE 5901
 
 # Set entrypoint
+
+# ==> 9. Install VS Code CLI (server-web)
+# Download Linux ARM64 binary (host is ARM64)
+RUN curl -Lk "https://update.code.visualstudio.com/latest/cli-linux-arm64/stable" --output vscode_cli.tar.gz \
+    && tar -xf vscode_cli.tar.gz \
+    && mv code /usr/bin/code-web \
+    && rm vscode_cli.tar.gz \
+    && chmod +x /usr/bin/code-web
+
+# ==> 10. Pre-configure VS Code settings script
+RUN echo "#!/bin/bash" > /usr/local/bin/apply-vscode-settings.sh \
+    && echo "mkdir -p /home/devuser/.local/share/code-server/User" >> /usr/local/bin/apply-vscode-settings.sh \
+    && echo "mkdir -p /home/devuser/.vscode-server/data/Machine" >> /usr/local/bin/apply-vscode-settings.sh \
+    && echo "cat > /home/devuser/.local/share/code-server/User/settings.json <<JSON" >> /usr/local/bin/apply-vscode-settings.sh \
+    && echo "{ \"terminal.integrated.sendKeybindingsToShell\": true, \"terminal.integrated.gpuAcceleration\": \"off\", \"workbench.action.terminal.sendSequence\": { \"text\": \"\\u0006\" } }" >> /usr/local/bin/apply-vscode-settings.sh \
+    && echo "JSON" >> /usr/local/bin/apply-vscode-settings.sh \
+    && echo "cp /home/devuser/.local/share/code-server/User/settings.json /home/devuser/.vscode-server/data/Machine/settings.json" >> /usr/local/bin/apply-vscode-settings.sh \
+    && echo "cat > /home/devuser/.local/share/code-server/User/keybindings.json <<JSON" >> /usr/local/bin/apply-vscode-settings.sh \
+    && echo "[ { \"key\": \"ctrl+f\", \"command\": \"workbench.action.terminal.sendSequence\", \"args\": { \"text\": \"\\u0006\" }, \"when\": \"terminalFocus\" }, { \"key\": \"ctrl+f\", \"command\": \"-actions.find\" } ]" >> /usr/local/bin/apply-vscode-settings.sh \
+    && echo "JSON" >> /usr/local/bin/apply-vscode-settings.sh \
+    && echo "chown -R devuser:devuser /home/devuser/.local /home/devuser/.vscode-server" >> /usr/local/bin/apply-vscode-settings.sh \
+    && chmod +x /usr/local/bin/apply-vscode-settings.sh
+
+# Restore ENTRYPOINT
 ENTRYPOINT ["/home/devuser/entrypoint.sh"]

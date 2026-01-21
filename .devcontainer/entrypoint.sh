@@ -96,4 +96,15 @@ else
 fi
 
 # Keep the container alive and wait for background processes
+
+# Apply VS Code settings
+echo "Applying VS Code settings..."
+/usr/local/bin/apply-vscode-settings.sh
+
+# Start VS Code Web (serve-web)
+echo "Starting VS Code Web..."
+sudo -u devuser nohup /usr/bin/code-web serve-web --host 0.0.0.0 --port 8000 --without-connection-token --accept-server-license-terms > /home/devuser/vscode-web.log 2>&1 &
+echo "VS Code Web started."
+
+# Keep the container alive
 exec sleep infinity

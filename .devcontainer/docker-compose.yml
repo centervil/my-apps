@@ -27,6 +27,8 @@ services:
       # ホストのカレントディレクトリをコンテナのワークスペースにマウントします
       - ..:/home/devuser/workspace:cached
       # gemini-cliの認証情報を、リポジトリ内の.geminiディレクトリにマウントします
+      - vscode-server-data:/home/devuser/.vscode-server
+      - vscode-config-data:/home/devuser/.local/share/code-server
       - /root/.gemini/oauth_creds.json:/home/devuser/workspace/.gemini/oauth_creds.json:ro
     # Tailscaleの動作に必要な権限を付与します
     cap_add:
@@ -48,3 +50,5 @@ volumes:
   gemini-data:
   # GitHub CLIの認証情報を保存する名前付きボリューム
   gh-config:
+  vscode-server-data:
+  vscode-config-data:
