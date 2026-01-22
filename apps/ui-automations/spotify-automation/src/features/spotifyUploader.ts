@@ -70,12 +70,6 @@ export async function runSpotifyUpload(options: SpotifyUploadOptions) {
     throw error;
   }
 
-  // Set browsers path if it exists but is not set in env
-  const expectedBrowsersPath = '/ms-playwright';
-  if (!process.env.PLAYWRIGHT_BROWSERS_PATH && fs.existsSync(expectedBrowsersPath)) {
-    process.env.PLAYWRIGHT_BROWSERS_PATH = expectedBrowsersPath;
-  }
-
   const browser = await firefox.launch({
     headless: true,
     args: ['--width=1920', '--height=1080'],

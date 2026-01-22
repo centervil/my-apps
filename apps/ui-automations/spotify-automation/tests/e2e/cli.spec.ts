@@ -48,7 +48,6 @@ const runCli = (
         ...envConfig,
         ...env,
         LANG: 'en_US.UTF-8',
-        PLAYWRIGHT_BROWSERS_PATH: '/ms-playwright', // Explicitly set for CI/Test env
       },
       cwd: projectRoot,
       detached: true, // Important for killing the process tree
