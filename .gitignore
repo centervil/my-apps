@@ -98,3 +98,5 @@ apps/ui-automations/spotify-automation/error-screenshot.png
 .pnpm-store/
 apps/infra/self-hosted-runner/runner.env
 test-results/
+credentials/spotify-auth.json
+apps/ui-automations/spotify-automation/error-page.html

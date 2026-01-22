@@ -1,9 +1,0 @@
-# Development End Configuration
-
-[post_process]
-merge_pr = true
-delete_branch = true
-update_main = true
-
-[instructions]
-description = "【最優先・必須】開発セッション終了時、プルリクエストのCIが成功し、自己レビューまたは承認が完了している場合は、例外なく自動的にマージ（gh pr merge --merge --delete-branch）を実行してください。マージ完了後は必ず main ブランチをプルして最新の状態に更新してください。"
