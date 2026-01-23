@@ -36,6 +36,7 @@ RUN apt-get install -y --no-install-recommends \
     python3.9 \
     python3.9-dev \
     python3.9-venv \
+    python3.9-distutils \
     python3-pip
 
 RUN apt-get install -y --no-install-recommends \
@@ -151,9 +152,11 @@ RUN mkdir -p $PLAYWRIGHT_BROWSERS_PATH \
 
 # ==> 7. Install Poetry for devuser
 USER devuser
-RUN curl -sSL https://install.python-poetry.org | python3.9 -
+WORKDIR /home/devuser
+RUN python3.9 -m pip install --user poetry==1.8.5
 ENV PATH="/home/devuser/.local/bin:${PATH}"
 USER root
+WORKDIR /
 
 # ==> 7. Install git-secrets from source
 RUN git clone https://github.com/awslabs/git-secrets.git /tmp/git-secrets \

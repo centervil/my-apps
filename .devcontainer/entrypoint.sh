@@ -39,9 +39,13 @@ chown -R devuser:devuser /home/devuser/.config/gh
 echo "GitHub CLI config permissions fixed."
 
 # Fix workspace permissions
-echo "Fixing workspace permissions..."
-chown -R devuser:devuser /home/devuser/workspace || echo "Warning: chown failed for some files (likely read-only mounts)"
-chown -R devuser:devuser /home/devuser/.local /home/devuser/.cache || true
+echo "Fixing workspace permissions (selective)..."
+# Avoid recursive chown on the entire workspace if possible, as it's very slow.
+# Instead, just ensure the top-level directory is owned by devuser, or let the user handle it.
+chown devuser:devuser /home/devuser/workspace || true
+# For .local and .cache, only chown if they exist and are not already owned by devuser
+[ -d /home/devuser/.local ] && chown -R devuser:devuser /home/devuser/.local || true
+[ -d /home/devuser/.cache ] && chown -R devuser:devuser /home/devuser/.cache || true
 echo "Workspace permissions fixed."
 
 # Clean up stale VNC locks (Force remove all X locks)
