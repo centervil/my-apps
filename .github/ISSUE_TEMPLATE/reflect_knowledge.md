@@ -1,9 +1,9 @@
 ---
-name: 知見反映・ブラッシュアップ
-description: 外部知見をプロジェクトに適用する際の検討・実装プロセス
-title: "[知見反映] "
-labels: ["enhancement", "documentation"]
-assignees: []
+name: '💡 知見反映・ブラッシュアップ'
+about: 外部知見をプロジェクトに適用する際の検討・実装プロセス
+title: ''
+labels: 'enhancement'
+assignees: ''
 ---
 
 ## 目的
