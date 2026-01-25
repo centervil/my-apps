@@ -43,8 +43,6 @@ export default defineConfig({
         // Use the saved authentication state
         storageState: authFile,
       },
-      // Ignore the setup file in the main test run
-      testIgnore: /auth\.setup\.ts/,
     },
   ],
   // webServer: {
