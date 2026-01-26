@@ -2,7 +2,9 @@
 
 ## Quick Reference
 
-- [1. Core Principles](#1-core-principles)
+- [1. Core Mandates & Rules](#1-core-mandates--rules)
+  - [1.1. Non-negotiables (Forbidden Rules)](#11-non-negotiables-forbidden-rules)
+  - [1.2. Knowledge Architecture](#12-knowledge-architecture)
 - [2. Technology Stack](#2-technology-stack)
 - [3. Development Workflows](#3-development-workflows)
   - [3.1. Issue-Driven Development (IDD)](#31-issue-driven-development-idd)
@@ -12,7 +14,7 @@
 - [5. Commit Guidelines](#5-commit-guidelines)
 - [6. Development Logs](#6-development-logs)
 - [7. CI/CD Pipeline](#7-ci-cd-pipeline-githubworkflows-ciyml)
-- [8. Project Structure](#8-project-structure)
+- [8. Project Architecture & Map](#8-project-architecture--map)
 - [9. Operational Guidelines](#9-operational-guidelines)
   - [9.1. Git Management and .gitignore](#91-git-management-and-gitignore)
   - [9.2. Tooling and Version Management](#92-tooling-and-version-management)
@@ -20,191 +22,140 @@
 - [10. Playwright Browser Automation Tasks](#10-playwright-browser-automation-tasks)
 - [11. Self-Reflection and Self-Correction](#11-self-reflection-and-self-correction)
 
-## 1. Core Principles
+## 1. Core Mandates & Rules
 
-- **Monorepo Approach**: This repository is a monorepo managed by `pnpm` workspaces. It houses multiple, distinct UI automation projects under the `apps/` directory.
-- **Automation as Code**: All UI automation logic is treated as production-level code, applying software engineering best practices.
-- **Security First (DevSecOps)**: Security is integrated into the development lifecycle from the beginning ("Shift-Left").
+### 1.1. Non-negotiables (Forbidden Rules)
+These rules are the "Constitution" of the project. AI agents must adhere to them strictly. Violation is considered a task failure.
+
+- **Language Policy**: All development logs (`development_logs/`), thinking processes, and reporting to the user MUST be in **Japanese**.
+- **Test-First Mandate**: Never modify production code (`src/`, `scripts/`, etc.) without adding or updating corresponding tests (unit, integration, or E2E).
+- **Strict Dependency Management**: Never use a library not listed in `package.json` or `pyproject.toml`. Propose additions to the user and obtain approval first.
+- **No Silent Failures**: Never ignore errors from shell commands or programs. Analyze, report, and halt if necessary.
+- **Strict Scope Adherence**: Never perform work outside the scope defined in `docs/issues/[ID]/`. Record discoveries as new issues instead of implementing them immediately.
+- **Prefer Automation**: Always prefer automating repetitive tasks (refactoring, file moves, cleanup) via scripts or Nx Executors instead of manual execution.
+- **No Hardcoded Secrets**: Use environment variables or credentials files. Never commit `.env` or API keys.
+
+### 1.2. Knowledge Architecture
+Intelligence in this workspace is managed in a hierarchical structure. Always refer to higher-level documents as the "Source of Truth."
+
+1.  **Universal Guidelines (`AGENTS.md`)**: This file. Global rules, architecture, and forbidden actions.
+2.  **Task Specifications (`docs/issues/[ID]/`)**: Task-specific "Blueprints" (`requirements.md`, `design.md`, `tasks.md`).
+3.  **Audit Logs (`development_logs/`)**: The "Resume" of decisions. Historical context for *why* things were done.
+
+```mermaid
+graph TD
+    subgraph "Execution Layer (apps/)"
+        SNA[security-news-agent]
+        SA[spotify-automation]
+        CLI[workspace-cli]
+    end
+
+    subgraph "Knowledge Layer"
+        AGENTS[AGENTS.md: Global Rules]
+        ISS[docs/issues/ID/: Task Specifics]
+        LOGS[development_logs/: Session History]
+    end
+
+    AGENTS --> ISS
+    ISS --> SNA
+    ISS --> SA
+    LOGS -.-> ISS
+```
 
 ## 2. Technology Stack
 
-- **Language**: TypeScript
-- **UI Automation Framework**: Playwright
-- **Test Runner**: `@playwright/test`
-- **Package Manager**: pnpm
+- **Language**: TypeScript (pnpm), Python (Poetry)
+- **UI Automation**: Playwright (`@playwright/test`)
+- **Package Manager**: pnpm (TS), Poetry (Python)
 - **CLI**: GitHub CLI (`gh`)
-- **Code Linter**: ESLint
-- **Code Formatter**: Prettier
+- **Linter/Formatter**: ESLint, Prettier
 - **CI/CD**: GitHub Actions
-- **Security Scanning**:
-  - **SAST**: GitHub CodeQL
-  - **Dependency Vulnerabilities**: `pnpm audit` & GitHub Dependabot
-  - **Secret Scanning**: GitHub Secret Scanning
+- **Security**: CodeQL, Dependabot, Secret Scanning
 
 ## 3. Development Workflows
 
-This repository combines two core development methodologies: Issue-Driven Development for task management and Test-Driven Development for implementation.
-
 ### 3.1. Issue-Driven Development (IDD)
-
 All work is managed through GitHub Issues.
 
-0.  **Sync `main` branch**: Before creating a new branch, ensure your local `main` branch is up-to-date with the remote repository (`git pull origin main`).
-1.  **Task Definition**: A task is defined as a GitHub Issue.
-2.  **Branch Creation**: Create a branch named `[type]/[issue-number]-[short-description]` (e.g., `feat/123-add-login-page`).
-3.  **Implementation**: Follow the TDD cycle.
-4.  **Commit Messages**: Link commits to issues (e.g., `Closes #123`).
-5.  **Pull Request**: Create a PR to merge into `main`.
-6.  **CI & Review**: The CI pipeline runs, followed by a human review.
-7.  **Merge**: After approval, the PR is merged.
+0.  **Sync `main`**: Ensure local `main` is up-to-date before branching.
+1.  **Issue Definition**: Define task as a GitHub Issue.
+2.  **Branching**: `[type]/[issue-number]-[short-description]`.
+3.  **Implementation**: Follow TDD cycle.
+4.  **Commits**: Link to issues (e.g., `Closes #123`).
+5.  **PR/CI**: Create PR, run CI, human review.
+6.  **Merge**: Approved PRs are merged into `main`.
 
 ### 3.2. Specification Document Creation Process
-
-To ensure high-quality software development, the following three specification documents are created for each Issue.
-
-- **`requirements.md`**: Defines what the system should do.
-  - Requirements are described in **user story format**.
-  - Each user story clearly defines **acceptance criteria** that serve as the criteria for completion.
-- **`design.md`**: Designs how to build the system.
-  - Defines the system's **architecture**, **components**, **interfaces**, and **data models**.
-  - Also describes **error handling** and **test strategies**.
-- **`tasks.md`**: Creates a concrete plan for building the system.
-  - Based on the design, implementation tasks are listed in **checklist format**.
-  - Each task must be small and clearly defined.
+For every Issue, create the following in `docs/issues/[ID]/`:
+- **`requirements.md`**: User stories and acceptance criteria.
+- **`design.md`**: Architecture, components, interfaces, and test strategy.
+- **`tasks.md`**: Checklist of atomic implementation steps.
 
 ### 3.3. Test-Driven Development (TDD)
-
-This project adopts a Test-Driven Development (TDD) approach.
-
-#### 3.3.1. Test Coverage for All Changes
-
-In addition to following the TDD cycle, the following principles must be strictly adhered to.
-
-Any feature addition or modification to the project's source code (e.g., files in `src/` or `scripts/`) must be accompanied by the addition or modification of corresponding test code. To avoid creating redundant tests, **modifying an existing test should be prioritized over creating a new one.** A new test should only be created when modification is not appropriate.
-
-- **Feature Additions**: Must be accompanied by new tests that verify the feature works as expected.
-- **Bug Fixes**: Must include a test that reproduces the bug (fails before the fix and passes after the fix). This ensures the fix is correct and prevents future regressions.
-- **Refactoring**: All existing tests must continue to pass. If the refactoring allows for better testing, tests should be improved as well.
-
-**A task is not considered complete if code changes are not accompanied by corresponding test changes.**
-
-#### Red-Green-Refactor Cycle
-
-1.  **Red**: Write a failing test in `tests/`.
-2.  **Green**: Write the minimum code in `src/` to make the test pass.
-3.  **Refactor**: Improve code and tests while keeping tests green.
-
-#### Page Object Model (POM)
-
-- **`tests/`**: Contains test files (`*.spec.ts`) describing user interactions.
-- **`src/pages/`**: Contains page objects with locators and methods for each page.
-- **`src/components/`**: Contains reusable UI components.
+- **Coverage**: All changes to `src/` or `scripts/` MUST have tests.
+- **Red-Green-Refactor**: Write failing test -> Minimal code to pass -> Improve code/tests.
+- **POM**: Use Page Object Model in `src/pages/` and reusable components in `src/components/`.
 
 ## 4. Issue Management Guidelines
-
-- **One Issue, One Pull Request**: Keep issues small and focused.
-- **Define "Done"**: Every issue must have a clear "Definition of Done" checklist.
-- **No Scope Creep**: If you discover a new task, create a new issue. Do not expand the scope of the current one.
+- **One Issue, One PR**: Keep scope small.
+- **Definition of Done**: Every issue needs a clear checklist.
+- **No Scope Creep**: Create new issues for new tasks.
 
 ## 5. Commit Guidelines
-
-Commit messages must follow the [Conventional Commits](https://www.conventionalcommits.org/) specification.
-
-- **Format**: `<type>(<scope>): <subject>`
-- **Example**: `feat(spotify-automation): add login page object. Closes #12`
-- **Frequency**: Commits should be "atomic," representing a single logical change.
+- **Conventional Commits**: `<type>(<scope>): <subject>` (e.g., `feat(spotify): add login. Closes #12`).
+- **Atomic Commits**: Each commit represents one logical change.
 
 ## 6. Development Logs
-
-All work sessions must be recorded in Markdown files. **注: すべての開発ログは日本語で記述されます。**
-
+**注: すべての開発ログは日本語で記述されます。**
 - **Location**: `development_logs/`.
-- **File Naming**: `YYYY-MM-DD-issue-[issue-number]-session-[session-number].md`
-- **Content**: Summary of actions, decisions, and rationale.
+- **Naming**: `YYYY-MM-DD-issue-[ID]-session-[N].md`.
+- **Content**: Action summary, decisions, and rationale.
 
-## 7. CI/CD Pipeline (`.github/workflows/ci.yml`)
+## 7. CI/CD Pipeline
+GitHub Actions runs on every push/PR to `main`, performing lint, format, test, and report uploads.
 
-The CI pipeline runs on every push or pull request to `main`, performing linting, formatting, testing, and uploading a test report.
+## 8. Project Architecture & Map (Ideal Architecture)
+This workspace follows an Nx "Apps and Libs" structure. **Any current structure that deviates from this is considered "Technical Debt" to be refactored.**
 
-## 8. Project Structure
+- **`apps/` (Executables & Deployables)**
+    - **`agents/`**: Standalone AI agents (e.g., `security-news-agent`).
+    - **`web-bots/`**: Browser automation entry points (e.g., `spotify-automation`).
+    - **`tools/`**: Internal workspace CLI tools.
+- **`libs/` (Reusable Modules)**
+    - **`shared/`**: Cross-language utilities (AI wrappers, logging).
+    - **`typescript/`**: TS-specific Page Objects, test helpers.
+    - **`python/`**: Python-specific data logic, API clients.
+- **`docs/issues/[ID]/`**: The Single Source of Truth (SSOT) for the current task.
+- **`development_logs/`**: Records of "Why" decisions were made.
 
-```
-/
-├── apps/
-│   ├── cli-tools/
-│   └── ui-automations/
-│
-├── .github/
-│   ├── ISSUE_TEMPLATE/
-│   └── workflows/
-│
-├── development_logs/
-│
-└── AGENTS.md           # This file
-```
+### 🚀 Placement Rules
+1.  **Executable?** -> `apps/[category]/[name]`.
+2.  **Shared Logic?** -> `libs/[category]/[name]`.
+3.  **Workspace Automation?** -> `tools/`.
 
 ## 9. Operational Guidelines
 
-This section outlines general best practices and considerations for development within this repository.
+### 9.1. Git Management
+- **Strict Management**: Only commit essential files.
+- **Proactive `.gitignore`**: Add generated files immediately.
+- **Precise Staging**: Avoid `git add .`. Prefer `git add <file>`.
 
-### 9.1. Git Management and `.gitignore`
-
-- **Strict Git Management**: Always be mindful of what is being added to Git. Only commit files that are essential for the project and should be version-controlled.
-- **Proactive `.gitignore` Usage**: Immediately add entries to `.gitignore` for any new files or directories that are generated during development (e.g., build artifacts, temporary files, IDE-specific configurations, personal logs) and should not be tracked by Git.
-- **Precise Staging**: Avoid using `git add .` indiscriminately. Prefer `git add <specific_files>` or `git add -u` to stage only the intended changes, reducing the risk of accidentally committing unwanted files.
-
-### 9.2. Tooling and Version Management
-
-- **Version Dependency Awareness**: Be aware that tools and libraries can have breaking changes in major version updates. Always consult official documentation, migration guides, and changelogs before performing major version upgrades.
-- **Official Documentation First**: When encountering issues or seeking to understand tool behavior, prioritize consulting the official documentation. This is the most reliable source of information for correct usage and best practices.
+### 9.2. Tooling & Documentation
+- **Official Docs**: Prioritize official documentation over assumptions.
+- **Version Awareness**: Check for breaking changes in major updates.
 
 ### 9.3. Quick Reference Maintenance
-
-- **Update on Change**: The "Quick Reference" section at the top of this document must be updated whenever new top-level sections or significant subsections are added, removed, or renamed.
-- **Maintain Link Integrity**: Ensure that all links within the quick reference accurately point to the correct sections.
-
-### 9.4. DOM Snapshot Debugging for UI Automation
-
-When UI element identification or interaction fails in a headless or remote environment (like VNC where visual inspection is limited), use DOM snapshots to diagnose the issue.
-
-- **Capture Page Content**: In the `catch` block of a failing interaction, use `await page.content()` and save it to an HTML file (e.g., `error-page.html`).
-- **Analyze DOM Structure**: Read the saved HTML to verify the actual state of the page, checking for unexpected dialogs, overlays, or validation errors that might be blocking the automation.
-- **Robustness via expect().toPass()**: For interactions that frequently fail due to timing or flaky UI state, use Playwright's `expect().toPass()` to wrap the interaction and the subsequent state check, enabling automatic retries until the operation succeeds.
+- Update the Quick Reference section when headers change.
 
 ## 10. Playwright Browser Automation Tasks
-
-This section describes specific guidelines and best practices for browser automation tasks using Playwright.
-
-### 10.1. Debugging and UI Element Identification
-
-- **Leveraging `page.pause()` and Playwright Inspector**: Use `await page.pause()` in `--headed` mode to inspect the browser state and debug step-by-step.
-
-### 10.2. Locator Selection and Management
-
-- **Dynamic Locators**: Acquire locators for dynamic elements right when they are needed.
-- **Robust Selectors**: Prefer semantic locators like `getByTestId()`, `getByRole()`, or `getByPlaceholder()`.
-
-### 10.3. Enhancing Test Stability
-
-- **Strategic Delays**: Use `await page.waitForTimeout(500);` before critical interactions to improve stability with dynamic UIs.
-- **`waitFor` Methods**: Use `locator.waitFor({ state: 'visible' })` to wait for elements to become available.
-
-### 10.4. Addressing Environment-Specific Issues
-
-- **System Dependencies**: Use `sudo pnpm exec playwright install-deps` to install necessary system dependencies like fonts.
-- **Tooling Conflicts**: Use the absolute path to the local Playwright binary in `node_modules/.bin` to avoid conflicts with global installations.
-
-### 10.5. Scope Management and Issue Isolation
-
-- **Security Challenges**: Isolate automation challenges like reCAPTCHA as separate concerns from the primary test objective.
-- **User Collaboration**: Work closely with the user to debug complex issues instead of guessing solutions.
+- **Debugging**: Use `page.pause()` in headed mode.
+- **Locators**: Prefer semantic locators (`getByTestId`, `getByRole`).
+- **Stability**: Use `waitForTimeout` or `locator.waitFor` strategically.
+- **Flaky UI**: Use `expect().toPass()` for retries on unstable elements.
 
 ## 11. Self-Reflection and Self-Correction
-
-Agents must critically evaluate their own work to ensure high quality.
-
-- **Process**: Record your thought process, use objective criteria to evaluate your work, and repeat the "Plan → Execute → Evaluate → Revise" cycle.
-- **Approaches**: Use internal rubrics, "chain of thought" reasoning, and iterative improvement.
+- Agents must critically evaluate their work using internal rubrics and "Chain of Thought" reasoning.
+- Repeat "Plan → Execute → Evaluate → Revise" cycle until quality is met.
 
 <!-- nx configuration start-->
 <!-- Leave the start & end comments to automatically receive updates. -->
