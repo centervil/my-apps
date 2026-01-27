@@ -1,27 +1,41 @@
 {
-  "context": {
-    "fileName": "AGENTS.md"
+  "general": {
+    "previewFeatures": true,
+    "enableAutoUpdate": true,
+    "enablePromptCompletion": false,
+    "retryFetchErrors": true
   },
-  "mcpServers": {
-    "chrome-devtools": {
-      "command": "npx",
-      "args": [
-        "chrome-devtools-mcp@latest"
-      ]
-    },
-    "nx-mcp": {
-      "command": "npx",
-      "args": [
-        "nx",
-        "mcp"
-      ]
-    },
-    "playwright": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@playwright/mcp"
-      ]
-    }
+  "ui": {
+    "showStatusInTitle": true,
+    "dynamicWindowTitle": true,
+    "showMemoryUsage": true,
+    "useAlternateBuffer": true,
+    "incrementalRendering": true
+  },
+  "contextFileName": [
+    "AGENTS.md",
+    "GEMINI.md"
+  ],
+  "model": {
+    "compressionThreshold": 0.5,
+    "maxSessionTurns": 30,
+    "summarizeToolOutput": true
+  },
+  "security": {
+    "disableYoloMode": true
+  },
+  "allowedTools": [
+    "ls",
+    "grep",
+    "cat",
+    "find",
+    "pwd",
+    "git status",
+    "git log",
+    "git diff"
+  ],
+  "fileFiltering": {
+    "respectGitIgnore": true,
+    "disableFuzzySearch": false
   }
 }
