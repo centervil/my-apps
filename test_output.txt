@@ -1,0 +1,62 @@
+
+> nx run spotify-automation:e2e
+
+[0m[7m[1m[36m NX [39m[22m[27m[0m  Ensuring Playwright is installed.
+use --skipInstall to skip installation.
+You are using a frozen webkit browser which does not receive updates anymore on ubuntu20.04-arm64. Please update to the latest version of your operating system to test up-to-date browsers.
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+--- Global Auth Setup ---
+Checking for valid authentication state...
+[WARN] Cookie 'X-AB' has expired and will be ignored.
+[WARN] Cookie '__cf_bm' has expired and will be ignored.
+[WARN] Cookie 'reduxPersistIndex' has expired and will be ignored.
+[WARN] Cookie '_gat_UA-62744412-3' has expired and will be ignored.
+[WARN] Cookie '_hjSession_3893126' has expired and will be ignored.
+[WARN] Cookie 'sp_landing' has expired and will be ignored.
+[WARN] Cookie 'sp_landingref' has expired and will be ignored.
+[WARN] Cookie '__Host-sp_csrf_sid' has expired and will be ignored.
+[WARN] Cookie 'reduxPersist%3AlocalStorage' has expired and will be ignored.
+[WARN] Cookie '_gid' has expired and will be ignored.
+[WARN] Cookie '__stripe_sid' has expired and will be ignored.
+[WARN] Cookie 'reduxPersist%3Atutorial' has expired and will be ignored.
+Authentication state is valid.
+--- Authentication state is valid. Proceeding with tests. ---
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+[2mRunning [22m18[2m tests using [22m2[2m workers[22m
+[1A[2K
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+[1A[2K[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+[1A[2K[1/18] [firefox] › apps/ui-automations/spotify-automation/tests/e2e/cli.spec.ts:109:7 › Spotify Automation CLI - E2E Tests › should fail with an error if required arguments are missing
+[1A[2K[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔄 add secrets lifecycle management: https://dotenvx.com/ops
+[1A[2K[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+[1A[2K[2/18] [firefox] › apps/ui-automations/spotify-automation/tests/e2e/cli.spec.ts:117:7 › Spotify Automation CLI - E2E Tests › should fail if --showId is missing
+[1A[2K[3/18] [firefox] › apps/ui-automations/spotify-automation/tests/e2e/cli.spec.ts:128:7 › Spotify Automation CLI - E2E Tests › should fail if --audioPath is missing
+[1A[2K[4/18] [firefox] › apps/ui-automations/spotify-automation/tests/e2e/cli.spec.ts:139:7 › Spotify Automation CLI - E2E Tests › should perform a successful dry run with a local audio file
+[1A[2K[5/18] [firefox] › apps/ui-automations/spotify-automation/tests/e2e/cli.spec.ts:160:7 › Spotify Automation CLI - E2E Tests › should perform a successful dry run with season and episode numbers
+[1A[2K[6/18] [firefox] › apps/ui-automations/spotify-automation/tests/e2e/cli.spec.ts:191:7 › Spotify Automation CLI - E2E Tests › should fail if the specified --audioPath does not exist
+[1A[2K[7/18] [firefox] › apps/ui-automations/spotify-automation/tests/e2e/cli.spec.ts:211:7 › Spotify Automation CLI - E2E Tests › should perform a successful dry run with a directory path and find the newest file
+[1A[2K[8/18] [firefox] › apps/ui-automations/spotify-automation/tests/e2e/cli.spec.ts:245:7 › Spotify Automation CLI - E2E Tests › should fail if the specified --audioPath is an empty directory
+[1A[2K[9/18] [firefox] › apps/ui-automations/spotify-automation/tests/e2e/cli.spec.ts:268:7 › Spotify Automation CLI - E2E Tests › should perform a successful dry run using a config file
+[1A[2K[10/18] [firefox] › apps/ui-automations/spotify-automation/tests/e2e/cli.spec.ts:291:7 › Spotify Automation CLI - E2E Tests › should attempt a real upload process
+[1A[2K[11/18] [firefox] › apps/ui-automations/spotify-automation/tests/utils/paths.spec.ts:20:9 › paths utils › getSpotifyAuthPath › should return path from SPOTIFY_AUTH_PATH if set
+[1A[2K[12/18] [firefox] › apps/ui-automations/spotify-automation/tests/utils/paths.spec.ts:26:9 › paths utils › getSpotifyAuthPath › should resolve relative SPOTIFY_AUTH_PATH to absolute
+[1A[2K[13/18] [firefox] › apps/ui-automations/spotify-automation/tests/utils/paths.spec.ts:33:9 › paths utils › getSpotifyAuthPath › should return default path if SPOTIFY_AUTH_PATH is not set
+[1A[2K[14/18] [firefox] › apps/ui-automations/spotify-automation/tests/utils/paths.spec.ts:41:9 › paths utils › ensureAuthDir › should create directory if it does not exist
+[1A[2K[15/18] [firefox] › apps/ui-automations/spotify-automation/tests/utils/paths.spec.ts:53:9 › paths utils › ensureAuthDir › should not throw if directory already exists
+[1A[2K[16/18] [firefox] › apps/ui-automations/spotify-automation/tests/utils/paths.spec.ts:68:9 › paths utils › getScreenshotPath › should use SPOTIFY_AUTOMATION_OUTPUT_DIR if set
+[1A[2K[17/18] [firefox] › apps/ui-automations/spotify-automation/tests/utils/paths.spec.ts:84:9 › paths utils › getScreenshotPath › should use default dist path if env var is not set
+[1A[2K[18/18] [firefox] › apps/ui-automations/spotify-automation/tests/utils/paths.spec.ts:90:9 › paths utils › getScreenshotPath › should create the directory if it does not exist
+[1A[2K
+[32m  18 passed[39m[2m (36.2s)[22m
+To open last HTML report run:
+[36m[39m
+[36m  pnpm exec playwright show-report apps/ui-automations/spotify-automation/playwright-report[39m
+[36m[39m
+
+
+
+ NX   Successfully ran target e2e for project spotify-automation
+
+
+View logs and investigate cache misses at https://cloud.nx.app/runs/dpwK4okijE
+
