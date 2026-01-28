@@ -48,7 +48,11 @@
   "model": {
     "compressionThreshold": 0.5,
     "maxSessionTurns": 30,
-    "summarizeToolOutput": true
+    "summarizeToolOutput": {
+      "run_shell_command": {
+        "tokenBudget": 2000
+      }
+    }
   },
   "security": {
     "disableYoloMode": false
