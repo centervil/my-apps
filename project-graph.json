@@ -1,0 +1,212 @@
+{
+  "graph": {
+    "nodes": {
+      "spotify-automation": {
+        "name": "spotify-automation",
+        "type": "app",
+        "data": {
+          "root": "apps/ui-automations/spotify-automation",
+          "targets": {
+            "typecheck": {
+              "dependsOn": [
+                "^typecheck"
+              ],
+              "options": {
+                "cwd": "apps/ui-automations/spotify-automation",
+                "command": "tsc --build --emitDeclarationOnly"
+              },
+              "cache": true,
+              "inputs": [
+                "production",
+                "^production"
+              ],
+              "outputs": [
+                "{workspaceRoot}/dist/out-tsc/**/*.d.ts",
+                "{workspaceRoot}/dist/out-tsc/tsconfig.tsbuildinfo"
+              ],
+              "syncGenerators": [
+                "@nx/js:typescript-sync"
+              ],
+              "metadata": {
+                "technologies": [
+                  "typescript"
+                ],
+                "description": "Runs type-checking for the project.",
+                "help": {
+                  "command": "pnpm exec tsc --build --help",
+                  "example": {
+                    "args": [
+                      "--force"
+                    ]
+                  }
+                }
+              },
+              "executor": "nx:run-commands",
+              "configurations": {},
+              "parallelism": true
+            },
+            "login": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "login"
+              },
+              "metadata": {
+                "scriptContent": "tsx ./scripts/saveAuth.ts",
+                "runCommand": "pnpm run login"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "upload": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "upload"
+              },
+              "metadata": {
+                "scriptContent": "tsx ./src/cli.ts",
+                "runCommand": "pnpm run upload"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "nx-release-publish": {
+              "executor": "@nx/js:release-publish",
+              "dependsOn": [
+                "^nx-release-publish"
+              ],
+              "options": {},
+              "configurations": {},
+              "parallelism": true
+            },
+            "test": {
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "pnpm --filter @my-apps/spotify-automation test > /dev/null 2>&1"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "lint": {
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "pnpm --filter @my-apps/spotify-automation lint"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "e2e": {
+              "executor": "@nx/playwright:playwright",
+              "outputs": [
+                "{workspaceRoot}/dist/.playwright/apps/ui-automations/spotify-automation/playwright-report"
+              ],
+              "options": {
+                "config": "apps/ui-automations/spotify-automation/playwright.config.ts"
+              },
+              "configurations": {},
+              "parallelism": true
+            }
+          },
+          "name": "spotify-automation",
+          "tags": [
+            "npm:public",
+            "npm:playwright",
+            "npm:automation",
+            "npm:spotify",
+            "scope:ui-automation",
+            "type:app"
+          ],
+          "metadata": {
+            "targetGroups": {
+              "NPM Scripts": [
+                "login",
+                "upload"
+              ]
+            },
+            "description": "Automates podcast distribution on Spotify for Creators.",
+            "js": {
+              "packageName": "@my-apps/spotify-automation",
+              "packageVersion": "1.0.0",
+              "packageMain": "index.js",
+              "isInPackageManagerWorkspaces": true
+            }
+          },
+          "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+          "sourceRoot": "apps/ui-automations/spotify-automation/src",
+          "projectType": "application",
+          "implicitDependencies": []
+        }
+      },
+      "security-news-agent": {
+        "name": "security-news-agent",
+        "type": "app",
+        "data": {
+          "root": "apps/security-news-agent",
+          "name": "security-news-agent",
+          "$schema": "../../node_modules/nx/schemas/project-schema.json",
+          "sourceRoot": "apps/security-news-agent/src",
+          "projectType": "application",
+          "tags": [
+            "lang:python",
+            "scope:security-news-agent"
+          ],
+          "targets": {
+            "test": {
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "poetry run pytest --cov=src/security_news_agent --cov-report=xml --cov-report=term-missing --cov-fail-under=80",
+                "cwd": "apps/security-news-agent"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "lint": {
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "poetry run flake8 src/ tests/",
+                "cwd": "apps/security-news-agent"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "format": {
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "poetry run black src/ tests/ && poetry run isort src/ tests/",
+                "cwd": "apps/security-news-agent"
+              },
+              "configurations": {},
+              "parallelism": true
+            }
+          },
+          "implicitDependencies": []
+        }
+      },
+      "cli-tools": {
+        "name": "cli-tools",
+        "type": "app",
+        "data": {
+          "root": "apps/cli-tools",
+          "name": "cli-tools",
+          "$schema": "../../node_modules/nx/schemas/project-schema.json",
+          "sourceRoot": "apps/cli-tools/src",
+          "projectType": "application",
+          "targets": {
+            "run": {
+              "executor": "./tools/executors/python:run",
+              "configurations": {},
+              "options": {},
+              "parallelism": true
+            }
+          },
+          "implicitDependencies": [],
+          "tags": []
+        }
+      }
+    },
+    "dependencies": {
+      "spotify-automation": [],
+      "security-news-agent": [],
+      "cli-tools": []
+    }
+  }
+}
