@@ -5,6 +5,13 @@
     "enablePromptCompletion": false,
     "retryFetchErrors": true
   },
+  "experimental": {
+    "skills": true,
+    "codebaseInvestigatorSettings": {
+      "enabled": true,
+      "maxNumTurns": 15
+    }
+  },
   "ui": {
     "showStatusInTitle": true,
     "dynamicWindowTitle": true,
