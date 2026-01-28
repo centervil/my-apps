@@ -16,13 +16,35 @@
     "AGENTS.md",
     "GEMINI.md"
   ],
+  "mcpServers": {
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "chrome-devtools-mcp@latest"
+      ]
+    },
+    "nx-mcp": {
+      "command": "npx",
+      "args": [
+        "nx",
+        "mcp"
+      ]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp"
+      ]
+    }
+  },
   "model": {
     "compressionThreshold": 0.5,
     "maxSessionTurns": 30,
     "summarizeToolOutput": true
   },
   "security": {
-    "disableYoloMode": true
+    "disableYoloMode": false
   },
   "allowedTools": [
     "ls",
