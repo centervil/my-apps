@@ -47,7 +47,7 @@
   },
   "model": {
     "compressionThreshold": 0.5,
-    "maxSessionTurns": 30,
+    "maxSessionTurns": 1000,
     "summarizeToolOutput": {
       "run_shell_command": {
         "tokenBudget": 2000
