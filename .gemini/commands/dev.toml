@@ -1,0 +1,52 @@
+description="開発サイクルの統合コマンドです。Issue番号ま たはサブコマンド+Issue番号を指定します。"
+prompt = """
+あなたはプロの開発アシスタントです。引数 `{{args}}` を解析し、指定されたIssue番号とアクション（サブコマンド）を特定してください。
+引数がIssue番号のみの場合は「全工程自動実行モード」として動作し、以下の A -> B -> C -> D の順に詳細手順を連続実行してください。
+特定のサブコマンドが指定された場合は、対応する詳細手順のみを実行してください。
+
+### 1. アクションの詳細手順
+
+#### A. 開発開始 (start)
+1.  **ブランチ作成と仕様定義用の情報取得**: `!{bash .gemini/scripts/dev-start.sh [Issue番号]}` を実行してください。
+    コマンドの出力から `ISSUE_TITLE_FOR_GENERATION:` と `ISSUE_BODY_FOR_GENERATION:` の内容を抽出し、以降のステップで利用してください。
+2.  **`requirements.md`の生成**: 抽出したIssue情報を基に、`AGENTS.MD`の「3.2. Specification Document Creation Process」で定義されている形式に従って、**ユーザーストーリーと受け入れ基準を記述した要件定義書(`requirements.md`)を生成してください。** 生成した内容は `docs/issues/[Issue番号]/requirements.md` に保存してください。
+3.  **`design.md`の生成**: 同様に、Issueの解決に向けた**技術的な設計書(`design.md`)を生成してください。** アーキテクチャ、実装方針、テスト戦略を含めてください。生成した内容は `docs/issues/[Issue番号]/design.md` に保存してください。
+4.  **`tasks.md`の生成**: 最後に、設計に基づいた**具体的な作業タスクリスト(`tasks.md`)をチェックリスト形式で生成してください。** 生成した内容は `docs/issues/[Issue番号]/tasks.md` に保存してください。
+5.  **完了報告**: 全てのドキュメントを生成後、「issue [Issue番号] の開発を開始しました。」と報告してください。
+
+#### B. タスク実行 (task)
+1.  **タスクリストの読み込み**: `docs/issues/[Issue番号]/tasks.md` を読み込み、タスクリストを取得してください。
+2.  **タスクの実行**: 読み込んだタスクリストに記載されたタスクを、順番に実行してください。実行にあたっては、AGENTS.MD の指示に従ってください。
+3.  **完了報告**: 全てのタスクが完了後、「issue [Issue番号] のタスクを完了しました。」と報告してください。
+
+#### C. 品質レビュー (review)
+1.  **ドキュメントの読み込み**: `docs/issues/[Issue番号]/` 配下の `requirements.md`, `design.md`, `tasks.md` を読み込んでください。
+2.  **変更箇所の特定と読み込み**: `!{git diff --name-only main...HEAD}` を実行し、変更されたソースコードを読み込んでください。
+3.  **レビューの実施**: 以下の観点で厳格に分析してください:
+    - **要件充足性**: Acceptance Criteriaを満たしているか？
+    - **設計整合性**: design.mdの方針に違反していないか？
+    - **タスク完了度**: tasks.mdの実装漏れはないか？
+    - **ドキュメント整合性**: README等の更新が必要か？
+4.  **結果の出力とタスク更新**:
+    - Markdown形式で結果を出力（承認 または 修正が必要）。
+    - 修正が必要な場合は `tasks.md` の末尾に `## Review Feedback` セクションを追加し、修正タスクを追記してください。
+
+#### D. 開発終了 (end)
+1.  **テスト**: `!{pnpm nx affected:test}` を実行し、成功を確認してください。
+2.  **記録とコミット**: `!{git branch --show-current}` でブランチ名を確認し、`development_logs` にログを作成。ログを `git add` し、`docs(log): record development session for issue [Issue番号]` でコミットしてください。
+3.  **PR作成と自動マージ**:
+    - `!{git push origin [ブランチ名] --force}`
+    - `gh issue view` でタイトル取得後、`gh pr create` でPR作成。
+    - `gh pr checks --watch` でCI監視。
+    - CI成功・レビュー対応完了後、**例外なく自動的にマージ** (`gh pr merge --merge --delete-branch`) を実行してください。
+    - `main` に切り替え、最新をプルしてください。
+
+#### E. キャンセル (cancel)
+1.  **保存**: `!{git branch --show-current}` で現在のブランチ名を保存。
+2.  **退避**: 未コミット変更があれば `!{git stash push -m "dev-cancel-stash"}` で退避。
+3.  **クリーンアップ**: `main` に切り替え、元の作業ブランチを削除 (`!{git branch -D [ブランチ名]}`)。
+
+### 2. 実行の指示
+引数 `{{args}}` に基づき、上記の手順を**一言一句漏らさず、正確に再現するように**実行してください。
+全工程自動実行モード（引数がIssue番号のみ）の場合は、AからDまでを自動で完遂することを目指してください。
+"""
