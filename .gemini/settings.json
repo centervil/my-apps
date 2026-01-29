@@ -16,8 +16,8 @@
     "showStatusInTitle": true,
     "dynamicWindowTitle": true,
     "showMemoryUsage": true,
-    "useAlternateBuffer": true,
-    "incrementalRendering": true
+    "useAlternateBuffer": false,
+    "incrementalRendering": false
   },
   "contextFileName": [
     "AGENTS.md",
