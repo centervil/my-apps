@@ -79,7 +79,9 @@ All work is managed through GitHub Issues.
 
 0.  **Sync `main`**: Ensure local `main` is up-to-date before branching.
 1.  **Issue Definition**: Define task as a GitHub Issue.
-2.  **Branching**: `[type]/[issue-number]-[short-description]`.
+2.  **Start Development**: Run `.ops/scripts/dev-start.sh [Issue ID]` to create a branch and setup directories.
+    - This script automates branching: `[type]/[issue-number]-[short-description]`.
+    - It creates the documentation directory: `docs/issues/[ID]/`.
 3.  **Implementation**: Follow TDD cycle.
 4.  **Commits**: Link to issues (e.g., `Closes #123`).
 5.  **PR/CI**: Create PR, run CI, human review.

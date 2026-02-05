@@ -88,8 +88,7 @@ apps/security-news-agent/coverage.xml
 apps/ui-automations/spotify-automation/.auth/
 # Playwright error screenshots
 apps/ui-automations/spotify-automation/error-screenshot.png
-.gemini/
-!.gemini/settings.json
+.gemini/oauth_creds.json
 
 # Self-hosted runner files
 /actions-runner/
