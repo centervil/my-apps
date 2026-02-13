@@ -1,8 +1,0 @@
-description="開発サイクル(IDD)を進行するための統合コマンドです。"
-prompt = """
-ユーザーはIssue駆動開発(IDD)のプロセスを進めようとしています。
-`activate_skill` ツールを使って `skill-issue-manager` を有効化し、ユーザーの意図（引数 `{{args}}`）に従って開発サイクル（Start, Task, Review, End, またはこれらの一連の流れ）を実行してください。
-
-- 引数がIssue番号のみ（例: `123`）の場合: Skillの `Manage Development Cycle` 機能を用い、StartからEndまでを可能な限り自律的に進めるよう指示してください。
-- 引数がサブコマンドを含む場合（例: `start 123`, `task 123`）: 指定された特定のフェーズを実行するよう指示してください。
-"""
