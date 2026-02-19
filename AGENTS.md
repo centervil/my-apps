@@ -38,57 +38,59 @@ These rules are the "Constitution" of the project. AI agents must adhere to them
 ### 1.2. Knowledge Architecture
 Intelligence in this workspace is managed in a hierarchical structure. Always refer to higher-level documents as the "Source of Truth."
 
-1.  **Universal Guidelines (`AGENTS.md`)**: This file. Global rules, architecture, and forbidden actions.
-2.  **Task Specifications (`docs/issues/[ID]/`)**: Task-specific "Blueprints" (`requirements.md`, `design.md`, `tasks.md`).
-3.  **Audit Logs (`development_logs/`)**: The "Resume" of decisions. Historical context for *why* things were done.
+1.  **Project Management (GitHub Issues)**: The Single Source of Truth for tasks, status, and project-level decisions.
+2.  **Universal Guidelines (`AGENTS.md`)**: This file. Global rules, architecture principles, and forbidden actions.
+3.  **Task Specifications (`docs/issues/[ID]/`)**: Task-specific "Blueprints" (`requirements.md`, `design.md`, `tasks.md`) that detail the implementation of a GitHub Issue.
+4.  **Audit Logs (`development_logs/`)**: The "Resume" of decisions. Historical context for *why* things were done.
 
 ```mermaid
 graph TD
-    subgraph "Execution Layer (apps/)"
-        SNA[security-news-agent]
-        SA[spotify-automation]
-        CLI[workspace-cli]
+    subgraph "Source of Truth"
+        GHI[GitHub Issues]
+    end
+
+    subgraph "Execution Layer"
+        APP[Applications / Agents]
     end
 
     subgraph "Knowledge Layer"
-        AGENTS[AGENTS.md: Global Rules]
-        ISS[docs/issues/ID/: Task Specifics]
+        AGENTS[AGENTS.md: Principles]
+        ISS[docs/issues/ID/: Blueprints]
         LOGS[development_logs/: Session History]
     end
 
+    GHI --> ISS
     AGENTS --> ISS
-    ISS --> SNA
-    ISS --> SA
+    ISS --> APP
     LOGS -.-> ISS
 ```
 
 ## 2. Technology Stack
 
+(Refer to [README.md](./README.md) for the specific versions and setup commands.)
+
 - **Language**: TypeScript (pnpm), Python (Poetry)
 - **UI Automation**: Playwright (`@playwright/test`)
-- **Package Manager**: pnpm (TS), Poetry (Python)
-- **CLI**: GitHub CLI (`gh`)
-- **Linter/Formatter**: ESLint, Prettier
+- **Monorepo**: Nx
 - **CI/CD**: GitHub Actions
-- **Security**: CodeQL, Dependabot, Secret Scanning
 
 ## 3. Development Workflows
 
 ### 3.1. Issue-Driven Development (IDD)
-All work is managed through GitHub Issues.
+All work is managed through **GitHub Issues**.
 
 0.  **Sync `main`**: Ensure local `main` is up-to-date before branching.
-1.  **Issue Definition**: Define task as a GitHub Issue.
+1.  **Issue Definition**: Define task as a GitHub Issue (The Source of Truth).
 2.  **Start Development**: Run `.ops/scripts/dev-start.sh [Issue ID]` to create a branch and setup directories.
     - This script automates branching: `[type]/[issue-number]-[short-description]`.
-    - It creates the documentation directory: `docs/issues/[ID]/`.
-3.  **Implementation**: Follow TDD cycle.
+    - It creates the blueprint directory: `docs/issues/[ID]/`.
+3.  **Implementation**: Follow TDD cycle based on the blueprints.
 4.  **Commits**: Link to issues (e.g., `Closes #123`).
 5.  **PR/CI**: Create PR, run CI, human review.
 6.  **Merge**: Approved PRs are merged into `main`.
 
-### 3.2. Specification Document Creation Process
-For every Issue, create the following in `docs/issues/[ID]/`:
+### 3.2. Blueprint Creation Process
+For every GitHub Issue, detail the implementation plan in `docs/issues/[ID]/`:
 - **`requirements.md`**: User stories and acceptance criteria.
 - **`design.md`**: Architecture, components, interfaces, and test strategy.
 - **`tasks.md`**: Checklist of atomic implementation steps.
@@ -116,19 +118,17 @@ For every Issue, create the following in `docs/issues/[ID]/`:
 ## 7. CI/CD Pipeline
 GitHub Actions runs on every push/PR to `main`, performing lint, format, test, and report uploads.
 
-## 8. Project Architecture & Map (Ideal Architecture)
-This workspace follows an Nx "Apps and Libs" structure. **Any current structure that deviates from this is considered "Technical Debt" to be refactored.**
+## 8. Project Architecture & Design Principles (Ideal State)
+This workspace adheres to an Nx "Apps and Libs" structure. **The physical location of files is documented in [README.md](./README.md).** Any deviation from the following principles is considered "Technical Debt."
 
-- **`apps/` (Executables & Deployables)**
-    - **`agents/`**: Standalone AI agents (e.g., `security-news-agent`).
-    - **`web-bots/`**: Browser automation entry points (e.g., `spotify-automation`).
+- **`apps/` (Executables & Deployables)**: Target-specific logic and entry points.
+    - **`agents/`**: Autonomous AI agents.
+    - **`web-bots/`**: Browser automation entry points.
     - **`tools/`**: Internal workspace CLI tools.
-- **`libs/` (Reusable Modules)**
-    - **`shared/`**: Cross-language utilities (AI wrappers, logging).
+- **`libs/` (Reusable Modules)**: Domain logic independent of execution entry points.
+    - **`shared/`**: Cross-language utilities (AI wrappers, logging, prompts).
     - **`typescript/`**: TS-specific Page Objects, test helpers.
     - **`python/`**: Python-specific data logic, API clients.
-- **`docs/issues/[ID]/`**: The Single Source of Truth (SSOT) for the current task.
-- **`development_logs/`**: Records of "Why" decisions were made.
 
 ### 🚀 Placement Rules
 1.  **Executable?** -> `apps/[category]/[name]`.
