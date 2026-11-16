@@ -5,7 +5,7 @@ description = "An AI agent that collects security news and generates a report."
 authors = ["Jules"]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 requests = ">=2.31.0"
 python-dotenv = ">=1.0.0"
 langchain = ">=0.2.0"
