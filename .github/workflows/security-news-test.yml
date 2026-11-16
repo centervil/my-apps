@@ -153,7 +153,6 @@ jobs:
 
       - name: Run security scan with bandit
         run: |
-          poetry add --group dev bandit[toml]
           poetry run bandit -r src/ -f json -o bandit-report.json || true
           poetry run bandit -r src/ -f txt
 
