@@ -57,7 +57,7 @@ GitHub Issue を作成後、以下のスクリプトを実行して作業ブラ�
 ### 3. タスクの実行 (Nx)
 ```bash
 npx nx run [project-name]:[target]
-# 例: npx nx test security-news-agent
+# 例: npx nx test spotify-automation
 ```
 
 ### 4. 監査の実行
