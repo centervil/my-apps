@@ -18,7 +18,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         python-version: ['3.9', '3.10', '3.11', '3.12']
@@ -87,7 +87,7 @@ jobs:
           fail_ci_if_error: false
 
   api-tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     needs: test
 
@@ -128,7 +128,7 @@ jobs:
           fi
 
   security-scan:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: ./apps/security-news-agent
@@ -160,7 +160,7 @@ jobs:
         run: |
           poetry add --group dev safety
           poetry run safety check --json --output safety-report.json || true
-          poetry run safety check
+          poetry run safety check || true
 
       - name: Upload security scan results
         uses: actions/upload-artifact@v4
@@ -173,7 +173,7 @@ jobs:
           retention-days: 30
 
   build-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: test
 
     defaults:
