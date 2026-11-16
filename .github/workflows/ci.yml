@@ -36,21 +36,6 @@ jobs:
       - name: Install Playwright Browsers
         run: pnpm exec playwright install --with-deps
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-
-      - name: Install Python dependencies
-        run: poetry install --no-interaction
-        working-directory: ./apps/security-news-agent
-
       - name: Create auth file from secret
         run: |
           if [ -n "${{ secrets.SPOTIFY_AUTH_JSON_BASE64 }}" ]; then
