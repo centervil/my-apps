@@ -1,4 +1,4 @@
-import { TransientError, PermanentError, AutomationError } from './errors';
+import { TransientError } from './errors';
 import { AuthError } from '../auth/authErrors';
 
 export interface RetryOptions {
@@ -26,17 +26,18 @@ export async function withRetry<T>(
     try {
       attempt++;
       return await fn();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as Record<string, unknown>;
       // Determine if error is permanent / non-recoverable
       if (
-        error instanceof PermanentError ||
+        err.name === 'PermanentError' ||
         error instanceof AuthError ||
-        error.code === 'FILE_NOT_FOUND' ||
-        error.code === 'INVALID_AUTH_FILE' ||
-        error.code === 'EXPIRED_AUTH' ||
-        error.code === 'AUTH_EXPIRED' ||
-        error.code === 'PERMANENT_ERROR' ||
-        error.recoverable === false
+        err.code === 'FILE_NOT_FOUND' ||
+        err.code === 'INVALID_AUTH_FILE' ||
+        err.code === 'EXPIRED_AUTH' ||
+        err.code === 'AUTH_EXPIRED' ||
+        err.code === 'PERMANENT_ERROR' ||
+        err.recoverable === false
       ) {
         throw error;
       }
@@ -45,16 +46,17 @@ export async function withRetry<T>(
         // Exceeded retries, wrap in TransientError if not already
         if (!(error instanceof TransientError)) {
           throw new TransientError(
-            `Operation failed after ${retries} retries. Last error: ${error.message}`,
+            `Operation failed after ${retries} retries. Last error: ${error instanceof Error ? error.message : String(error)}`,
             'MAX_RETRIES_EXCEEDED',
           );
         }
         throw error;
       }
 
-      onRetry(error, attempt);
+      onRetry(error as Error, attempt);
       await new Promise((resolve) => setTimeout(resolve, currentDelay));
       currentDelay *= backoffFactor;
     }
   }
 }
+

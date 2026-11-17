@@ -45,7 +45,8 @@ export async function uploadAndPublishEpisode(
 
     // 3. Publish the episode
     await newEpisodePage.publishEpisode();
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as Record<string, unknown>;
     // Check if error is related to authentication / login loss during navigation or wizard
     const pageContent = await page.content().catch(() => '');
     if (
@@ -58,12 +59,10 @@ export async function uploadAndPublishEpisode(
 
     // Wrap in TransientError if it looks temporary (network / timeout / element not found)
     if (
-      error.name === 'TimeoutError' ||
-      error.message?.includes('Timeout') ||
-      error.message?.includes('net::') ||
-      error.message?.includes('network')
+      err.name === 'TimeoutError' ||
+      (typeof err.message === 'string' && (err.message.includes('Timeout') || err.message.includes('net::') || err.message.includes('network')))
     ) {
-      throw new TransientError(`Transient upload error: ${error.message}`);
+      throw new TransientError(`Transient upload error: ${String(err.message)}`);
     }
     throw error;
   }

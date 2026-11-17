@@ -166,7 +166,7 @@ ${resolvedAudioPath}\
     };
     await saveExecutionResult(successResult);
     process.exit(0);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('\n❌ CLI process failed.');
     if (error instanceof Error) {
       console.error(error.message);

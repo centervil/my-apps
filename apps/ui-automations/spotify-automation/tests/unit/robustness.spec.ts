@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { withRetry } from '../../src/utils/retry';
-import { TransientError, PermanentError, AuthExpiredError } from '../../src/utils/errors';
-import { mapErrorToExecutionResult, ExecutionResult } from '../../src/utils/resultReporter';
+import { TransientError, AuthExpiredError } from '../../src/utils/errors';
+import { mapErrorToExecutionResult } from '../../src/utils/resultReporter';
 import { AuthManager, AuthState } from '../../src/auth/authManager';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -59,7 +59,7 @@ test.describe('Robustness Unit Tests', () => {
         { retries: 3, delayMs: 10 },
       );
       expect(true).toBe(false); // should not reach here
-    } catch (error: any) {
+    } catch (error: unknown) {
       expect(error).toBeInstanceOf(AuthExpiredError);
       expect(attempts).toBe(1);
     }
@@ -99,8 +99,9 @@ test.describe('Robustness Unit Tests', () => {
     let threwAuthError = false;
     try {
       await authManager.isAuthValid(720);
-    } catch (err: any) {
-      if (err.code === 'EXPIRED_AUTH') {
+    } catch (err: unknown) {
+      const error = err as Record<string, unknown>;
+      if (error.code === 'EXPIRED_AUTH') {
         threwAuthError = true;
       }
     }

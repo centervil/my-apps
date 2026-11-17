@@ -17,7 +17,7 @@ export interface ExecutionResult {
   message?: string;
   timestamp: string;
   durationMs: number;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 export async function saveExecutionResult(
@@ -37,42 +37,43 @@ export async function saveExecutionResult(
 }
 
 export function mapErrorToExecutionResult(
-  error: any,
+  error: unknown,
   startTime: number,
 ): ExecutionResult {
   const durationMs = Date.now() - startTime;
   const timestamp = new Date().toISOString();
 
+  const err = error as Record<string, unknown>;
   let status: ExecutionStatus = 'UNKNOWN_ERROR';
   let exitCode = 1;
-  let errorCode = error.code || 'UNKNOWN';
-  let message = error.message || String(error);
+  let errorCode = (err.code as string) || 'UNKNOWN';
+  const message = (err.message as string) || String(error);
 
   if (
     error instanceof Error &&
     (error.name === 'AuthExpiredError' ||
      error.name === 'AuthError' ||
-     error.code === 'EXPIRED_AUTH' ||
-     error.code === 'AUTH_EXPIRED' ||
+     err.code === 'EXPIRED_AUTH' ||
+     err.code === 'AUTH_EXPIRED' ||
      errorCode === 'EXPIRED_AUTH' ||
      errorCode === 'AUTH_EXPIRED')
   ) {
     status = 'AUTH_EXPIRED';
     exitCode = 2;
     errorCode = errorCode === 'UNKNOWN' ? 'AUTH_EXPIRED' : errorCode;
-  } else if (error.name === 'TransientError' || error.code === 'MAX_RETRIES_EXCEEDED') {
+  } else if (err.name === 'TransientError' || err.code === 'MAX_RETRIES_EXCEEDED') {
     status = 'TRANSIENT_FAILURE';
     exitCode = 3;
   } else if (
-    error.name === 'PermanentError' ||
-    error.code === 'FILE_NOT_FOUND' ||
-    error.code === 'INVALID_AUTH_FILE'
+    err.name === 'PermanentError' ||
+    err.code === 'FILE_NOT_FOUND' ||
+    err.code === 'INVALID_AUTH_FILE'
   ) {
     status = 'PERMANENT_FAILURE';
     exitCode = 1;
   } else if (
-    error.message?.includes('Missing required argument') ||
-    error.message?.includes('does not exist')
+    message.includes('Missing required argument') ||
+    message.includes('does not exist')
   ) {
     status = 'VALIDATION_ERROR';
     exitCode = 1;
@@ -86,6 +87,7 @@ export function mapErrorToExecutionResult(
     message,
     timestamp,
     durationMs,
-    details: error.details || {},
+    details: (err.details as Record<string, unknown>) || {},
   };
 }
+
