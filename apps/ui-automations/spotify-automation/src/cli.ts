@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import * as dotenv from 'dotenv';
 import { runSpotifyUpload } from './features/spotifyUploader';
+import { mapErrorToExecutionResult, saveExecutionResult } from './utils/resultReporter';
 
 // Load .env file from the root of the monorepo
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
@@ -31,6 +32,7 @@ const findLatestFile = (dir: string): string | undefined => {
 };
 
 export const main = async () => {
+  const startTime = Date.now();
   const parser = yargs(hideBin(process.argv))
     .option('showId', {
       alias: 's',
@@ -84,14 +86,13 @@ export const main = async () => {
     .help()
     .strict();
 
-  const argv = await parser.argv;
-
   try {
+    const argv = await parser.parse();
     const { showId, title, description, season, episode, dryRun } = argv;
     let { audioPath } = argv;
 
     // 2. Resolve Audio Path
-    const resolvedAudioPath = path.resolve(audioPath);
+    const resolvedAudioPath = path.resolve(audioPath as string);
 
     if (!fs.existsSync(resolvedAudioPath)) {
       throw new Error(`The specified path does not exist: ${resolvedAudioPath}`);
@@ -124,20 +125,25 @@ ${resolvedAudioPath}\
     // 3. Handle Dry Run
     if (dryRun) {
       console.log('--- DRY RUN ---');
-      console.log(
-        JSON.stringify(
-          {
-            showId,
-            audioPath,
-            title,
-            description,
-            season,
-            episode,
-          },
-          null,
-          2,
-        ),
-      );
+      const dryRunOutput = {
+        showId,
+        audioPath,
+        title,
+        description,
+        season,
+        episode,
+      };
+      console.log(JSON.stringify(dryRunOutput, null, 2));
+
+      await saveExecutionResult({
+        success: true,
+        status: 'SUCCESS',
+        exitCode: 0,
+        timestamp: new Date().toISOString(),
+        durationMs: Date.now() - startTime,
+        details: dryRunOutput,
+      });
+
       process.exit(0);
     }
 
@@ -150,12 +156,27 @@ ${resolvedAudioPath}\
       season: season as number,
       episode: episode as number,
     });
-  } catch (error) {
+
+    const successResult = {
+      success: true,
+      status: 'SUCCESS' as const,
+      exitCode: 0,
+      timestamp: new Date().toISOString(),
+      durationMs: Date.now() - startTime,
+    };
+    await saveExecutionResult(successResult);
+    process.exit(0);
+  } catch (error: unknown) {
     console.error('\n❌ CLI process failed.');
     if (error instanceof Error) {
       console.error(error.message);
     }
-    process.exit(1);
+
+    const execResult = mapErrorToExecutionResult(error, startTime);
+    await saveExecutionResult(execResult);
+    console.log(JSON.stringify(execResult, null, 2));
+
+    process.exit(execResult.exitCode);
   }
 };
 
