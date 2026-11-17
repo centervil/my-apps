@@ -26,12 +26,12 @@ export const TEMPLATE_TEXT = 'この記事の内容はPodCastとしても配信�
   * 正本 §5 に従った見出し変換とボディ構築を行う
   */
 export function convertMarkdownToNoteBody(contentType: 'study' | 'news', rawMarkdown: string): string {
-  let lines = rawMarkdown.split(/\r?\n/);
-  let convertedLines: string[] = [];
+  const lines = rawMarkdown.split(/\r?\n/);
+  const convertedLines: string[] = [];
 
   let isFirstHeading = true;
 
-  for (let line of lines) {
+  for (const line of lines) {
     if (contentType === 'news' && line.startsWith('# ')) {
       // News title is used as article title, skip in body
       continue;
