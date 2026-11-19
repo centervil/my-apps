@@ -225,6 +225,7 @@ export const main = async () => {
 
     let publishedUrl: string | undefined = undefined;
     let publishDetails: { tagsApplied: string[]; magazineApplied: string | null } | undefined = undefined;
+    let publishFailed = false;
     if (publish) {
       console.log('Quality checks passed. Proceeding to publish note...');
       const tagList = tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined;
@@ -247,15 +248,15 @@ export const main = async () => {
       const magazineMismatch = requestedMagazine !== null && publishDetails!.magazineApplied !== requestedMagazine;
 
       if (tagsMismatch || magazineMismatch) {
-        console.error('\n⚠️ Warning: Requested tags or magazine could not be fully verified as applied.');
-        // We can optionally set exitCode to 1 or log failure details
+        console.error('\n❌ Requested tags or magazine could not be fully verified as applied.');
+        publishFailed = true;
       }
     }
 
     await browser.close();
 
-    const status: ExecutionStatus = 'SUCCESS';
-    const exitCode = 0;
+    const status: ExecutionStatus = publishFailed ? 'PUBLISH_SETTINGS_FAILED' : 'SUCCESS';
+    const exitCode = publishFailed ? 1 : 0;
 
     const executionResult: ExecutionResult = {
       success: true,

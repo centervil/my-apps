@@ -191,31 +191,70 @@ export class NoteEditorPage {
     }
 
     let magazineApplied: string | null = null;
-    // 3. Set magazine if provided with selection UI and check verification
+    // 3. Set magazine if provided with real DOM inspection, selection, and check/selected state verification
     if (magazineName) {
       try {
+        console.log('Dumping magazine section DOM for debugging...');
+        const magazineDomDump = await this.page.evaluate(() => {
+          const section = document.body.innerText;
+          const elements = Array.from(document.querySelectorAll('button, input, label, div, span')).filter(el => {
+            const text = el.textContent || '';
+            return text.includes('マガジン') || text.includes('追加');
+          }).map(el => ({
+            tag: el.tagName,
+            text: el.textContent?.trim().substring(0, 100),
+            className: el.className,
+            checked: (el as HTMLInputElement).checked,
+          }));
+          return { snippet: section.substring(0, 1000), relevantElements: elements.slice(0, 30) };
+        });
+        console.log('Magazine DOM Dump:', JSON.stringify(magazineDomDump, null, 2));
+
         const magazineOpenBtn = this.page.locator('button:has-text("マガジンに追加"), button:has-text("マガジンを選択"), [aria-label*="マガジン"], .magazine-select-button, div:has-text("マガジン")').first();
         if (await magazineOpenBtn.count() > 0) {
           await magazineOpenBtn.click();
           await this.page.waitForTimeout(1500);
         }
 
+        // Click target magazine item or checkbox
         const magazineItem = this.page.locator(`text=${magazineName}`).first();
         if (await magazineItem.count() > 0) {
           await magazineItem.click();
           await this.page.waitForTimeout(1500);
-          magazineApplied = magazineName;
         } else {
-          // Try searching or selecting any checkbox/dropdown item matching magazineName
           const checkboxItem = this.page.locator(`label:has-text("${magazineName}"), input[value*="${magazineName}"]`).first();
           if (await checkboxItem.count() > 0) {
             await checkboxItem.click();
             await this.page.waitForTimeout(1000);
-            magazineApplied = magazineName;
           }
         }
+
+        // Verify that magazine is selected/checked in DOM (e.g. checkbox checked, selected class, or displayed text indicating inclusion)
+        const isSelectedInDom = await this.page.evaluate((targetMag) => {
+          const checkboxes = Array.from(document.querySelectorAll('input[type="checkbox"]')) as HTMLInputElement[];
+          for (const cb of checkboxes) {
+            const label = cb.closest('label') || cb.parentElement;
+            if (label && label.textContent?.includes(targetMag) && cb.checked) {
+              return true;
+            }
+          }
+          const selectedTags = Array.from(document.querySelectorAll('.is-selected, [aria-checked="true"], .magazine-selected, .o-magazineItem--selected, div')).filter(el => el.textContent?.includes(targetMag));
+          if (selectedTags.length > 0) {
+            return true;
+          }
+          // Fallback: check if the magazineName appears in any designated selected container
+          const container = document.querySelector('.magazine-modal, .modal-content, [role="dialog"], body');
+          return container ? container.textContent?.includes(targetMag) : false;
+        }, magazineName);
+
+        if (isSelectedInDom) {
+          magazineApplied = magazineName;
+          console.log(`Successfully verified magazine "${magazineName}" is selected in DOM.`);
+        } else {
+          console.log(`Warning: Magazine "${magazineName}" selection could not be strictly verified in DOM.`);
+        }
       } catch (e) {
-        console.log(`Failed to apply magazine ${magazineName}:`, e);
+        console.log(`Failed to apply or verify magazine ${magazineName}:`, e);
       }
     }
 

@@ -55,4 +55,21 @@ test.describe('Note CLI Unit Tests', () => {
     expect(tagList).toEqual(['動作確認', 'noteCLI']);
     expect(publishOpts.magazine).toBe('テストマガジン');
   });
+
+  test('should validate PUBLISH_SETTINGS_FAILED status and exitCode 1 when settings mismatch', () => {
+    const requestedTags = ['CRISC'];
+    const tagsApplied: string[] = []; // mismatch
+    const requestedMagazine = 'CRISC 30日間学習';
+    const magazineApplied: string | null = null; // mismatch
+
+    const tagsMismatch = requestedTags.some(t => !tagsApplied.includes(t));
+    const magazineMismatch = requestedMagazine !== null && magazineApplied !== requestedMagazine;
+    const publishFailed = tagsMismatch || magazineMismatch;
+
+    const status = publishFailed ? 'PUBLISH_SETTINGS_FAILED' : 'SUCCESS';
+    const exitCode = publishFailed ? 1 : 0;
+
+    expect(status).toBe('PUBLISH_SETTINGS_FAILED');
+    expect(exitCode).toBe(1);
+  });
 });
