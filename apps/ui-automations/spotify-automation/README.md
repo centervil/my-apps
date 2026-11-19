@@ -158,3 +158,53 @@ pnpm exec playwright install
 # 設定ファイルを使用しつつ、一部の引数を上書き
 ./scripts/upload.sh --config "./config.json" --title "新しいタイトル"
 ```
+
+## 6. 本番実行手順 (Production Execution Guide)
+
+### セットアップ
+```bash
+# 依存関係のインストール（凍結ロックファイル使用）
+pnpm install --frozen-lockfile
+
+# Playwright ブラウザ（Firefox）のインストール
+pnpm exec playwright install firefox
+```
+
+### 1. Spotify アップロード CLI 本番手順
+- **認証ファイルの配置先**: `SPOTIFY_AUTH_PATH` 環境変数、またはデフォルトでリポジトリルートの `credentials/spotify-auth.json`。
+- **初回作成手順**: 表示のあるマシン環境（または WSL2 / デスクトップ環境）で以下を実行し、headed ブラウザ上でログインを完了させてウィンドウを閉じます。
+  ```bash
+  pnpm --filter @my-apps/spotify-automation run login
+  ```
+  生成された認証ファイルを適切な配置先（`credentials/spotify-auth.json`）に配置します（TH80 等ではデスクトップの .bat から WSL2 経由で起動する運用を想定）。
+- **セッション切れ時の対応**: 実行結果で `AUTH_EXPIRED` (終了コード `2`) が検出された場合は、上記の `npm run login` 手順を再度実行してセッションを更新してください。
+- **実行コマンド例**:
+  ```bash
+  ./scripts/upload.sh --showId "1ptW7cCcrt1Qb3QinuKHc5" --audioPath "tests/e2e/fixtures/test-audio.mp3" --title "TestEpisode" --description "Automated upload test"
+  ```
+
+### 2. note 下書き作成 CLI 本番手順
+- **認証ファイルの配置先**: `NOTE_AUTH_PATH` 環境変数、またはデフォルトでリポジトリルートの `credentials/note-auth.json`。
+- **初回作成手順**: 表示のあるマシン環境で以下を実行し、headed ブラウザ上で note にログインしてウィンドウを閉じます。
+  ```bash
+  pnpm --filter @my-apps/spotify-automation run login:note
+  ```
+- **セッション切れ時の対応**: 認証ファイルが存在しない、またはログイン画面へリダイレクトされた場合は `AUTH_EXPIRED` (終了コード `2`) が返されるため、`npm run login:note` を実行して再作成してください。
+- **実行コマンド例（ドライラン）**:
+  ```bash
+  ./scripts/note.sh --contentType study --source "./path/to/source.md" --spotifyShowUrl "https://open.spotify.com/show/..." --seriesName "Python入門" --dayNumber 1 --dryRun
+  ```
+- **実行コマンド例（本番下書き作成）**:
+  ```bash
+  ./scripts/note.sh --contentType study --source "./path/to/source.md" --spotifyShowUrl "https://open.spotify.com/show/..." --seriesName "Python入門" --dayNumber 1
+  ```
+
+### 結果 JSON と終了コード規約
+- **終了コード `0`**: 成功（Success / Dry-Run成功）
+- **終了コード `2`**: 認証切れ (`AUTH_EXPIRED`) - セッションの再作成が必要
+- **終了コード `3`**: 一時失敗 (`TRANSIENT_FAILURE`) - リトライ対象
+- **終了コード `1`**: その他 / バリデーションエラー (`PERMANENT_FAILURE`, `VALIDATION_ERROR`, etc.)
+- **結果出力ファイル**:
+  - Spotify: `spotify-automation-result.json`
+  - note: `note-draft-result.json`
+
