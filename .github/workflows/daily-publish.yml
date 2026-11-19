@@ -1,0 +1,85 @@
+name: Daily Podcast Publish Orchestrator
+
+on:
+  schedule:
+    # JST 05:00 to 10:00 every 30 minutes (UTC: 20:00-23:30 / 00:00-01:00)
+    - cron: '*/30 20-23,0-1 * * *'
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Execution date JST (YYYY-MM-DD)'
+        required: false
+        type: string
+      dry_run:
+        description: 'Dry run mode'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: daily-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout my-apps
+        uses: actions/checkout@v4
+        with:
+          path: my-apps
+
+      - name: Checkout my-docs
+        uses: actions/checkout@v4
+        with:
+          repository: centervil/my-docs
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: my-docs
+
+      - name: Setup Node.js & pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+          cache-dependency-path: my-apps/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: my-apps
+
+      - name: Run Orchestrator
+        env:
+          DAILY_AUDIO_DIR: /home/devuser/workspace/daily-audio
+          DAILY_STATE_DIR: /home/devuser/workspace/daily-publish-state
+          SPOTIFY_AUTH_PATH: /home/devuser/workspace/credentials/spotify-auth.json
+          NOTE_AUTH_PATH: /home/devuser/workspace/credentials/note-auth.json
+          PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+        run: |
+          DATE_ARG=""
+          if [ "${{ inputs.date }}" != "" ]; then
+            DATE_ARG="--date ${{ inputs.date }}"
+          fi
+          DRY_RUN_ARG=""
+          if [ "${{ inputs.dry_run }}" == "true" ]; then
+            DRY_RUN_ARG="--dryRun"
+          fi
+          
+          pnpm exec tsx apps/ui-automations/spotify-automation/src/orchestrator.ts \
+            --docsDir ${{ github.workspace }}/my-docs \
+            $DATE_ARG $DRY_RUN_ARG
+        working-directory: my-apps
+
+      - name: Upload Report Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: daily-publish-report
+          path: my-apps/daily-publish-report.json
+
+      # Note: SSOT git push back is not implemented in this version.
+      # The calculated progress is recorded in daily-publish-report.json.

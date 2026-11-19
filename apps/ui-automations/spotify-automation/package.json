@@ -9,7 +9,8 @@
     "login": "tsx ./scripts/saveAuth.ts",
     "login:note": "tsx ./scripts/saveNoteAuth.ts",
     "upload": "tsx ./src/cli.ts",
-    "note-draft": "tsx ./src/noteCli.ts"
+    "note-draft": "tsx ./src/noteCli.ts",
+    "daily-publish": "tsx ./src/orchestrator.ts"
   },
   "keywords": [
     "playwright",
@@ -20,11 +21,16 @@
   "license": "ISC",
   "devDependencies": {
     "@playwright/test": ">=1.61.0 <1.64.0",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.12.12",
     "@types/yargs": "^17.0.33",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.4.5",
+    "vitest": "^5.1.1",
     "yargs": "^18.0.0"
+  },
+  "dependencies": {
+    "js-yaml": "^5.5.0"
   }
 }
