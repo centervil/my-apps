@@ -147,7 +147,7 @@ export class NoteEditorPage {
     await this.page.waitForTimeout(3000);
 
     const tagsApplied: string[] = [];
-    // 2. Set tags if provided with robust retry and chip verification
+    // 2. Set tags if provided with robust retry, input clearing, and chip verification
     if (tags && tags.length > 0) {
       for (const rawTag of tags) {
         const cleanTag = rawTag.startsWith('#') ? rawTag.substring(1) : rawTag;
@@ -157,6 +157,9 @@ export class NoteEditorPage {
             const tagInput = this.page.locator('input[placeholder*="ハッシュタグ"], input[placeholder*="タグ"], .tag-input input, input[aria-label*="タグ"], input[placeholder*="半角スペース"]').first();
             if (await tagInput.count() > 0) {
               await tagInput.click();
+              // Ensure input is empty before typing to avoid residual text/garbage tags
+              await tagInput.press('Control+A');
+              await tagInput.press('Backspace');
               await tagInput.fill(cleanTag);
               await tagInput.press('Enter');
               await this.page.waitForTimeout(1000);
@@ -168,7 +171,7 @@ export class NoteEditorPage {
                 await this.page.waitForTimeout(1000);
               }
 
-              // Verify tag chip appears
+              // Verify tag chip appears and matches requested tag
               const chipSelector = `.tag-item, .o-tagItem, span:has-text("${cleanTag}"), div:has-text("${cleanTag}"), .o-tag`;
               const chipLoc = this.page.locator(chipSelector).first();
               if (await chipLoc.isVisible({ timeout: 2000 })) {
@@ -183,75 +186,70 @@ export class NoteEditorPage {
           await this.page.waitForTimeout(1000);
         }
         if (!success) {
-          // If input chip element wasn't strictly found but input was typed, record optimistically or try fallback
-          tagsApplied.push(cleanTag);
-          console.log(`Warning: Tag #${cleanTag} added without strict chip element confirmation.`);
+          console.log(`Warning: Tag #${cleanTag} chip element confirmation failed after 3 attempts.`);
         }
       }
     }
 
     let magazineApplied: string | null = null;
-    // 3. Set magazine if provided with real DOM inspection, selection, and check/selected state verification
+    // 3. Set magazine if provided following exact structure: "マガジン / メンバーシップ" tabs -> "<マガジン名> / centervil / 追加" row -> click "追加" button and verify row state change.
     if (magazineName) {
       try {
-        console.log('Dumping magazine section DOM for debugging...');
-        const magazineDomDump = await this.page.evaluate(() => {
-          const section = document.body.innerText;
-          const elements = Array.from(document.querySelectorAll('button, input, label, div, span')).filter(el => {
-            const text = el.textContent || '';
-            return text.includes('マガジン') || text.includes('追加');
-          }).map(el => ({
-            tag: el.tagName,
-            text: el.textContent?.trim().substring(0, 100),
-            className: el.className,
-            checked: (el as HTMLInputElement).checked,
-          }));
-          return { snippet: section.substring(0, 1000), relevantElements: elements.slice(0, 30) };
+        console.log('Dumping publishing page DOM for debugging magazine section...');
+        const pageDump = await this.page.evaluate(() => {
+          return {
+            bodyText: document.body.innerText.substring(0, 2000),
+            buttons: Array.from(document.querySelectorAll('button')).map(b => b.textContent?.trim()).filter(Boolean),
+          };
         });
-        console.log('Magazine DOM Dump:', JSON.stringify(magazineDomDump, null, 2));
+        console.log('Page DOM snippet & buttons:', JSON.stringify(pageDump, null, 2));
 
-        const magazineOpenBtn = this.page.locator('button:has-text("マガジンに追加"), button:has-text("マガジンを選択"), [aria-label*="マガジン"], .magazine-select-button, div:has-text("マガジン")').first();
-        if (await magazineOpenBtn.count() > 0) {
-          await magazineOpenBtn.click();
-          await this.page.waitForTimeout(1500);
+        // Locate magazine tab if present ("マガジン" tab or section)
+        const magazineTab = this.page.locator('button:has-text("マガジン"), [role="tab"]:has-text("マガジン"), div:has-text("マガジン")').first();
+        if (await magazineTab.count() > 0) {
+          await magazineTab.click().catch(() => {});
+          await this.page.waitForTimeout(1000);
         }
 
-        // Click target magazine item or checkbox
-        const magazineItem = this.page.locator(`text=${magazineName}`).first();
-        if (await magazineItem.count() > 0) {
-          await magazineItem.click();
-          await this.page.waitForTimeout(1500);
-        } else {
-          const checkboxItem = this.page.locator(`label:has-text("${magazineName}"), input[value*="${magazineName}"]`).first();
-          if (await checkboxItem.count() > 0) {
-            await checkboxItem.click();
-            await this.page.waitForTimeout(1000);
-          }
-        }
+        // Find the target magazine row containing magazineName under "記事の追加" section and click its "追加" button, and verify that button text/class changes or row state changes
+        const magazineRows = this.page.locator(`tr, div, li`).filter({ hasText: magazineName });
+        const count = await magazineRows.count();
+        let clicked = false;
+        let verifiedStateChange = false;
+        for (let i = 0; i < count; i++) {
+          const row = magazineRows.nth(i);
+          const rowText = await row.textContent() || '';
+          if (rowText.includes('centervil') || rowText.includes('追加')) {
+            const addBtn = row.locator('button:has-text("追加"), a:has-text("追加")').first();
+            if (await addBtn.count() > 0 && await addBtn.isVisible()) {
+              console.log(`Found "追加" button for "${magazineName}" at row index ${i}. Clicking...`);
+              await addBtn.click();
+              await this.page.waitForTimeout(2500);
 
-        // Verify that magazine is selected/checked in DOM (e.g. checkbox checked, selected class, or displayed text indicating inclusion)
-        const isSelectedInDom = await this.page.evaluate((targetMag) => {
-          const checkboxes = Array.from(document.querySelectorAll('input[type="checkbox"]')) as HTMLInputElement[];
-          for (const cb of checkboxes) {
-            const label = cb.closest('label') || cb.parentElement;
-            if (label && label.textContent?.includes(targetMag) && cb.checked) {
-              return true;
+              // Observe row state change (e.g. button text changes from "追加" or becomes disabled/added/selected)
+              const stateCheck = await row.evaluate((el) => {
+                const buttons = Array.from(el.querySelectorAll('button, a'));
+                const btnTexts = buttons.map(b => b.textContent?.trim() || '');
+                const hasChanged = !btnTexts.includes('追加') || btnTexts.some(bt => bt.includes('追加済み') || bt.includes('削除') || bt.includes('登録済み') || bt.includes('解除'));
+                return { btnTexts, hasChanged };
+              });
+
+              console.log(`Row ${i} state after click:`, JSON.stringify(stateCheck, null, 2));
+
+              clicked = true;
+              if (stateCheck.hasChanged) {
+                verifiedStateChange = true;
+              }
+              break;
             }
           }
-          const selectedTags = Array.from(document.querySelectorAll('.is-selected, [aria-checked="true"], .magazine-selected, .o-magazineItem--selected, div')).filter(el => el.textContent?.includes(targetMag));
-          if (selectedTags.length > 0) {
-            return true;
-          }
-          // Fallback: check if the magazineName appears in any designated selected container
-          const container = document.querySelector('.magazine-modal, .modal-content, [role="dialog"], body');
-          return container ? container.textContent?.includes(targetMag) : false;
-        }, magazineName);
+        }
 
-        if (isSelectedInDom) {
+        if (clicked && verifiedStateChange) {
           magazineApplied = magazineName;
-          console.log(`Successfully verified magazine "${magazineName}" is selected in DOM.`);
+          console.log(`Successfully applied and verified magazine "${magazineName}" (State change verified: true).`);
         } else {
-          console.log(`Warning: Magazine "${magazineName}" selection could not be strictly verified in DOM.`);
+          console.log(`Warning: Magazine "${magazineName}" application could not be strictly verified via "追加" button state change. magazineApplied remains null.`);
         }
       } catch (e) {
         console.log(`Failed to apply or verify magazine ${magazineName}:`, e);

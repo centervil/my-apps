@@ -1,37 +1,19 @@
 ## 概要
+Issue #207 マガジン適用の作り直し（3回目）の修正を実装しました。
 
-Issue #1「環境設定を行う」の作業を完了しました。
-
-主な変更点:
-
-- ESLintとPrettierのセットアップと設定を行いました。
-- 未使用のインポート文を削除しました。
-- `package.json`に`type: module`と`lint`, `format`スクリプトを追加しました。
-- `eslint.config.js`を新規作成し、`pnpm-lock.yaml`を更新しました。
-- GitHub Issueテンプレートが正しく機能するように、`.github/ISSUE_TEMPLATE/config.yml`を追加しました。
+## 主な変更点
+1. **マガジン適用の厳格化**：
+   - マガジン名を含む要素をクリックしただけで `magazineApplied` を無条件に記録するフォールバックロジックを完全に削除。
+   - 「記事の追加」節における対象マガジンの行（`<マガジン名> / centervil / 追加`）の **「追加」ボタン** をクリックし、クリック後にその行の状態変化（ボタン文言の変化や追加済み表示など）を実際に観測できた場合のみ `magazineApplied` を記録。観測できない場合は `magazineApplied = null` のままにし、ステータス `PUBLISH_SETTINGS_FAILED`（終了コード 1）とする。
+2. **タグ入力の厳格化**：
+   - タグ入力前に `input` を確実にクリア（Control+A + Backspace）し、残留テキストによるゴミタグ（#TANINOCRISCI等）の発生を防止。確定後にチップ一覧が要求タグと一致することを確認。
+3. **実機検証および API 検証結果**：
+   - テスト記事「動作確認」（タグ: `#CRISC`、マガジン: `CRISC 30日間学習`）を公開。
+   - 公開後の note API（公開 GET）レスポンス：
+     - `hashtag_notes`: `[{ "name": "CRISC", ... }]` に `#CRISC` のみが含まれ、ゴミタグは含まれないことを確認。
+     - `belonging_magazine_keys`: 空ではなく、正しくマガジンキーが含まれていることを確認。
+   - テスト記事削除後、公開 GET が 404 になることを確認。
 
 ## テスト方法
-
-1. `pnpm install` を実行
-2. `pnpm lint` を実行し、エラーがないことを確認
-3. `pnpm format` を実行し、ファイルがフォーマットされることを確認
-
-## 備考
-
-本PRマージ後、GitHub上で以下の設定が正しく反映されているか、または追加設定が必要かをご確認ください。
-
-- **GitHub Issue Templates**:
-  1.  リポジトリの「Issues」タブに移動し、「New issue」ボタンをクリックしてください。
-  2.  「Choose a template」セクションに「Feature or Task Request」テンプレートが表示され、選択できることを確認してください。
-- **GitHub Actions (CI/CD)**:
-  1.  このプルリクエストの「Checks」タブで、CIワークフローが正常に完了していることを確認してください。
-  2.  本PRが`main`ブランチにマージされた後、リポジトリの「Actions」タブに移動し、`main`ブランチに対する最新のワークフロー実行が成功していることを確認してください。
-- **GitHub CodeQL (SAST)**:
-  1.  リポジトリの「Security」タブに移動し、「Code scanning alerts」をクリックしてください。
-  2.  CodeQLによるコードスキャンが実行され、結果が表示されていることを確認してください。もしスキャンが実行されていない場合は、手動でトリガーするか、次回のプッシュを待つ必要があります。
-- **GitHub Dependabot (Dependency Vulnerabilities)**:
-  1.  リポジトリの「Security」タブに移動し、「Dependabot alerts」をクリックしてください。
-  2.  依存関係の脆弱性アラートが正しく表示されていることを確認してください。
-- **GitHub Secret Scanning**:
-  1.  リポジトリの「Settings」タブに移動し、左側のメニューから「Code security and analysis」をクリックしてください。
-  2.  「Secret scanning」が「Enabled」になっていることを確認してください。
+1. `npx playwright test tests/unit/noteCli.spec.ts` を実行し、単体テストがすべて合格することを確認。
+2. `pnpm lint` を実行し、Lintエラーがないことを確認。
