@@ -226,20 +226,30 @@ export class NoteEditorPage {
               await addBtn.click();
               await this.page.waitForTimeout(2500);
 
-              // Observe row state change (e.g. button text changes from "追加" or becomes disabled/added/selected)
-              const stateCheck = await row.evaluate((el) => {
-                const buttons = Array.from(el.querySelectorAll('button, a'));
-                const btnTexts = buttons.map(b => b.textContent?.trim() || '');
-                const hasChanged = !btnTexts.includes('追加') || btnTexts.some(bt => bt.includes('追加済み') || bt.includes('削除') || bt.includes('登録済み') || bt.includes('解除'));
-                return { btnTexts, hasChanged };
-              });
+               // Observe row state change (e.g. button class includes bg-custom-accent) with polling over a few seconds
+               let verifiedAccent = false;
+               for (let attempt = 1; attempt <= 5; attempt++) {
+                 const stateCheck = await row.evaluate((el) => {
+                   const buttons = Array.from(el.querySelectorAll('button, a'));
+                   const btnClasses = buttons.map(b => b.className || '');
+                   const hasAccent = btnClasses.some(cls => cls.includes('bg-custom-accent'));
+                   const btnTexts = buttons.map(b => b.textContent?.trim() || '');
+                   return { btnTexts, btnClasses, hasAccent };
+                 });
 
-              console.log(`Row ${i} state after click:`, JSON.stringify(stateCheck, null, 2));
+                 console.log(`Row ${i} state check attempt ${attempt}:`, JSON.stringify(stateCheck, null, 2));
 
-              clicked = true;
-              if (stateCheck.hasChanged) {
-                verifiedStateChange = true;
-              }
+                 if (stateCheck.hasAccent) {
+                   verifiedAccent = true;
+                   break;
+                 }
+                 await new Promise(r => setTimeout(r, 1000));
+               }
+
+               clicked = true;
+               if (verifiedAccent) {
+                 verifiedStateChange = true;
+               }
               break;
             }
           }
