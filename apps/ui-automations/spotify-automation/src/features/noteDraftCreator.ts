@@ -82,6 +82,22 @@ export function buildNoteContent(options: NoteDraftOptions): { title: string; bo
 }
 
 /**
+  * note API のレスポンスから公開 URL を組み立てる純粋関数
+  */
+export function derivePublishedUrl(apiData: Record<string, unknown>, fallbackEditorUrl: string): string {
+  try {
+    const urlname = apiData?.data?.user?.urlname;
+    const key = apiData?.data?.key;
+    if (urlname && key) {
+      return `https://note.com/${urlname}/n/${key}`;
+    }
+  } catch {
+    // Fall back to editor URL if parsing fails
+  }
+  return fallbackEditorUrl;
+}
+
+/**
   * 品質チェックを実行する
   */
 export function performQualityCheck(
@@ -107,7 +123,7 @@ export function performQualityCheck(
 
   const tocPositionCheck = tocIndex !== -1;
 
-  // 3. Embed player check: Spotify embed must be converted to player widget
+  // 3. Embed player check: Test embed conversion
   const embedPlayerCheck = isEmbedPlayerConverted;
 
   const passed = verbatimCheck && tocPositionCheck && embedPlayerCheck;

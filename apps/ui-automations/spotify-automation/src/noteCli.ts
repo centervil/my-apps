@@ -49,6 +49,19 @@ export const main = async () => {
       type: 'string',
       description: 'Previous note ID for reference',
     })
+    .option('publish', {
+      type: 'boolean',
+      description: 'Publish note after quality checks',
+      default: false,
+    })
+    .option('tags', {
+      type: 'string',
+      description: 'Comma-separated tags for publication',
+    })
+    .option('magazine', {
+      type: 'string',
+      description: 'Magazine name for publication',
+    })
     .option('dryRun', {
       type: 'boolean',
       description: 'Perform a dry run without opening browser',
@@ -72,6 +85,9 @@ export const main = async () => {
       targetDate,
       spotifyShowUrl,
       previousNoteId,
+      publish,
+      tags,
+      magazine,
       dryRun,
       headed,
     } = argv;
@@ -107,6 +123,9 @@ export const main = async () => {
         title,
         bodyPreview: body.substring(0, 200) + '...',
         spotifyShowUrl,
+        publish,
+        tags,
+        magazine,
       };
       console.log(JSON.stringify(dryRunDetails, null, 2));
 
@@ -168,6 +187,13 @@ export const main = async () => {
     console.log(`Setting title: ${title}`);
     await editorPage.setTitle(title);
 
+    let eyecatchResult: { success: boolean; message?: string } | undefined = undefined;
+    if (previousNoteId) {
+      console.log(`Setting eyecatch image from previous note ID: ${previousNoteId}`);
+      eyecatchResult = await editorPage.setEyecatchImageFromPreviousNote(previousNoteId);
+      console.log('Eyecatch result:', eyecatchResult);
+    }
+
     console.log('Setting body and embedding Spotify player...');
     await editorPage.setBodyAndEmbed(TEMPLATE_TEXT, spotifyShowUrl, convertedBody);
 
@@ -176,13 +202,42 @@ export const main = async () => {
     const noteId = editorPage.extractNoteId();
     const draftUrl = editorPage.getEditUrl();
 
+    if (!qualityResult.passed) {
+      await browser.close();
+      const executionResult: ExecutionResult = {
+        success: false,
+        status: 'QUALITY_CHECK_FAILED',
+        exitCode: 1,
+        timestamp: new Date().toISOString(),
+        durationMs: Date.now() - startTime,
+        details: {
+          title,
+          noteId: noteId || undefined,
+          draftUrl: draftUrl || undefined,
+          eyecatchResult,
+          qualityCheck: qualityResult,
+        },
+      };
+      await saveExecutionResult(executionResult, resultOutputPath);
+      console.error('\n❌ Quality check failed. Aborting publication.');
+      process.exit(1);
+    }
+
+    let publishedUrl: string | undefined = undefined;
+    if (publish) {
+      console.log('Quality checks passed. Proceeding to publish note...');
+      const tagList = tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined;
+      publishedUrl = await editorPage.publishNote(tagList, magazine);
+      console.log(`Successfully published note at: ${publishedUrl}`);
+    }
+
     await browser.close();
 
-    const status: ExecutionStatus = qualityResult.passed ? 'SUCCESS' : 'PERMANENT_FAILURE';
-    const exitCode = qualityResult.passed ? 0 : 1;
+    const status: ExecutionStatus = 'SUCCESS';
+    const exitCode = 0;
 
     const executionResult: ExecutionResult = {
-      success: qualityResult.passed,
+      success: true,
       status,
       exitCode,
       timestamp: new Date().toISOString(),
@@ -191,6 +246,8 @@ export const main = async () => {
         title,
         noteId: noteId || undefined,
         draftUrl: draftUrl || undefined,
+        publishedUrl,
+        eyecatchResult,
         qualityCheck: qualityResult,
       },
     };
