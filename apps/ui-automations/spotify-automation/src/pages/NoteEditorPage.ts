@@ -1,5 +1,5 @@
 import { type Page } from '@playwright/test';
-import { QualityCheckResult, performQualityCheck } from '../features/noteDraftCreator';
+import { QualityCheckResult, performQualityCheck, derivePublishedUrl } from '../features/noteDraftCreator';
 import fs from 'fs';
 import path from 'path';
 
@@ -136,8 +136,10 @@ export class NoteEditorPage {
   }
 
   async publishNote(tags?: string[], magazineName?: string): Promise<string> {
+    const editorUrl = this.page.url();
+    const noteId = this.extractNoteId();
+
     // 1. Click "公開に進む" button or header publish button
-    // Let's inspect/click button with text "公開に進む" or similar
     console.log('Clicking publish/proceed button...');
     const publishBtn = this.page.locator('button:has-text("公開に進む"), button:has-text("公開設定"), .o-noteHeader__publishButton, button.o-button--primary:has-text("公開")').first();
     await publishBtn.waitFor({ state: 'visible', timeout: 10000 });
@@ -175,13 +177,31 @@ export class NoteEditorPage {
     // Wait for actual published public page URL (e.g. /n/n...) or any redirect
     try {
       await this.page.waitForURL(url => url.pathname.includes('/n/') || url.pathname.includes('/publish/'), { timeout: 15000 });
-      // If we landed on /publish/, wait a bit more or click confirmation if needed
       if (this.page.url().includes('/publish/')) {
         await this.page.waitForTimeout(3000);
       }
     } catch {
       console.log('Current URL after publish click:', this.page.url());
     }
+
+    // Attempt to fetch note API to derive correct public URL
+    if (noteId) {
+      try {
+        console.log(`Fetching note API for published noteId: ${noteId}`);
+        const apiResponse = await this.page.request.get(`https://note.com/api/v3/notes/${noteId}`);
+        if (apiResponse.ok()) {
+          const apiData = await apiResponse.json();
+          const derived = derivePublishedUrl(apiData, editorUrl);
+          if (derived !== editorUrl) {
+            console.log(`Successfully derived public URL from note API: ${derived}`);
+            return derived;
+          }
+        }
+      } catch (err) {
+        console.log('Failed to fetch note API for published URL derivation, falling back to editor URL:', err);
+      }
+    }
+
     return this.page.url();
   }
 }

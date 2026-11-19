@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { convertMarkdownToNoteBody, buildNoteContent, performQualityCheck } from '../../src/features/noteDraftCreator';
+import { convertMarkdownToNoteBody, buildNoteContent, performQualityCheck, derivePublishedUrl } from '../../src/features/noteDraftCreator';
 
 test.describe('Note Draft Creator Unit Tests', () => {
   test('convertMarkdownToNoteBody should correctly map headings for study content', () => {
@@ -59,5 +59,26 @@ https://open.spotify.com/show/12345
     expect(qc.passed).toBe(false);
     expect(qc.tocPositionCheck).toBe(false);
     expect(qc.embedPlayerCheck).toBe(false);
+  });
+
+  test('derivePublishedUrl should construct correct public URL when apiData has user.urlname and key', () => {
+    const apiData = {
+      data: {
+        key: 'n0e484c8e0206',
+        user: {
+          urlname: 'clever_chives813'
+        }
+      }
+    };
+    const fallback = 'https://editor.note.com/notes/n0e484c8e0206/publish/';
+    const result = derivePublishedUrl(apiData, fallback);
+    expect(result).toBe('https://note.com/clever_chives813/n/n0e484c8e0206');
+  });
+
+  test('derivePublishedUrl should fall back to fallbackEditorUrl if apiData is missing urlname or key', () => {
+    const apiData = { data: { key: 'n0e484c8e0206' } };
+    const fallback = 'https://editor.note.com/notes/n0e484c8e0206/publish/';
+    const result = derivePublishedUrl(apiData, fallback);
+    expect(result).toBe(fallback);
   });
 });
