@@ -7,6 +7,7 @@ export type ExecutionStatus =
   | 'TRANSIENT_FAILURE'
   | 'PERMANENT_FAILURE'
   | 'VALIDATION_ERROR'
+  | 'QUALITY_CHECK_FAILED'
   | 'UNKNOWN_ERROR';
 
 export interface ExecutionResult {

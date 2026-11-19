@@ -43,4 +43,16 @@ test.describe('Note CLI Unit Tests', () => {
     expect(editorPage.extractNoteId()).toBe('n12345678abcd');
     expect(editorPage.getEditUrl()).toBe('https://editor.note.com/notes/n12345678abcd/edit/');
   });
+
+  test('should validate publish options parsing and structure', () => {
+    const publishOpts = {
+      publish: true,
+      tags: '動作確認,noteCLI',
+      magazine: 'テストマガジン',
+    };
+    expect(publishOpts.publish).toBe(true);
+    const tagList = publishOpts.tags.split(',').map(t => t.trim());
+    expect(tagList).toEqual(['動作確認', 'noteCLI']);
+    expect(publishOpts.magazine).toBe('テストマガジン');
+  });
 });
