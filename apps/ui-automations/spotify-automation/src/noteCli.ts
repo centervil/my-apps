@@ -224,11 +224,32 @@ export const main = async () => {
     }
 
     let publishedUrl: string | undefined = undefined;
+    let publishDetails: { tagsApplied: string[]; magazineApplied: string | null } | undefined = undefined;
     if (publish) {
       console.log('Quality checks passed. Proceeding to publish note...');
       const tagList = tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined;
-      publishedUrl = await editorPage.publishNote(tagList, magazine);
-      console.log(`Successfully published note at: ${publishedUrl}`);
+      const pubResult = await editorPage.publishNote(tagList, magazine);
+      publishedUrl = pubResult.publishedUrl;
+      publishDetails = {
+        tagsApplied: pubResult.tagsApplied,
+        magazineApplied: pubResult.magazineApplied,
+      };
+      console.log(`Successfully published note at: ${publishedUrl}`, publishDetails);
+
+      // Verify if requested tags/magazine were successfully applied
+      const requestedTags = tagList || [];
+      const requestedMagazine = magazine || null;
+
+      const tagsMismatch = requestedTags.some(t => {
+        const clean = t.startsWith('#') ? t.substring(1) : t;
+        return !publishDetails!.tagsApplied.includes(clean);
+      });
+      const magazineMismatch = requestedMagazine !== null && publishDetails!.magazineApplied !== requestedMagazine;
+
+      if (tagsMismatch || magazineMismatch) {
+        console.error('\n⚠️ Warning: Requested tags or magazine could not be fully verified as applied.');
+        // We can optionally set exitCode to 1 or log failure details
+      }
     }
 
     await browser.close();
@@ -249,6 +270,7 @@ export const main = async () => {
         publishedUrl,
         eyecatchResult,
         qualityCheck: qualityResult,
+        ...(publishDetails || {}),
       },
     };
 

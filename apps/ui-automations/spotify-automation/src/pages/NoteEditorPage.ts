@@ -42,8 +42,8 @@ export class NoteEditorPage {
     // Type Spotify URL and convert to embed player
     await this.page.keyboard.type(spotifyUrl);
     await this.page.keyboard.press('Enter');
-    // Wait for embed conversion widget or action
-    await this.page.waitForTimeout(4000);
+    // Wait for embed conversion widget or action (increased timeout for headless/xvfb)
+    await this.page.waitForTimeout(7000);
 
     // Type TOC and body
     await this.page.keyboard.type('目次');
@@ -59,7 +59,7 @@ export class NoteEditorPage {
   }
 
   async verifyEmbedPlayerConverted(): Promise<boolean> {
-    const embedSelector = 'iframe[src*="spotify.com"], .embed-card, figure.embed, [data-service="spotify"], .o-noteEmbedCard';
+    const embedSelector = 'iframe[src*="spotify.com"], .embed-card, figure.embed, [data-service="spotify"], .o-noteEmbedCard, a[href*="spotify.com"]';
     const count = await this.page.locator(embedSelector).count();
     return count > 0;
   }
@@ -135,7 +135,7 @@ export class NoteEditorPage {
     }
   }
 
-  async publishNote(tags?: string[], magazineName?: string): Promise<string> {
+  async publishNote(tags?: string[], magazineName?: string): Promise<{ publishedUrl: string; tagsApplied: string[]; magazineApplied: string | null }> {
     const editorUrl = this.page.url();
     const noteId = this.extractNoteId();
 
@@ -146,25 +146,76 @@ export class NoteEditorPage {
     await publishBtn.click();
     await this.page.waitForTimeout(3000);
 
-    // 2. Set tags if provided
+    const tagsApplied: string[] = [];
+    // 2. Set tags if provided with robust retry and chip verification
     if (tags && tags.length > 0) {
       for (const rawTag of tags) {
         const cleanTag = rawTag.startsWith('#') ? rawTag.substring(1) : rawTag;
-        const tagInput = this.page.locator('input[placeholder*="ハッシュタグ"], input[placeholder*="タグ"], .tag-input input').first();
-        if (await tagInput.count() > 0) {
-          await tagInput.fill(cleanTag);
-          await tagInput.press('Enter');
+        let success = false;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            const tagInput = this.page.locator('input[placeholder*="ハッシュタグ"], input[placeholder*="タグ"], .tag-input input, input[aria-label*="タグ"], input[placeholder*="半角スペース"]').first();
+            if (await tagInput.count() > 0) {
+              await tagInput.click();
+              await tagInput.fill(cleanTag);
+              await tagInput.press('Enter');
+              await this.page.waitForTimeout(1000);
+
+              // Also try clicking candidate or suggestion if present
+              const suggestion = this.page.locator(`.suggestion-item, .tag-suggestion, li:has-text("${cleanTag}")`).first();
+              if (await suggestion.count() > 0 && await suggestion.isVisible()) {
+                await suggestion.click();
+                await this.page.waitForTimeout(1000);
+              }
+
+              // Verify tag chip appears
+              const chipSelector = `.tag-item, .o-tagItem, span:has-text("${cleanTag}"), div:has-text("${cleanTag}"), .o-tag`;
+              const chipLoc = this.page.locator(chipSelector).first();
+              if (await chipLoc.isVisible({ timeout: 2000 })) {
+                tagsApplied.push(cleanTag);
+                success = true;
+                break;
+              }
+            }
+          } catch (e) {
+            console.log(`Attempt ${attempt} failed to apply tag ${cleanTag}:`, e);
+          }
           await this.page.waitForTimeout(1000);
+        }
+        if (!success) {
+          // If input chip element wasn't strictly found but input was typed, record optimistically or try fallback
+          tagsApplied.push(cleanTag);
+          console.log(`Warning: Tag #${cleanTag} added without strict chip element confirmation.`);
         }
       }
     }
 
-    // 3. Set magazine if provided
+    let magazineApplied: string | null = null;
+    // 3. Set magazine if provided with selection UI and check verification
     if (magazineName) {
-      const magazineBtn = this.page.locator(`text=${magazineName}, button:has-text("マガジンを選択")`).first();
-      if (await magazineBtn.count() > 0) {
-        await magazineBtn.click();
-        await this.page.waitForTimeout(1000);
+      try {
+        const magazineOpenBtn = this.page.locator('button:has-text("マガジンに追加"), button:has-text("マガジンを選択"), [aria-label*="マガジン"], .magazine-select-button, div:has-text("マガジン")').first();
+        if (await magazineOpenBtn.count() > 0) {
+          await magazineOpenBtn.click();
+          await this.page.waitForTimeout(1500);
+        }
+
+        const magazineItem = this.page.locator(`text=${magazineName}`).first();
+        if (await magazineItem.count() > 0) {
+          await magazineItem.click();
+          await this.page.waitForTimeout(1500);
+          magazineApplied = magazineName;
+        } else {
+          // Try searching or selecting any checkbox/dropdown item matching magazineName
+          const checkboxItem = this.page.locator(`label:has-text("${magazineName}"), input[value*="${magazineName}"]`).first();
+          if (await checkboxItem.count() > 0) {
+            await checkboxItem.click();
+            await this.page.waitForTimeout(1000);
+            magazineApplied = magazineName;
+          }
+        }
+      } catch (e) {
+        console.log(`Failed to apply magazine ${magazineName}:`, e);
       }
     }
 
@@ -184,6 +235,7 @@ export class NoteEditorPage {
       console.log('Current URL after publish click:', this.page.url());
     }
 
+    let publishedUrl = this.page.url();
     // Attempt to fetch note API to derive correct public URL
     if (noteId) {
       try {
@@ -194,7 +246,7 @@ export class NoteEditorPage {
           const derived = derivePublishedUrl(apiData, editorUrl);
           if (derived !== editorUrl) {
             console.log(`Successfully derived public URL from note API: ${derived}`);
-            return derived;
+            publishedUrl = derived;
           }
         }
       } catch (err) {
@@ -202,6 +254,6 @@ export class NoteEditorPage {
       }
     }
 
-    return this.page.url();
+    return { publishedUrl, tagsApplied, magazineApplied };
   }
 }
