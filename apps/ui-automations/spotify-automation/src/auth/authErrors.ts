@@ -3,7 +3,8 @@ export type AuthErrorCode =
   | 'INVALID_AUTH_FILE'
   | 'EXPIRED_AUTH'
   | 'NETWORK_ERROR'
-  | 'PERMISSION_DENIED';
+  | 'PERMISSION_DENIED'
+  | 'AUTH_EXPIRED';
 
 export class AuthError extends Error {
   constructor(

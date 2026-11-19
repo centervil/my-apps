@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import * as dotenv from 'dotenv';
 import { firefox } from '@playwright/test';
-import { buildNoteContent, TEMPLATE_TEXT } from './features/noteDraftCreator';
+import { buildNoteContent, convertMarkdownToNoteBody, TEMPLATE_TEXT } from './features/noteDraftCreator';
 import { NoteEditorPage } from './pages/NoteEditorPage';
 import { AuthManager } from './auth/authManager';
 import { AuthError } from './auth/authErrors';
@@ -94,6 +94,8 @@ export const main = async () => {
       previousNoteId,
     });
 
+    const convertedBody = convertMarkdownToNoteBody(contentType as 'study' | 'news', sourceContent);
+
     const resultOutputPath = path.resolve(process.cwd(), 'note-draft-result.json');
 
     // Handle Dry Run
@@ -167,10 +169,12 @@ export const main = async () => {
     await editorPage.setTitle(title);
 
     console.log('Setting body and embedding Spotify player...');
-    await editorPage.setBodyAndEmbed(TEMPLATE_TEXT, spotifyShowUrl, body);
+    await editorPage.setBodyAndEmbed(TEMPLATE_TEXT, spotifyShowUrl, convertedBody);
 
     console.log('Running quality checks on editor...');
     const qualityResult = await editorPage.runQualityCheckOnEditor(sourceContent);
+    const noteId = editorPage.extractNoteId();
+    const draftUrl = editorPage.getEditUrl();
 
     await browser.close();
 
@@ -185,6 +189,8 @@ export const main = async () => {
       durationMs: Date.now() - startTime,
       details: {
         title,
+        noteId: noteId || undefined,
+        draftUrl: draftUrl || undefined,
         qualityCheck: qualityResult,
       },
     };
