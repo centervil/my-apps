@@ -84,7 +84,7 @@ export const main = async () => {
     const sourceContent = fs.readFileSync(resolvedSourcePath, 'utf-8');
 
     // Build content
-    const { title, body: _fullBody } = buildNoteContent({
+    const { title, body } = buildNoteContent({
       contentType: contentType as 'study' | 'news',
       sourceContent,
       seriesName,

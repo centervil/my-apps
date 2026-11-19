@@ -38,7 +38,7 @@ test.describe('Note CLI Unit Tests', () => {
   test('should extract note ID and edit URL correctly from editor page url', () => {
     const mockPage = {
       url: () => 'https://editor.note.com/notes/n12345678abcd/edit/',
-    } as any;
+    } as unknown as import('@playwright/test').Page;
     const editorPage = new NoteEditorPage(mockPage);
     expect(editorPage.extractNoteId()).toBe('n12345678abcd');
     expect(editorPage.getEditUrl()).toBe('https://editor.note.com/notes/n12345678abcd/edit/');
