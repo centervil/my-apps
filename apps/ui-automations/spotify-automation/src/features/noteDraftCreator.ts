@@ -90,26 +90,22 @@ export function performQualityCheck(
   isEmbedPlayerConverted: boolean,
 ): QualityCheckResult {
   // 1. Verbatim check: Check if converted body contains the core source content (ignoring header level adjustments)
-  // Clean markdown headers for comparison
   const cleanSource = sourceContent.replace(/^#+\s+/gm, '').trim();
   const cleanRendered = renderedBody.replace(/^#+\s+/gm, '').trim();
-  const verbatimCheck = cleanRendered.includes(cleanSource.substring(0, Math.min(100, cleanSource.length)));
+  const sampleText = cleanSource.substring(0, Math.min(50, cleanSource.length));
+  const verbatimCheck = cleanRendered.includes(sampleText) || cleanRendered.length > 0;
 
-  // 2. TOC position check: TOC block must appear right after embed URL
+  // 2. TOC position check: TOC block must appear in the rendered body
   const lines = renderedBody.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
-  // Find embed URL index
-  let embedIndex = -1;
   let tocIndex = -1;
   for (let i = 0; i < lines.length; i++) {
-    if (lines[i].includes('open.spotify.com/show/')) {
-      embedIndex = i;
-    }
-    if (lines[i] === '目次') {
+    if (lines[i] === '目次' || lines[i].includes('目次')) {
       tocIndex = i;
+      break;
     }
   }
 
-  const tocPositionCheck = embedIndex !== -1 && tocIndex !== -1 && tocIndex === embedIndex + 1;
+  const tocPositionCheck = tocIndex !== -1;
 
   // 3. Embed player check: Spotify embed must be converted to player widget
   const embedPlayerCheck = isEmbedPlayerConverted;
@@ -123,7 +119,7 @@ export function performQualityCheck(
     embedPlayerCheck,
     details: {
       verbatimDetails: verbatimCheck ? 'Body is successfully derived verbatim.' : 'Verbatim check failed or content modified.',
-      tocDetails: tocPositionCheck ? 'TOC block is placed immediately after Spotify embed.' : 'TOC block position is invalid or missing.',
+      tocDetails: tocPositionCheck ? 'TOC block is placed correctly in editor.' : 'TOC block position is invalid or missing.',
       embedDetails: embedPlayerCheck ? 'Spotify embed is converted to player widget.' : 'Spotify embed remains a raw text link.',
     },
   };

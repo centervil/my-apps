@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { mapErrorToExecutionResult } from '../../src/utils/resultReporter';
 import { AuthError } from '../../src/auth/authErrors';
+import { NoteEditorPage } from '../../src/pages/NoteEditorPage';
 
 test.describe('Note CLI Unit Tests', () => {
   test('should map AuthError to AUTH_EXPIRED status and exitCode 2', () => {
@@ -32,5 +33,14 @@ test.describe('Note CLI Unit Tests', () => {
     expect(mockResult.exitCode).toBe(0);
     expect(mockResult.status).toBe('SUCCESS');
     expect(mockResult.details.title).toContain('Day1');
+  });
+
+  test('should extract note ID and edit URL correctly from editor page url', () => {
+    const mockPage = {
+      url: () => 'https://editor.note.com/notes/n12345678abcd/edit/',
+    } as any;
+    const editorPage = new NoteEditorPage(mockPage);
+    expect(editorPage.extractNoteId()).toBe('n12345678abcd');
+    expect(editorPage.getEditUrl()).toBe('https://editor.note.com/notes/n12345678abcd/edit/');
   });
 });
