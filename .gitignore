@@ -88,6 +88,8 @@ apps/ui-automations/spotify-automation/.auth/
 # Playwright error screenshots
 apps/ui-automations/spotify-automation/error-screenshot.png
 .gemini/oauth_creds.json
+apps/ui-automations/spotify-automation/spotify-automation-result.json
+apps/ui-automations/spotify-automation/note-draft-result.json
 
 # Self-hosted runner files
 /actions-runner/
@@ -98,4 +100,5 @@ apps/ui-automations/spotify-automation/error-screenshot.png
 apps/infra/self-hosted-runner/runner.env
 test-results/
 credentials/spotify-auth.json
+credentials/note-auth.json
 apps/ui-automations/spotify-automation/error-page.html

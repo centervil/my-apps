@@ -1,5 +1,5 @@
 import { type Page } from '@playwright/test';
-import { QualityCheckResult, performQualityCheck } from './noteDraftCreator';
+import { QualityCheckResult, performQualityCheck } from '../features/noteDraftCreator';
 
 export class NoteEditorPage {
   constructor(private page: Page) {}

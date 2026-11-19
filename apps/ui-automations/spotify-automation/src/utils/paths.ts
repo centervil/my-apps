@@ -10,6 +10,13 @@ export function getSpotifyAuthPath(): string {
   return path.resolve(__dirname, '../../../../../credentials/spotify-auth.json');
 }
 
+export function getNoteAuthPath(): string {
+  if (process.env.NOTE_AUTH_PATH) {
+    return path.resolve(process.env.NOTE_AUTH_PATH);
+  }
+  return path.resolve(__dirname, '../../../../../credentials/note-auth.json');
+}
+
 export function ensureAuthDir(filePath: string): void {
   const dir = path.dirname(filePath);
   if (!fs.existsSync(dir)) {

@@ -7,7 +7,9 @@
     "test": "playwright test --quiet",
     "lint": "eslint .",
     "login": "tsx ./scripts/saveAuth.ts",
-    "upload": "tsx ./src/cli.ts"
+    "login:note": "tsx ./scripts/saveNoteAuth.ts",
+    "upload": "tsx ./src/cli.ts",
+    "note-draft": "tsx ./src/noteCli.ts"
   },
   "keywords": [
     "playwright",
