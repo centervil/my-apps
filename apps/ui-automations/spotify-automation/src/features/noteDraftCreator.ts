@@ -86,8 +86,10 @@ export function buildNoteContent(options: NoteDraftOptions): { title: string; bo
   */
 export function derivePublishedUrl(apiData: Record<string, unknown>, fallbackEditorUrl: string): string {
   try {
-    const urlname = apiData?.data?.user?.urlname;
-    const key = apiData?.data?.key;
+    const urlname = (apiData?.data as Record<string, unknown>)?.user
+      ? ((apiData.data as Record<string, unknown>).user as Record<string, unknown>)?.urlname
+      : (apiData?.user as Record<string, unknown>)?.urlname;
+    const key = (apiData?.data as Record<string, unknown>)?.key ?? apiData?.key;
     if (urlname && key) {
       return `https://note.com/${urlname}/n/${key}`;
     }
@@ -95,6 +97,27 @@ export function derivePublishedUrl(apiData: Record<string, unknown>, fallbackEdi
     // Fall back to editor URL if parsing fails
   }
   return fallbackEditorUrl;
+}
+
+/**
+ * URL から note キー (noteId) を抽出する純粋関数
+ */
+export function extractKeyFromUrl(url: string): string | null {
+  const match = url.match(/\/(?:notes|n)\/([a-zA-Z0-9_\-]+)/);
+  return match ? match[1] : null;
+}
+
+/**
+ * note API のレスポンスデータから belonging_magazine_keys が空でないかを検証する純粋関数
+ */
+export function verifyMagazineAppliedFromApi(apiData: Record<string, unknown>): boolean {
+  try {
+    const data = apiData?.data as Record<string, unknown> | undefined;
+    const keys = data?.belonging_magazine_keys ?? apiData?.belonging_magazine_keys;
+    return Array.isArray(keys) && keys.length > 0;
+  } catch {
+    return false;
+  }
 }
 
 /**

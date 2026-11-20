@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { convertMarkdownToNoteBody, buildNoteContent, performQualityCheck, derivePublishedUrl } from '../../src/features/noteDraftCreator';
+import { convertMarkdownToNoteBody, buildNoteContent, performQualityCheck, derivePublishedUrl, extractKeyFromUrl, verifyMagazineAppliedFromApi } from '../../src/features/noteDraftCreator';
 
 test.describe('Note Draft Creator Unit Tests', () => {
   test('convertMarkdownToNoteBody should correctly map headings for study content', () => {
@@ -80,5 +80,39 @@ https://open.spotify.com/show/12345
     const fallback = 'https://editor.note.com/notes/n0e484c8e0206/publish/';
     const result = derivePublishedUrl(apiData, fallback);
     expect(result).toBe(fallback);
+  });
+
+  test('extractKeyFromUrl should correctly extract note key from various URL formats', () => {
+    expect(extractKeyFromUrl('https://editor.note.com/notes/n9437b0fb5854/edit/')).toBe('n9437b0fb5854');
+    expect(extractKeyFromUrl('https://note.com/clever_chives813/n/n9437b0fb5854')).toBe('n9437b0fb5854');
+    expect(extractKeyFromUrl('invalid-url')).toBeNull();
+  });
+
+  test('verifyMagazineAppliedFromApi should return true when belonging_magazine_keys is non-empty', () => {
+    const apiDataWithData = {
+      data: {
+        belonging_magazine_keys: ['m709ca5680512'],
+      },
+    };
+    expect(verifyMagazineAppliedFromApi(apiDataWithData)).toBe(true);
+
+    const apiDataRoot = {
+      belonging_magazine_keys: ['m709ca5680512'],
+    };
+    expect(verifyMagazineAppliedFromApi(apiDataRoot)).toBe(true);
+  });
+
+  test('verifyMagazineAppliedFromApi should return false when belonging_magazine_keys is empty or missing', () => {
+    const apiDataEmpty = {
+      data: {
+        belonging_magazine_keys: [],
+      },
+    };
+    expect(verifyMagazineAppliedFromApi(apiDataEmpty)).toBe(false);
+
+    const apiDataMissing = {
+      data: {},
+    };
+    expect(verifyMagazineAppliedFromApi(apiDataMissing)).toBe(false);
   });
 });

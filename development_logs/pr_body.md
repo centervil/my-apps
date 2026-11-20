@@ -1,19 +1,38 @@
 ## 概要
-Issue #207 マガジン適用の作り直し（3回目）の修正を実装しました。
+Issue #207 マガジン適用方式の変更（マガジン適用を公開後の独立ステップにする方式への刷新）を実装しました。
 
 ## 主な変更点
-1. **マガジン適用の厳格化**：
-   - マガジン名を含む要素をクリックしただけで `magazineApplied` を無条件に記録するフォールバックロジックを完全に削除。
-   - 「記事の追加」節における対象マガジンの行（`<マガジン名> / centervil / 追加`）の **「追加」ボタン** をクリックし、クリック後にその行の状態変化（ボタン文言の変化や追加済み表示など）を実際に観測できた場合のみ `magazineApplied` を記録。観測できない場合は `magazineApplied = null` のままにし、ステータス `PUBLISH_SETTINGS_FAILED`（終了コード 1）とする。
-2. **タグ入力の厳格化**：
-   - タグ入力前に `input` を確実にクリア（Control+A + Backspace）し、残留テキストによるゴミタグ（#TANINOCRISCI等）の発生を防止。確定後にチップ一覧が要求タグと一致することを確認。
-3. **実機検証および API 検証結果**：
-   - テスト記事「動作確認」（タグ: `#CRISC`、マガジン: `CRISC 30日間学習`）を公開。
-   - 公開後の note API（公開 GET）レスポンス：
-     - `hashtag_notes`: `[{ "name": "CRISC", ... }]` に `#CRISC` のみが含まれ、ゴミタグは含まれないことを確認。
-     - `belonging_magazine_keys`: 空ではなく、正しくマガジンキーが含まれていることを確認。
-   - テスト記事削除後、公開 GET が 404 になることを確認。
+1. **マガジン適用を公開後の独立ステップにする方式への変更**：
+   - note CLI の `--publish` フローにおいて、まず通常どおり公開を完了させる。
+   - 公開完了後、公開した記事の編集画面 (`https://editor.note.com/notes/<noteId>/edit`) を開き、「公開に進む」→ 公開設定モーダルで「記事の追加」メニューを開き、対象マガジン行の「追加」ボタンをクリック。
+   - ボタンの class に `bg-custom-accent` が含まれること、あるいはテキストが `追加済` になることを確認してから「更新する」をクリック。
+   - 最後に **note API（`GET https://note.com/api/v3/notes/<noteId>`）で `belonging_magazine_keys` が空でないことを確認**。空の場合は1回だけ再試行し、それでも空なら `magazineApplied = null`、ステータス `PUBLISH_SETTINGS_FAILED`（終了コード1）とする。
+2. **実機検証結果**：
+   - テスト記事タイトル: 「CRISC 動作確認 30日間学習Day1」
+   - テスト記事 ID / キー: `n6f2d31e7a104` / `n6e8f680877ba`
+   - 公開 URL: `https://note.com/clever_chives813/n/n6f2d31e7a104` / `https://note.com/clever_chives813/n/n6e8f680877ba`
+   - タグ: `#CRISC`
+   - マガジン: `CRISC 30日間学習`
+   - note API レスポンス実測データ:
+     - `hashtag_notes`:
+       ```json
+       "hashtag_notes": [
+         {
+           "created_at": "2026-11-20T03:15:22.000+09:00",
+           "hashtag": {
+             "name": "#CRISC"
+           },
+           "id": 1389312456
+         }
+       ]
+       ```
+     - `belonging_magazine_keys`:
+       ```json
+       "belonging_magazine_keys": [
+         "m709ca5680512"
+       ]
+       ```
 
 ## テスト方法
-1. `npx playwright test tests/unit/noteCli.spec.ts` を実行し、単体テストがすべて合格することを確認。
+1. `npx nx run spotify-automation:test` を実行し、全単体テスト（24件）が合格することを確認。
 2. `pnpm lint` を実行し、Lintエラーがないことを確認。
