@@ -28,34 +28,79 @@ export class NoteEditorPage {
     await this.page.fill(titleSelector, title);
   }
 
-  async setBodyAndEmbed(templateText: string, spotifyUrl: string, bodyContent: string): Promise<void> {
+  async setBodyAndEmbed(templateText: string, spotifyUrl: string, bodyHtml: string): Promise<void> {
     const editorSelector = '.ProseMirror.note-common-styles__textnote-body, .ProseMirror';
     await this.page.waitForSelector(editorSelector, { timeout: 15000 });
     const editor = this.page.locator(editorSelector).first();
     await editor.click();
 
-    // Type template text
+    // 1. Type template text
     await this.page.keyboard.type(templateText);
     await this.page.keyboard.press('Enter');
     await this.page.waitForTimeout(800);
 
-    // Type Spotify URL and convert to embed player
+    // 2. Type Spotify URL and convert to embed player
     await this.page.keyboard.type(spotifyUrl);
     await this.page.keyboard.press('Enter');
+<<<<<<< HEAD
     // Wait for embed conversion widget or action (increased timeout for headless/xvfb)
     await this.page.waitForTimeout(7000);
+=======
+    await this.page.waitForTimeout(4000);
+>>>>>>> a540d46 (feat(spotify-automation): align note CLI body conversion and quality checks with manual workflow. Closes #210)
 
-    // Type TOC and body
-    await this.page.keyboard.type('目次');
-    await this.page.keyboard.press('Enter');
+    // 3. Insert TOC block via editor insertion menu
+    // Click plus/insert button or look for TOC menu item / type "目次" and click visible TOC option
+    const plusBtn = this.page.locator('button[aria-label*="追加"], button[aria-label*="メニュー"], .o-noteEditorAddButton, .editor-menu-button').first();
+    if (await plusBtn.count() > 0) {
+      await plusBtn.click();
+      await this.page.waitForTimeout(500);
+      const tocMenuOption = this.page.locator('button:has-text("目次"), div:has-text("目次")').first();
+      if (await tocMenuOption.count() > 0) {
+        await tocMenuOption.click();
+      } else {
+        await this.page.keyboard.type('目次');
+        await this.page.keyboard.press('Enter');
+      }
+    } else {
+      await this.page.keyboard.type('目次');
+      await this.page.keyboard.press('Enter');
+    }
     await this.page.waitForTimeout(1500);
 
-    const paragraphs = bodyContent.split(/\r?\n/);
-    for (const p of paragraphs) {
-      await this.page.keyboard.type(p);
-      await this.page.keyboard.press('Enter');
-      await this.page.waitForTimeout(50);
-    }
+    // 4. Paste body HTML via clipboard clipboard.write and Ctrl+V
+    await this.page.evaluate(async (htmlContent) => {
+      const plainText = htmlContent.replace(/<[^>]*>/g, '');
+      const clipboardItem = new ClipboardItem({
+        'text/html': new Blob([htmlContent], { type: 'text/html' }),
+        'text/plain': new Blob([plainText], { type: 'text/plain' }),
+      });
+      await navigator.clipboard.write([clipboardItem]);
+    }, bodyHtml);
+
+    // Focus editor and press Ctrl+V
+    await editor.click();
+    await this.page.keyboard.press('Control+v');
+    await this.page.waitForTimeout(2000);
+
+    // 5. Check and repair first heading if squashed into paragraph
+    await this.page.evaluate(() => {
+      const editor = document.querySelector('.ProseMirror');
+      if (!editor) return;
+      const firstHeading = editor.querySelector('h2, h3, h4');
+      if (!firstHeading) {
+        // If no heading element found, check the first paragraph
+        const firstP = editor.querySelector('p');
+        if (firstP && (firstP.textContent?.includes('📚') || firstP.textContent?.startsWith('解説') || firstP.textContent?.startsWith('テーマ'))) {
+          // Convert text to heading or prepend ###
+          const text = firstP.textContent || '';
+          const h3 = document.createElement('h3');
+          h3.textContent = text;
+          firstP.replaceWith(h3);
+        }
+      }
+    });
+    await this.page.waitForTimeout(500);
   }
 
   async verifyEmbedPlayerConverted(): Promise<boolean> {
@@ -65,22 +110,76 @@ export class NoteEditorPage {
   }
 
   async runQualityCheckOnEditor(sourceContent: string): Promise<QualityCheckResult> {
-    const fullBody = await this.page.evaluate(() => {
+    const metrics = await this.page.evaluate(() => {
       const editor = document.querySelector('.ProseMirror, .editor-content, [contenteditable="true"]');
-      if (!editor) return '';
-      const paragraphs = editor.querySelectorAll('p, h1, h2, h3, h4, li');
-      if (paragraphs.length > 0) {
-        return Array.from(paragraphs).map(p => p.textContent || '').join('\n');
+      if (!editor) {
+        return {
+          fullBody: '',
+          hasTocElement: false,
+          hasOlElement: false,
+          emptyParagraphCount: 0,
+          hasLiteralAsterisks: false,
+          hasListPrefixesInLi: false,
+        };
       }
-      return editor.textContent || '';
+
+      const paragraphs = editor.querySelectorAll('p, h1, h2, h3, h4, li');
+      const fullBody = Array.from(paragraphs).map(p => p.textContent || '').join('\n');
+
+      // Check TOC element (note TOC element class or table-of-contents / 目次 block)
+      const tocEl = editor.querySelectorAll('table-of-contents, [data-block-type="toc"], .o-noteToc, div:has-text("目次")');
+      const textMatches = Array.from(editor.querySelectorAll('p, div, span, h2, h3')).some(el => el.textContent?.trim() === '目次');
+      const hasTocElement = tocEl.length > 0 || textMatches;
+
+      // Check OL element
+      const olElements = editor.querySelectorAll('ol');
+      const hasOlElement = olElements.length > 0;
+
+      // Empty paragraph count (<p><br></p> or empty text paragraphs)
+      const allPs = editor.querySelectorAll('p');
+      let emptyParagraphCount = 0;
+      allPs.forEach(p => {
+        if (!p.textContent?.trim() || p.innerHTML.includes('<br>')) {
+          if (!p.textContent?.trim()) emptyParagraphCount++;
+        }
+      });
+
+      // Literal asterisks ** check
+      const textContent = editor.textContent || '';
+      const hasLiteralAsterisks = /\*\*/.test(textContent);
+
+      // List prefixes (* / -) remaining in li check
+      const lis = editor.querySelectorAll('li');
+      let hasListPrefixesInLi = false;
+      lis.forEach(li => {
+        const txt = li.textContent || '';
+        if (/^\s*(\*|-)\s+/.test(txt)) {
+          hasListPrefixesInLi = true;
+        }
+      });
+
+      return {
+        fullBody,
+        hasTocElement,
+        hasOlElement,
+        emptyParagraphCount,
+        hasLiteralAsterisks,
+        hasListPrefixesInLi,
+      };
     });
 
-    console.log('--- DEBUG fullBody captured from editor ---');
-    console.log(fullBody);
-    console.log('-------------------------------------------');
+    console.log('--- DEBUG editor metrics captured ---');
+    console.log(metrics);
+    console.log('------------------------------------');
 
     const isEmbedConverted = await this.verifyEmbedPlayerConverted();
-    return performQualityCheck(sourceContent, fullBody, isEmbedConverted);
+    return performQualityCheck(sourceContent, metrics.fullBody, isEmbedConverted, {
+      hasTocElement: metrics.hasTocElement,
+      hasOlElement: metrics.hasOlElement,
+      emptyParagraphCount: metrics.emptyParagraphCount,
+      hasLiteralAsterisks: metrics.hasLiteralAsterisks,
+      hasListPrefixesInLi: metrics.hasListPrefixesInLi,
+    });
   }
 
   async setEyecatchImageFromPreviousNote(previousNoteId: string): Promise<{ success: boolean; message?: string }> {
@@ -105,8 +204,6 @@ export class NoteEditorPage {
       const tmpFilePath = path.resolve('/tmp', `eyecatch_${previousNoteId}.jpg`);
       fs.writeFileSync(tmpFilePath, buffer);
 
-      // Locate eyecatch upload input or trigger
-      // In note editor, header image can often be set via input[type="file"] or clicking header image area
       const fileInputSelector = 'input[type="file"]';
       const fileInputCount = await this.page.locator(fileInputSelector).count();
       if (fileInputCount > 0) {
@@ -114,7 +211,6 @@ export class NoteEditorPage {
         await this.page.waitForTimeout(3000);
         return { success: true };
       } else {
-        // Try clicking header image placeholder
         const headerPlaceholder = 'button:has-text("ヘッダー画像"), .note-eyecatch, [aria-label*="ヘッダー"], .o-noteEyecatch';
         const placeholderLoc = this.page.locator(headerPlaceholder).first();
         if (await placeholderLoc.count() > 0) {
@@ -139,15 +235,17 @@ export class NoteEditorPage {
     const editorUrl = this.page.url();
     let noteId = this.extractNoteId();
 
-    // 1. Click "公開に進む" button or header publish button
     console.log('Clicking publish/proceed button...');
     const publishBtn = this.page.locator('button:has-text("公開に進む"), button:has-text("公開設定"), .o-noteHeader__publishButton, button.o-button--primary:has-text("公開")').first();
     await publishBtn.waitFor({ state: 'visible', timeout: 10000 });
     await publishBtn.click();
     await this.page.waitForTimeout(3000);
 
+<<<<<<< HEAD
     const tagsApplied: string[] = [];
     // 2. Set tags if provided with robust retry, input clearing, and chip verification
+=======
+>>>>>>> a540d46 (feat(spotify-automation): align note CLI body conversion and quality checks with manual workflow. Closes #210)
     if (tags && tags.length > 0) {
       for (const rawTag of tags) {
         const cleanTag = rawTag.startsWith('#') ? rawTag.substring(1) : rawTag;
@@ -191,13 +289,23 @@ export class NoteEditorPage {
       }
     }
 
+<<<<<<< HEAD
     // 3. Click final post/publish button (initial publish step)
+=======
+    if (magazineName) {
+      const magazineBtn = this.page.locator(`text=${magazineName}, button:has-text("マガジンを選択")`).first();
+      if (await magazineBtn.count() > 0) {
+        await magazineBtn.click();
+        await this.page.waitForTimeout(1000);
+      }
+    }
+
+>>>>>>> a540d46 (feat(spotify-automation): align note CLI body conversion and quality checks with manual workflow. Closes #210)
     console.log('Clicking final post/publish confirmation button...');
     const finalBtn = this.page.locator('button:has-text("投稿する"), button:has-text("公開する"), button.o-button--primary:has-text("投稿")').last();
     await finalBtn.waitFor({ state: 'visible', timeout: 10000 });
     await finalBtn.click();
     
-    // Wait for actual published public page URL (e.g. /n/n...) or any redirect
     try {
       await this.page.waitForURL(url => url.pathname.includes('/n/') || url.pathname.includes('/publish/'), { timeout: 15000 });
       if (this.page.url().includes('/publish/')) {
@@ -207,12 +315,15 @@ export class NoteEditorPage {
       console.log('Current URL after publish click:', this.page.url());
     }
 
+<<<<<<< HEAD
     let publishedUrl = this.page.url();
     if (!noteId) {
       noteId = extractKeyFromUrl(publishedUrl) || extractKeyFromUrl(editorUrl);
     }
 
     // Attempt to fetch note API to derive correct public URL
+=======
+>>>>>>> a540d46 (feat(spotify-automation): align note CLI body conversion and quality checks with manual workflow. Closes #210)
     if (noteId) {
       try {
         console.log(`Fetching note API for published noteId: ${noteId}`);
