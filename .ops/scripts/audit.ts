@@ -224,7 +224,7 @@ async function checkNonNegotiables() {
         violations.push(`- **セキュリティリスク**: 秘密情報と思われるファイル \`${file}\` がリポジトリに含まれています。`);
       }
     }
-  } catch (e) {
+  } catch {
     // gitが入っていない環境等の考慮
   }
 

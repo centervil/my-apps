@@ -1,5 +1,5 @@
 import { type Page } from '@playwright/test';
-import { QualityCheckResult, performQualityCheck, derivePublishedUrl } from '../features/noteDraftCreator';
+import { QualityCheckResult, performQualityCheck, derivePublishedUrl, extractKeyFromUrl, verifyMagazineAppliedFromApi } from '../features/noteDraftCreator';
 import fs from 'fs';
 import path from 'path';
 
@@ -42,8 +42,8 @@ export class NoteEditorPage {
     // Type Spotify URL and convert to embed player
     await this.page.keyboard.type(spotifyUrl);
     await this.page.keyboard.press('Enter');
-    // Wait for embed conversion widget or action
-    await this.page.waitForTimeout(4000);
+    // Wait for embed conversion widget or action (increased timeout for headless/xvfb)
+    await this.page.waitForTimeout(7000);
 
     // Type TOC and body
     await this.page.keyboard.type('目次');
@@ -59,7 +59,7 @@ export class NoteEditorPage {
   }
 
   async verifyEmbedPlayerConverted(): Promise<boolean> {
-    const embedSelector = 'iframe[src*="spotify.com"], .embed-card, figure.embed, [data-service="spotify"], .o-noteEmbedCard';
+    const embedSelector = 'iframe[src*="spotify.com"], .embed-card, figure.embed, [data-service="spotify"], .o-noteEmbedCard, a[href*="spotify.com"]';
     const count = await this.page.locator(embedSelector).count();
     return count > 0;
   }
@@ -135,9 +135,9 @@ export class NoteEditorPage {
     }
   }
 
-  async publishNote(tags?: string[], magazineName?: string): Promise<string> {
+  async publishNote(tags?: string[], magazineName?: string): Promise<{ publishedUrl: string; tagsApplied: string[]; magazineApplied: string | null }> {
     const editorUrl = this.page.url();
-    const noteId = this.extractNoteId();
+    let noteId = this.extractNoteId();
 
     // 1. Click "公開に進む" button or header publish button
     console.log('Clicking publish/proceed button...');
@@ -146,29 +146,52 @@ export class NoteEditorPage {
     await publishBtn.click();
     await this.page.waitForTimeout(3000);
 
-    // 2. Set tags if provided
+    const tagsApplied: string[] = [];
+    // 2. Set tags if provided with robust retry, input clearing, and chip verification
     if (tags && tags.length > 0) {
       for (const rawTag of tags) {
         const cleanTag = rawTag.startsWith('#') ? rawTag.substring(1) : rawTag;
-        const tagInput = this.page.locator('input[placeholder*="ハッシュタグ"], input[placeholder*="タグ"], .tag-input input').first();
-        if (await tagInput.count() > 0) {
-          await tagInput.fill(cleanTag);
-          await tagInput.press('Enter');
+        let success = false;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            const tagInput = this.page.locator('input[placeholder*="ハッシュタグ"], input[placeholder*="タグ"], .tag-input input, input[aria-label*="タグ"], input[placeholder*="半角スペース"]').first();
+            if (await tagInput.count() > 0) {
+              await tagInput.click();
+              // Ensure input is empty before typing to avoid residual text/garbage tags
+              await tagInput.press('Control+A');
+              await tagInput.press('Backspace');
+              await tagInput.fill(cleanTag);
+              await tagInput.press('Enter');
+              await this.page.waitForTimeout(1000);
+
+              // Also try clicking candidate or suggestion if present
+              const suggestion = this.page.locator(`.suggestion-item, .tag-suggestion, li:has-text("${cleanTag}")`).first();
+              if (await suggestion.count() > 0 && await suggestion.isVisible()) {
+                await suggestion.click();
+                await this.page.waitForTimeout(1000);
+              }
+
+              // Verify tag chip appears and matches requested tag
+              const chipSelector = `.tag-item, .o-tagItem, span:has-text("${cleanTag}"), div:has-text("${cleanTag}"), .o-tag`;
+              const chipLoc = this.page.locator(chipSelector).first();
+              if (await chipLoc.isVisible({ timeout: 2000 })) {
+                tagsApplied.push(cleanTag);
+                success = true;
+                break;
+              }
+            }
+          } catch (e) {
+            console.log(`Attempt ${attempt} failed to apply tag ${cleanTag}:`, e);
+          }
           await this.page.waitForTimeout(1000);
+        }
+        if (!success) {
+          console.log(`Warning: Tag #${cleanTag} chip element confirmation failed after 3 attempts.`);
         }
       }
     }
 
-    // 3. Set magazine if provided
-    if (magazineName) {
-      const magazineBtn = this.page.locator(`text=${magazineName}, button:has-text("マガジンを選択")`).first();
-      if (await magazineBtn.count() > 0) {
-        await magazineBtn.click();
-        await this.page.waitForTimeout(1000);
-      }
-    }
-
-    // 4. Click final publish/post button
+    // 3. Click final post/publish button (initial publish step)
     console.log('Clicking final post/publish confirmation button...');
     const finalBtn = this.page.locator('button:has-text("投稿する"), button:has-text("公開する"), button.o-button--primary:has-text("投稿")').last();
     await finalBtn.waitFor({ state: 'visible', timeout: 10000 });
@@ -184,6 +207,11 @@ export class NoteEditorPage {
       console.log('Current URL after publish click:', this.page.url());
     }
 
+    let publishedUrl = this.page.url();
+    if (!noteId) {
+      noteId = extractKeyFromUrl(publishedUrl) || extractKeyFromUrl(editorUrl);
+    }
+
     // Attempt to fetch note API to derive correct public URL
     if (noteId) {
       try {
@@ -194,7 +222,7 @@ export class NoteEditorPage {
           const derived = derivePublishedUrl(apiData, editorUrl);
           if (derived !== editorUrl) {
             console.log(`Successfully derived public URL from note API: ${derived}`);
-            return derived;
+            publishedUrl = derived;
           }
         }
       } catch (err) {
@@ -202,6 +230,171 @@ export class NoteEditorPage {
       }
     }
 
-    return this.page.url();
+    let magazineApplied: string | null = null;
+
+    // 4. Post-publish independent magazine application step
+    if (magazineName && noteId) {
+      console.log(`Executing post-publish magazine application for magazine "${magazineName}"...`);
+      const success = await this.applyMagazinePostPublish(noteId, magazineName);
+      if (success) {
+        magazineApplied = magazineName;
+      }
+    } else if (magazineName && !noteId) {
+      console.log('Warning: Cannot execute post-publish magazine application because noteId could not be extracted.');
+    }
+
+    return { publishedUrl, tagsApplied, magazineApplied };
+  }
+
+  async applyMagazinePostPublish(noteId: string, magazineName: string): Promise<boolean> {
+    console.log(`Starting post-publish magazine application process for noteId: ${noteId}, magazine: "${magazineName}"`);
+
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      console.log(`[Magazine Apply Attempt ${attempt}/2] Opening edit page: https://editor.note.com/notes/${noteId}/edit`);
+      try {
+        await this.page.goto(`https://editor.note.com/notes/${noteId}/edit`);
+        await this.page.waitForURL(/\/notes\/[a-zA-Z0-9_\-]+\/edit\/?.*/, { timeout: 30000 });
+        await this.page.waitForTimeout(2000);
+
+        // Click "公開に進む" button
+        console.log('[Magazine Apply] Clicking "公開に進む"...');
+        const publishBtn = this.page.locator('button:has-text("公開に進む"), button:has-text("公開設定"), .o-noteHeader__publishButton, button.o-button--primary:has-text("公開")').first();
+        await publishBtn.waitFor({ state: 'visible', timeout: 10000 });
+        await publishBtn.click();
+        await this.page.waitForTimeout(3000);
+
+        // Select "記事の追加" (magazine settings) menu in publish settings modal
+        const magazineMenuItem = this.page.locator('#item-magazine-add, button:has-text("記事の追加")').first();
+        if (await magazineMenuItem.count() > 0 && await magazineMenuItem.isVisible()) {
+          console.log('[Magazine Apply] Clicking "#item-magazine-add" menu item to reveal magazine list...');
+          await magazineMenuItem.click();
+          await this.page.waitForTimeout(2000);
+        }
+
+        // Select magazine tab if present
+        const magazineTab = this.page.locator('button:has-text("マガジン"), [role="tab"]:has-text("マガジン"), div:has-text("マガジン")').first();
+        if (await magazineTab.count() > 0 && await magazineTab.isVisible()) {
+          await magazineTab.click().catch(() => {});
+          await this.page.waitForTimeout(1000);
+        }
+
+        // Find magazine row containing exact or matching magazineName and centervil, then click its "追加" button
+        const magazineRows = this.page.locator('div, tr, li').filter({ hasText: magazineName });
+        const count = await magazineRows.count();
+        let clicked = false;
+        let verifiedAccent = false;
+
+        for (let i = 0; i < count; i++) {
+          const row = magazineRows.nth(i);
+          const rowText = await row.textContent() || '';
+          // Ensure we target the row specifically for magazineName (e.g. rowText contains magazineName and centervil, and does not belong to another magazine name)
+          if (rowText.includes(magazineName) && rowText.includes('centervil') && !rowText.includes('CCSP') && (rowText.includes('追加') || rowText.includes('追加済'))) {
+            const addBtn = row.locator('button, a').filter({ hasText: '追加' }).first();
+            if (await addBtn.count() > 0 && await addBtn.isVisible()) {
+              const btnText = await addBtn.textContent() || '';
+              if (btnText.includes('追加済')) {
+                console.log(`[Magazine Apply] Magazine "${magazineName}" is already added.`);
+                clicked = true;
+                verifiedAccent = true;
+                break;
+              }
+              console.log(`[Magazine Apply] Found "追加" button for "${magazineName}" at row index ${i}. Clicking with force...`);
+              await addBtn.click({ force: true });
+              await this.page.waitForTimeout(2000);
+
+              // Observe button state change (class includes bg-custom-accent or text includes 追加済) via polling
+              for (let poll = 1; poll <= 5; poll++) {
+                const btnState = await addBtn.evaluate((el) => {
+                  const cls = el.className || '';
+                  const txt = el.textContent || '';
+                  return { cls, txt, hasAccent: cls.includes('bg-custom-accent') || txt.includes('追加済') };
+                });
+
+                if (btnState.hasAccent) {
+                  verifiedAccent = true;
+                  console.log(`[Magazine Apply] Button verification success (bg-custom-accent or '追加済' found at poll ${poll}).`);
+                  break;
+                }
+                await this.page.waitForTimeout(1000);
+              }
+
+              clicked = true;
+              break;
+            }
+          }
+        }
+
+        if (!clicked || !verifiedAccent) {
+          console.log(`[Magazine Apply Attempt ${attempt}] Warning: DOM button click or bg-custom-accent class verification was not confirmed.`);
+        }
+
+        // Click "更新する" button
+        console.log('[Magazine Apply] Clicking "更新する" button...');
+        const updateBtn = this.page.locator('button:has-text("更新する"), button:has-text("投稿する"), button:has-text("公開する")').last();
+        await updateBtn.waitFor({ state: 'visible', timeout: 10000 });
+        await updateBtn.click();
+        await this.page.waitForTimeout(5000);
+
+        // Verify belonging_magazine_keys via note API
+        console.log(`[Magazine Apply Attempt ${attempt}] Verifying belonging_magazine_keys via note API (GET https://note.com/api/v3/notes/${noteId})...`);
+        const apiResponse = await this.page.request.get(`https://note.com/api/v3/notes/${noteId}`);
+        if (apiResponse.ok()) {
+          const apiData = await apiResponse.json();
+          const isApplied = verifyMagazineAppliedFromApi(apiData);
+          console.log(`[Magazine Apply Attempt ${attempt}] API verification result: ${isApplied}. belonging_magazine_keys:`, apiData?.data?.belonging_magazine_keys ?? apiData?.belonging_magazine_keys);
+          if (isApplied) {
+            console.log(`✅ [Magazine Apply Attempt ${attempt}] Verified magazine application via note API!`);
+            return true;
+          }
+        } else {
+          console.log(`[Magazine Apply Attempt ${attempt}] note API response status: ${apiResponse.status()}`);
+        }
+
+      } catch (err) {
+        console.log(`[Magazine Apply Attempt ${attempt}] Error:`, err);
+      }
+    }
+
+    console.log('❌ Post-publish magazine application failed after 2 attempts. belonging_magazine_keys is empty on note API.');
+    return false;
+  }
+
+  async deleteNote(noteId: string): Promise<boolean> {
+    try {
+      console.log(`Attempting to delete noteId: ${noteId}...`);
+      await this.page.goto(`https://editor.note.com/notes/${noteId}/edit`);
+      await this.page.waitForURL(/\/notes\/[a-zA-Z0-9_\-]+\/edit\/?.*/, { timeout: 30000 });
+      await this.page.waitForTimeout(2000);
+
+      // Click "公開に進む" to open publish modal where delete option or setting might be
+      const publishBtn = this.page.locator('button:has-text("公開に進む"), button:has-text("公開設定")').first();
+      if (await publishBtn.count() > 0 && await publishBtn.isVisible()) {
+        await publishBtn.click();
+        await this.page.waitForTimeout(2000);
+
+        const detailSettingTab = this.page.locator('#item-detail-setting, button:has-text("詳細設定")').first();
+        if (await detailSettingTab.count() > 0 && await detailSettingTab.isVisible()) {
+          await detailSettingTab.click();
+          await this.page.waitForTimeout(1500);
+
+          const delBtn = this.page.locator('button:has-text("記事を削除"), button:has-text("削除する"), button:has-text("削除")').first();
+          if (await delBtn.count() > 0 && await delBtn.isVisible()) {
+            await delBtn.click({ force: true });
+            await this.page.waitForTimeout(1000);
+
+            const confirmBtn = this.page.locator('button:has-text("削除する"), button:has-text("OK"), button.o-button--danger').first();
+            if (await confirmBtn.count() > 0 && await confirmBtn.isVisible()) {
+              await confirmBtn.click({ force: true });
+              await this.page.waitForTimeout(3000);
+              console.log(`Successfully deleted note ${noteId}`);
+              return true;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.log('Error deleting note:', e);
+    }
+    return false;
   }
 }

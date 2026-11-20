@@ -224,17 +224,39 @@ export const main = async () => {
     }
 
     let publishedUrl: string | undefined = undefined;
+    let publishDetails: { tagsApplied: string[]; magazineApplied: string | null } | undefined = undefined;
+    let publishFailed = false;
     if (publish) {
       console.log('Quality checks passed. Proceeding to publish note...');
       const tagList = tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined;
-      publishedUrl = await editorPage.publishNote(tagList, magazine);
-      console.log(`Successfully published note at: ${publishedUrl}`);
+      const pubResult = await editorPage.publishNote(tagList, magazine);
+      publishedUrl = pubResult.publishedUrl;
+      publishDetails = {
+        tagsApplied: pubResult.tagsApplied,
+        magazineApplied: pubResult.magazineApplied,
+      };
+      console.log(`Successfully published note at: ${publishedUrl}`, publishDetails);
+
+      // Verify if requested tags/magazine were successfully applied
+      const requestedTags = tagList || [];
+      const requestedMagazine = magazine || null;
+
+      const tagsMismatch = requestedTags.some(t => {
+        const clean = t.startsWith('#') ? t.substring(1) : t;
+        return !publishDetails!.tagsApplied.includes(clean);
+      });
+      const magazineMismatch = requestedMagazine !== null && publishDetails!.magazineApplied !== requestedMagazine;
+
+      if (tagsMismatch || magazineMismatch) {
+        console.error('\n❌ Requested tags or magazine could not be fully verified as applied.');
+        publishFailed = true;
+      }
     }
 
     await browser.close();
 
-    const status: ExecutionStatus = 'SUCCESS';
-    const exitCode = 0;
+    const status: ExecutionStatus = publishFailed ? 'PUBLISH_SETTINGS_FAILED' : 'SUCCESS';
+    const exitCode = publishFailed ? 1 : 0;
 
     const executionResult: ExecutionResult = {
       success: true,
@@ -249,6 +271,7 @@ export const main = async () => {
         publishedUrl,
         eyecatchResult,
         qualityCheck: qualityResult,
+        ...(publishDetails || {}),
       },
     };
 

@@ -8,6 +8,7 @@ export type ExecutionStatus =
   | 'PERMANENT_FAILURE'
   | 'VALIDATION_ERROR'
   | 'QUALITY_CHECK_FAILED'
+  | 'PUBLISH_SETTINGS_FAILED'
   | 'UNKNOWN_ERROR';
 
 export interface ExecutionResult {
