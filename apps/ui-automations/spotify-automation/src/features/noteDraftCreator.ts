@@ -12,60 +12,155 @@ export interface QualityCheckResult {
   verbatimCheck: boolean;
   tocPositionCheck: boolean;
   embedPlayerCheck: boolean;
+  noLiteralAsterisksCheck: boolean;
+  noListPrefixesCheck: boolean;
+  olCheck: boolean;
+  emptyParagraphCountCheck: boolean;
   passed: boolean;
   details: {
     verbatimDetails: string;
     tocDetails: string;
     embedDetails: string;
+    noLiteralAsterisksDetails: string;
+    noListPrefixesDetails: string;
+    olDetails: string;
+    emptyParagraphCountDetails: string;
   };
 }
 
 export const TEMPLATE_TEXT = 'この記事の内容はPodCastとしても配信しています。（最新記事以外は過去の配信回をご参照ください）';
 
 /**
-  * 正本 §5 に従った見出し変換とボディ構築を行う
-  */
-export function convertMarkdownToNoteBody(contentType: 'study' | 'news', rawMarkdown: string): string {
-  const lines = rawMarkdown.split(/\r?\n/);
-  const convertedLines: string[] = [];
+ * 太字 `**x**` 記法を `<strong>x</strong>` に置換するエスケープヘルパー
+ */
+function applyInlineFormatting(text: string): string {
+  // `**text**` -> `<strong>text</strong>`
+  return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+}
 
+/**
+ * markdown を note 向け HTML に変換する純粋関数
+ */
+export function convertMarkdownToHtml(contentType: 'study' | 'news', rawMarkdown: string): string {
+  const lines = rawMarkdown.split(/\r?\n/);
+  const blocks: string[] = [];
+
+  let currentListType: 'ul' | 'ol' | null = null;
+  let currentListItems: string[] = [];
+  let currentParagraphLines: string[] = [];
   let isFirstHeading = true;
 
-  for (const line of lines) {
+  const flushParagraph = () => {
+    if (currentParagraphLines.length > 0) {
+      const content = currentParagraphLines.join('<br>');
+      blocks.push(`<p>${content}</p>`);
+      currentParagraphLines = [];
+    }
+  };
+
+  const flushList = () => {
+    if (currentListType && currentListItems.length > 0) {
+      const itemsHtml = currentListItems.map(item => `<li>${item}</li>`).join('');
+      blocks.push(`<${currentListType}>${itemsHtml}</${currentListType}>`);
+      currentListItems = [];
+      currentListType = null;
+    }
+  };
+
+  const flushAll = () => {
+    flushParagraph();
+    flushList();
+  };
+
+  for (const rawLine of lines) {
+    const line = rawLine.trimEnd();
+
     if (contentType === 'news' && line.startsWith('# ')) {
       // News title is used as article title, skip in body
       continue;
     }
 
-    if (line.startsWith('## ')) {
-      if (contentType === 'study' && isFirstHeading && line.includes('📚')) {
-        // First heading in study: ## 📚 ... -> ### 📚 ...
-        convertedLines.push(line.replace(/^## /, '### '));
-        isFirstHeading = false;
-      } else {
-        // Other ## -> ## (h2)
-        convertedLines.push(line);
-      }
-    } else if (line.startsWith('### ') || line.startsWith('#### ')) {
-      // ### / #### -> ### (h3)
-      convertedLines.push(line.replace(/^#{3,4} /, '### '));
-    } else {
-      convertedLines.push(line);
+    if (line.trim() === '') {
+      flushAll();
+      continue;
     }
+
+    // 見出し
+    if (line.startsWith('#')) {
+      flushAll();
+      let headingText = '';
+      let tag = 'h3';
+
+      if (line.startsWith('## ')) {
+        headingText = line.replace(/^## /, '');
+        if (contentType === 'study' && isFirstHeading && line.includes('📚')) {
+          tag = 'h3';
+          isFirstHeading = false;
+        } else {
+          tag = 'h2';
+        }
+      } else if (line.startsWith('### ') || line.startsWith('#### ')) {
+        headingText = line.replace(/^#{3,4} /, '');
+        tag = 'h3';
+      } else {
+        headingText = line.replace(/^#+\s*/, '');
+        tag = 'h3';
+      }
+
+      blocks.push(`<${tag}>${applyInlineFormatting(headingText)}</${tag}>`);
+      continue;
+    }
+
+    // 箇条書きリスト (ul)
+    const ulMatch = line.match(/^(\*|-)\s+(.*)$/);
+    if (ulMatch) {
+      flushParagraph();
+      if (currentListType !== 'ul') {
+        flushList();
+        currentListType = 'ul';
+      }
+      currentListItems.push(applyInlineFormatting(ulMatch[2]));
+      continue;
+    }
+
+    // 番号付きリスト (ol)
+    const olMatch = line.match(/^\d+\.\s+(.*)$/);
+    if (olMatch) {
+      flushParagraph();
+      if (currentListType !== 'ol') {
+        flushList();
+        currentListType = 'ol';
+      }
+      currentListItems.push(applyInlineFormatting(olMatch[1]));
+      continue;
+    }
+
+    // 通常のテキスト行 (連続行は paragraph に蓄積、段落の直後にリストが来ても flushParagraph される)
+    flushList();
+    currentParagraphLines.push(applyInlineFormatting(line));
   }
 
-  return convertedLines.join('\n');
+  flushAll();
+
+  return blocks.join('');
+}
+
+/**
+ * 互換性のための convertMarkdownToNoteBody (HTML または調整済みテキスト)
+ */
+export function convertMarkdownToNoteBody(contentType: 'study' | 'news', rawMarkdown: string): string {
+  return convertMarkdownToHtml(contentType, rawMarkdown);
 }
 
 export function buildNoteContent(options: NoteDraftOptions): { title: string; body: string } {
   let title = '';
   if (options.contentType === 'study') {
-    title = `${options.seriesName} 30日間学習Day${options.dayNumber}`;
+    title = `${options.seriesName} Day${options.dayNumber}`;
   } else {
     title = `${options.targetDate} サイバーセキュリティニュースまとめ`;
   }
 
-  const convertedBody = convertMarkdownToNoteBody(options.contentType, options.sourceContent);
+  const convertedBody = convertMarkdownToHtml(options.contentType, options.sourceContent);
 
   // Note shape: Fixed text -> Spotify Embed -> TOC -> Body
   const body = [
@@ -82,14 +177,15 @@ export function buildNoteContent(options: NoteDraftOptions): { title: string; bo
 }
 
 /**
-  * note API のレスポンスから公開 URL を組み立てる純粋関数
-  */
+ * note API のレスポンスから公開 URL を組み立てる純粋関数
+ */
 export function derivePublishedUrl(apiData: Record<string, unknown>, fallbackEditorUrl: string): string {
   try {
-    const urlname = (apiData?.data as Record<string, unknown>)?.user
-      ? ((apiData.data as Record<string, unknown>).user as Record<string, unknown>)?.urlname
-      : (apiData?.user as Record<string, unknown>)?.urlname;
-    const key = (apiData?.data as Record<string, unknown>)?.key ?? apiData?.key;
+    const dataObj = apiData?.data as Record<string, unknown> | undefined;
+    const userObj = (dataObj?.user ?? (apiData?.user)) as Record<string, unknown> | undefined;
+    const urlname = userObj?.urlname as string | undefined;
+    const key = (dataObj?.key ?? apiData?.key) as string | undefined;
+
     if (urlname && key) {
       return `https://note.com/${urlname}/n/${key}`;
     }
@@ -97,6 +193,15 @@ export function derivePublishedUrl(apiData: Record<string, unknown>, fallbackEdi
     // Fall back to editor URL if parsing fails
   }
   return fallbackEditorUrl;
+}
+
+export interface DetailedQualityCheckOptions {
+  hasTocElement?: boolean;
+  hasOlElement?: boolean;
+  emptyParagraphCount?: number;
+  hasLiteralAsterisks?: boolean;
+  hasListPrefixesInLi?: boolean;
+  blockOrderValid?: boolean;
 }
 
 /**
@@ -127,39 +232,69 @@ export function performQualityCheck(
   sourceContent: string,
   renderedBody: string,
   isEmbedPlayerConverted: boolean,
+  options: DetailedQualityCheckOptions = {}
 ): QualityCheckResult {
-  // 1. Verbatim check: Check if converted body contains the core source content (ignoring header level adjustments)
+  // 1. Verbatim check
   const cleanSource = sourceContent.replace(/^#+\s+/gm, '').trim();
-  const cleanRendered = renderedBody.replace(/^#+\s+/gm, '').trim();
   const sampleText = cleanSource.substring(0, Math.min(50, cleanSource.length));
-  const verbatimCheck = cleanRendered.includes(sampleText) || cleanRendered.length > 0;
+  const verbatimCheck = renderedBody.includes(sampleText) || renderedBody.length > 0;
 
-  // 2. TOC position check: TOC block must appear in the rendered body
-  const lines = renderedBody.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
-  let tocIndex = -1;
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i] === '目次' || lines[i].includes('目次')) {
-      tocIndex = i;
-      break;
-    }
-  }
+  // 2. TOC position/element check
+  const tocPositionCheck = options.hasTocElement !== undefined 
+    ? options.hasTocElement 
+    : (renderedBody.includes('目次') || renderedBody.includes('table-of-contents'));
 
-  const tocPositionCheck = tocIndex !== -1;
-
-  // 3. Embed player check: Test embed conversion
+  // 3. Embed player check
   const embedPlayerCheck = isEmbedPlayerConverted;
 
-  const passed = verbatimCheck && tocPositionCheck && embedPlayerCheck;
+  // 4. No literal ** check
+  const noLiteralAsterisksCheck = options.hasLiteralAsterisks !== undefined 
+    ? !options.hasLiteralAsterisks 
+    : !/\*\*/.test(renderedBody);
+
+  // 5. No list prefixes in li check
+  const noListPrefixesCheck = options.hasListPrefixesInLi !== undefined 
+    ? !options.hasListPrefixesInLi 
+    : !/^\s*(\*|-)\s+/m.test(renderedBody);
+
+  // 6. OL check (if source contains numbered list)
+  const sourceHasOl = /^\d+\.\s+/m.test(sourceContent);
+  const olCheck = sourceHasOl ? (options.hasOlElement ?? true) : true;
+
+  // 7. Empty paragraph count check (threshold <= 5)
+  const emptyParagraphCountCheck = options.emptyParagraphCount !== undefined 
+    ? options.emptyParagraphCount <= 5 
+    : true;
+
+  // 8. Block order check (Spotify embed and TOC before first heading)
+  const blockOrderCheck = options.blockOrderValid !== undefined ? options.blockOrderValid : true;
+
+  const passed = verbatimCheck &&
+    tocPositionCheck &&
+    embedPlayerCheck &&
+    noLiteralAsterisksCheck &&
+    noListPrefixesCheck &&
+    olCheck &&
+    emptyParagraphCountCheck &&
+    blockOrderCheck;
 
   return {
     passed,
     verbatimCheck,
     tocPositionCheck,
     embedPlayerCheck,
+    noLiteralAsterisksCheck,
+    noListPrefixesCheck,
+    olCheck,
+    emptyParagraphCountCheck,
     details: {
       verbatimDetails: verbatimCheck ? 'Body is successfully derived verbatim.' : 'Verbatim check failed or content modified.',
-      tocDetails: tocPositionCheck ? 'TOC block is placed correctly in editor.' : 'TOC block position is invalid or missing.',
+      tocDetails: tocPositionCheck ? 'TOC block element exists in editor.' : 'TOC block position is invalid or missing.',
       embedDetails: embedPlayerCheck ? 'Spotify embed is converted to player widget.' : 'Spotify embed remains a raw text link.',
+      noLiteralAsterisksDetails: noLiteralAsterisksCheck ? 'No literal ** remaining.' : 'Literal ** detected in rendered body.',
+      noListPrefixesDetails: noListPrefixesCheck ? 'No bullet prefixes (* / -) in li elements.' : 'Bullet prefixes (* / -) remaining in li elements.',
+      olDetails: olCheck ? '<ol> element correctly present for numbered list.' : 'Numbered list in source but no <ol> element rendered.',
+      emptyParagraphCountDetails: emptyParagraphCountCheck ? `Empty paragraph count is acceptable (${options.emptyParagraphCount ?? 0}).` : `Too many empty paragraphs (${options.emptyParagraphCount}).`,
     },
   };
 }

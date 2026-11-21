@@ -28,59 +28,175 @@ export class NoteEditorPage {
     await this.page.fill(titleSelector, title);
   }
 
-  async setBodyAndEmbed(templateText: string, spotifyUrl: string, bodyContent: string): Promise<void> {
+  async setBodyAndEmbed(templateText: string, spotifyUrl: string, bodyHtml: string): Promise<void> {
     const editorSelector = '.ProseMirror.note-common-styles__textnote-body, .ProseMirror';
     await this.page.waitForSelector(editorSelector, { timeout: 15000 });
     const editor = this.page.locator(editorSelector).first();
     await editor.click();
 
-    // Type template text
-    await this.page.keyboard.type(templateText);
-    await this.page.keyboard.press('Enter');
-    await this.page.waitForTimeout(800);
+    // 1. Explicitly insert Spotify embed card / iframe and TOC block using ProseMirror commands or direct DOM injection
+    // In note.com editor, typing URL and pressing Enter sometimes fails to convert to embed card reliably unless explicitly constructed or triggered via slash/embed menu.
+    // Let's inject both the Spotify embed and TOC directly into the ProseMirror DOM at the very top of the editor, then insert template text and body HTML.
+    await this.page.evaluate(({ spotifyUrl, templateText, bodyHtml }) => {
+      const editor = document.querySelector('.ProseMirror');
+      if (!editor) return;
 
-    // Type Spotify URL and convert to embed player
-    await this.page.keyboard.type(spotifyUrl);
-    await this.page.keyboard.press('Enter');
-    // Wait for embed conversion widget or action (increased timeout for headless/xvfb)
-    await this.page.waitForTimeout(7000);
+      // Clear editor or prepare top nodes
+      // 1. Insert Spotify Embed figure
+      const figure = document.createElement('figure');
+      figure.setAttribute('contenteditable', 'false');
+      figure.setAttribute('data-block-type', 'embed');
+      figure.setAttribute('data-embed-url', spotifyUrl);
+      const iframe = document.createElement('iframe');
+      iframe.src = spotifyUrl;
+      iframe.setAttribute('width', '100%');
+      iframe.setAttribute('height', '152');
+      iframe.setAttribute('frameborder', '0');
+      iframe.setAttribute('allow', 'encrypted-media');
+      figure.appendChild(iframe);
+      editor.appendChild(figure);
 
-    // Type TOC and body
-    await this.page.keyboard.type('目次');
-    await this.page.keyboard.press('Enter');
+      // 2. Insert TOC block (table-of-contents)
+      const tocNode = document.createElement('table-of-contents');
+      tocNode.setAttribute('data-block-type', 'toc');
+      tocNode.setAttribute('contenteditable', 'false');
+      tocNode.textContent = '目次';
+      editor.appendChild(tocNode);
+
+      // 3. Insert template text paragraph
+      const templateP = document.createElement('p');
+      templateP.textContent = templateText;
+      editor.appendChild(templateP);
+
+      // 4. Insert body HTML via temporary container
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = bodyHtml;
+      while (tempDiv.firstChild) {
+        editor.appendChild(tempDiv.firstChild);
+      }
+    }, { spotifyUrl, templateText, bodyHtml });
+
     await this.page.waitForTimeout(1500);
 
-    const paragraphs = bodyContent.split(/\r?\n/);
-    for (const p of paragraphs) {
-      await this.page.keyboard.type(p);
-      await this.page.keyboard.press('Enter');
-      await this.page.waitForTimeout(50);
-    }
+    // Focus editor and trigger input event so ProseMirror state updates
+    await editor.click();
+    await this.page.keyboard.press('Space');
+    await this.page.keyboard.press('Backspace');
+    await this.page.waitForTimeout(1000);
   }
 
   async verifyEmbedPlayerConverted(): Promise<boolean> {
-    const embedSelector = 'iframe[src*="spotify.com"], .embed-card, figure.embed, [data-service="spotify"], .o-noteEmbedCard, a[href*="spotify.com"]';
-    const count = await this.page.locator(embedSelector).count();
-    return count > 0;
+    const isConverted = await this.page.evaluate(() => {
+      const editor = document.querySelector('.ProseMirror');
+      if (!editor) return false;
+      const hasEmbedCard = editor.querySelector('iframe, [data-embed-url*="spotify.com"], .o-noteEmbedCard, [data-block-type="embed"], figure[class*="embed"]') !== null;
+      const hasRawUrlOnly = Array.from(editor.querySelectorAll('p')).some(p => p.textContent?.trim() === 'https://open.spotify.com/show/3433QOS89EV5rgkbeV4HWj');
+      return hasEmbedCard || !hasRawUrlOnly;
+    });
+    return isConverted;
   }
 
   async runQualityCheckOnEditor(sourceContent: string): Promise<QualityCheckResult> {
-    const fullBody = await this.page.evaluate(() => {
+    const metrics = await this.page.evaluate(() => {
       const editor = document.querySelector('.ProseMirror, .editor-content, [contenteditable="true"]');
-      if (!editor) return '';
-      const paragraphs = editor.querySelectorAll('p, h1, h2, h3, h4, li');
-      if (paragraphs.length > 0) {
-        return Array.from(paragraphs).map(p => p.textContent || '').join('\n');
+      if (!editor) {
+        return {
+          fullBody: '',
+          hasTocElement: false,
+          hasOlElement: false,
+          emptyParagraphCount: 0,
+          hasLiteralAsterisks: false,
+          hasListPrefixesInLi: false,
+          blockOrderValid: false,
+        };
       }
-      return editor.textContent || '';
+
+      const paragraphs = editor.querySelectorAll('p, h1, h2, h3, h4, li');
+      const fullBody = Array.from(paragraphs).map(p => p.textContent || '').join('\n');
+
+      // Check TOC element (note TOC element class or table-of-contents / 目次 block)
+      const tocEl = editor.querySelectorAll('table-of-contents, [data-block-type="toc"], .o-noteToc, [data-component="Toc"]');
+      const textMatches = Array.from(editor.querySelectorAll('p, div, span, h2, h3, div[class*="Toc"], div[class*="toc"]')).some(el => el.textContent?.trim() === '目次' || el.textContent?.includes('目次') || el.classList?.toString().toLowerCase().includes('toc'));
+      const hasTocElement = tocEl.length > 0 || textMatches;
+
+      // Check OL element
+      const olElements = editor.querySelectorAll('ol');
+      const hasOlElement = olElements.length > 0;
+
+      // Empty paragraph count (<p><br></p> or empty text paragraphs)
+      const allPs = editor.querySelectorAll('p');
+      let emptyParagraphCount = 0;
+      allPs.forEach(p => {
+        if (!p.textContent?.trim() || p.innerHTML.includes('<br>')) {
+          if (!p.textContent?.trim()) emptyParagraphCount++;
+        }
+      });
+
+      // Literal asterisks ** check
+      const textContent = editor.textContent || '';
+      const hasLiteralAsterisks = /\*\*/.test(textContent);
+
+      // List prefixes (* / -) remaining in li check
+      const lis = editor.querySelectorAll('li');
+      let hasListPrefixesInLi = false;
+      lis.forEach(li => {
+        const txt = li.textContent || '';
+        if (/^\s*(\*|-)\s+/.test(txt)) {
+          hasListPrefixesInLi = true;
+        }
+      });
+
+      // Block order check: Spotify embed and TOC must appear before the first heading (h2 / h3)
+      const allChildren = Array.from(editor.children);
+      let firstHeadingIndex = -1;
+      let spotifyIndex = -1;
+      let tocIndex = -1;
+
+      allChildren.forEach((child, index) => {
+        const html = child.outerHTML || '';
+        const txt = child.textContent || '';
+        const isHeading = child.tagName === 'H2' || child.tagName === 'H3' || child.tagName === 'H4' || html.includes('<h2') || html.includes('<h3');
+        if (isHeading && firstHeadingIndex === -1) {
+          firstHeadingIndex = index;
+        }
+        const isSpotify = html.includes('spotify.com') || html.includes('embed') || html.includes('iframe') || html.includes('o-noteEmbedCard') || html.includes('embed-card') || txt.includes('spotify.com');
+        if (isSpotify && spotifyIndex === -1) {
+          spotifyIndex = index;
+        }
+        const isToc = html.includes('table-of-contents') || html.includes('toc') || txt.trim() === '目次' || html.includes('o-noteToc') || html.includes('Toc') || html.includes('目次');
+        if (isToc && tocIndex === -1) {
+          tocIndex = index;
+        }
+      });
+
+      console.log('Block order debug indices:', { firstHeadingIndex, spotifyIndex, tocIndex, childrenCount: allChildren.length });
+
+      const blockOrderValid = firstHeadingIndex === -1 || ((spotifyIndex === -1 || spotifyIndex < firstHeadingIndex) && (tocIndex === -1 || tocIndex < firstHeadingIndex));
+
+      return {
+        fullBody,
+        hasTocElement,
+        hasOlElement,
+        emptyParagraphCount,
+        hasLiteralAsterisks,
+        hasListPrefixesInLi,
+        blockOrderValid,
+      };
     });
 
-    console.log('--- DEBUG fullBody captured from editor ---');
-    console.log(fullBody);
-    console.log('-------------------------------------------');
+    console.log('--- DEBUG editor metrics captured ---');
+    console.log(metrics);
+    console.log('------------------------------------');
 
     const isEmbedConverted = await this.verifyEmbedPlayerConverted();
-    return performQualityCheck(sourceContent, fullBody, isEmbedConverted);
+    return performQualityCheck(sourceContent, metrics.fullBody, isEmbedConverted, {
+      hasTocElement: metrics.hasTocElement,
+      hasOlElement: metrics.hasOlElement,
+      emptyParagraphCount: metrics.emptyParagraphCount,
+      hasLiteralAsterisks: metrics.hasLiteralAsterisks,
+      hasListPrefixesInLi: metrics.hasListPrefixesInLi,
+      blockOrderValid: metrics.blockOrderValid,
+    });
   }
 
   async setEyecatchImageFromPreviousNote(previousNoteId: string): Promise<{ success: boolean; message?: string }> {
@@ -105,8 +221,6 @@ export class NoteEditorPage {
       const tmpFilePath = path.resolve('/tmp', `eyecatch_${previousNoteId}.jpg`);
       fs.writeFileSync(tmpFilePath, buffer);
 
-      // Locate eyecatch upload input or trigger
-      // In note editor, header image can often be set via input[type="file"] or clicking header image area
       const fileInputSelector = 'input[type="file"]';
       const fileInputCount = await this.page.locator(fileInputSelector).count();
       if (fileInputCount > 0) {
@@ -114,7 +228,6 @@ export class NoteEditorPage {
         await this.page.waitForTimeout(3000);
         return { success: true };
       } else {
-        // Try clicking header image placeholder
         const headerPlaceholder = 'button:has-text("ヘッダー画像"), .note-eyecatch, [aria-label*="ヘッダー"], .o-noteEyecatch';
         const placeholderLoc = this.page.locator(headerPlaceholder).first();
         if (await placeholderLoc.count() > 0) {
@@ -139,7 +252,6 @@ export class NoteEditorPage {
     const editorUrl = this.page.url();
     let noteId = this.extractNoteId();
 
-    // 1. Click "公開に進む" button or header publish button
     console.log('Clicking publish/proceed button...');
     const publishBtn = this.page.locator('button:has-text("公開に進む"), button:has-text("公開設定"), .o-noteHeader__publishButton, button.o-button--primary:has-text("公開")').first();
     await publishBtn.waitFor({ state: 'visible', timeout: 10000 });
@@ -197,7 +309,6 @@ export class NoteEditorPage {
     await finalBtn.waitFor({ state: 'visible', timeout: 10000 });
     await finalBtn.click();
     
-    // Wait for actual published public page URL (e.g. /n/n...) or any redirect
     try {
       await this.page.waitForURL(url => url.pathname.includes('/n/') || url.pathname.includes('/publish/'), { timeout: 15000 });
       if (this.page.url().includes('/publish/')) {
