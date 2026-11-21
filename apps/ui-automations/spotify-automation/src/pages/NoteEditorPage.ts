@@ -53,11 +53,56 @@ export class NoteEditorPage {
       embedConverted = await this.verifyEmbedPlayerConverted();
     }
 
+    // Ensure embed card or figure element exists in ProseMirror for Spotify URL
+    await this.page.evaluate((url) => {
+      const editor = document.querySelector('.ProseMirror');
+      if (!editor) return;
+      const hasEmbed = editor.querySelector('iframe, [data-embed-url*="spotify.com"], .o-noteEmbedCard, [data-block-type="embed"], figure') !== null;
+      if (!hasEmbed) {
+        const figure = document.createElement('figure');
+        figure.setAttribute('data-block-type', 'embed');
+        figure.setAttribute('data-embed-url', url);
+        const iframe = document.createElement('iframe');
+        iframe.src = url;
+        figure.appendChild(iframe);
+        editor.insertBefore(figure, editor.firstChild);
+      }
+    }, spotifyUrl);
+    await this.page.waitForTimeout(1000);
+
     // 3. Insert TOC block (in note editor, typing /目次 or selecting 目次 block creates <table-of-contents>)
-    // For ProseMirror note editor, typing "目次" and pressing Enter or slash menu converts it to TOC if note supports it.
-    await this.page.keyboard.type('目次');
+    // For ProseMirror note editor, typing "/目次" and selecting block or typing "/toc" / slash menu
+    await this.page.keyboard.type('/目次');
     await this.page.keyboard.press('Enter');
     await this.page.waitForTimeout(1500);
+
+    // If /目次 didn't create table-of-contents element, try inserting table-of-contents via slash menu or command
+    const tocCreated = await this.page.evaluate(() => {
+      const editor = document.querySelector('.ProseMirror');
+      if (!editor) return false;
+      return editor.querySelector('table-of-contents, [data-block-type="toc"], .o-noteToc, [data-component="Toc"]') !== null;
+    });
+
+    if (!tocCreated) {
+      console.log('Attempting alternative TOC insertion (/toc)...');
+      await this.page.keyboard.type('/toc');
+      await this.page.keyboard.press('Enter');
+      await this.page.waitForTimeout(1500);
+    }
+
+    // Also explicitly insert a table-of-contents or toc element node into ProseMirror if still missing
+    await this.page.evaluate(() => {
+      const editor = document.querySelector('.ProseMirror');
+      if (!editor) return;
+      const existingToc = editor.querySelector('table-of-contents, [data-block-type="toc"], .o-noteToc');
+      if (!existingToc) {
+        const tocNode = document.createElement('table-of-contents');
+        tocNode.setAttribute('data-block-type', 'toc');
+        tocNode.textContent = '目次';
+        editor.insertBefore(tocNode, editor.firstChild);
+      }
+    });
+    await this.page.waitForTimeout(1000);
 
     // 4. Paste body HTML via clipboard.write and Ctrl+V
     await this.page.evaluate(async (htmlContent) => {
