@@ -227,29 +227,36 @@ export const main = async () => {
     let publishDetails: { tagsApplied: string[]; magazineApplied: string | null } | undefined = undefined;
     let publishFailed = false;
     if (publish) {
-      console.log('Quality checks passed. Proceeding to publish note...');
-      const tagList = tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined;
-      const pubResult = await editorPage.publishNote(tagList, magazine);
-      publishedUrl = pubResult.publishedUrl;
-      publishDetails = {
-        tagsApplied: pubResult.tagsApplied,
-        magazineApplied: pubResult.magazineApplied,
-      };
-      console.log(`Successfully published note at: ${publishedUrl}`, publishDetails);
-
-      // Verify if requested tags/magazine were successfully applied
-      const requestedTags = tagList || [];
-      const requestedMagazine = magazine || null;
-
-      const tagsMismatch = requestedTags.some(t => {
-        const clean = t.startsWith('#') ? t.substring(1) : t;
-        return !publishDetails!.tagsApplied.includes(clean);
-      });
-      const magazineMismatch = requestedMagazine !== null && publishDetails!.magazineApplied !== requestedMagazine;
-
-      if (tagsMismatch || magazineMismatch) {
-        console.error('\n❌ Requested tags or magazine could not be fully verified as applied.');
+      if (previousNoteId && eyecatchResult && !eyecatchResult.success) {
+        console.error(`\n❌ Eyecatch setting failed: ${eyecatchResult.message}. Aborting publication due to strict eyecatch requirement.`);
         publishFailed = true;
+      }
+
+      if (!publishFailed) {
+        console.log('Quality checks passed. Proceeding to publish note...');
+        const tagList = tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined;
+        const pubResult = await editorPage.publishNote(tagList, magazine);
+        publishedUrl = pubResult.publishedUrl;
+        publishDetails = {
+          tagsApplied: pubResult.tagsApplied,
+          magazineApplied: pubResult.magazineApplied,
+        };
+        console.log(`Successfully published note at: ${publishedUrl}`, publishDetails);
+
+        // Verify if requested tags/magazine were successfully applied
+        const requestedTags = tagList || [];
+        const requestedMagazine = magazine || null;
+
+        const tagsMismatch = requestedTags.some(t => {
+          const clean = t.startsWith('#') ? t.substring(1) : t;
+          return !publishDetails!.tagsApplied.includes(clean);
+        });
+        const magazineMismatch = requestedMagazine !== null && publishDetails!.magazineApplied !== requestedMagazine;
+
+        if (tagsMismatch || magazineMismatch) {
+          console.error('\n❌ Requested tags or magazine could not be fully verified as applied.');
+          publishFailed = true;
+        }
       }
     }
 

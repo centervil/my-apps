@@ -221,27 +221,47 @@ export class NoteEditorPage {
       const tmpFilePath = path.resolve('/tmp', `eyecatch_${previousNoteId}.jpg`);
       fs.writeFileSync(tmpFilePath, buffer);
 
+      // 1. Click the circular icon button in top area (main > div button[data-id="ButtonIcon"])
+      const iconButtonSelector = 'main > div button[data-id="ButtonIcon"], main > div button, button[aria-label*="ヘッダー"], .note-eyecatch button, button:has-text("ヘッダー画像")';
+      const iconBtn = this.page.locator(iconButtonSelector).first();
+      await iconBtn.waitFor({ state: 'visible', timeout: 10000 });
+      await iconBtn.click();
+      await this.page.waitForTimeout(1000);
+
+      // 2. Click "画像をアップロード" button via normal click (not JS click)
+      const uploadMenuItem = this.page.locator('button:has-text("画像をアップロード"), [role="menuitem"]:has-text("画像をアップロード")').first();
+      await uploadMenuItem.waitFor({ state: 'visible', timeout: 10000 });
+      await uploadMenuItem.click();
+      await this.page.waitForTimeout(1000);
+
+      // 3. Set files on input[type="file"]
       const fileInputSelector = 'input[type="file"]';
-      const fileInputCount = await this.page.locator(fileInputSelector).count();
-      if (fileInputCount > 0) {
-        await this.page.setInputFiles(fileInputSelector, tmpFilePath);
-        await this.page.waitForTimeout(3000);
-        return { success: true };
+      const fileInput = this.page.locator(fileInputSelector).first();
+      await fileInput.setInputFiles(tmpFilePath);
+      await this.page.waitForTimeout(2000);
+
+      // 4. CropModal ("画像のサイズの変更") - click "保存"
+      const saveCropBtn = this.page.locator('button:has-text("保存"), button:has-text("切り取り")').filter({ hasText: /^保存$|^決定$|^適用$/ }).first();
+      if (await saveCropBtn.count() > 0 && await saveCropBtn.isVisible()) {
+        await saveCropBtn.click();
+        await this.page.waitForTimeout(2000);
       } else {
-        const headerPlaceholder = 'button:has-text("ヘッダー画像"), .note-eyecatch, [aria-label*="ヘッダー"], .o-noteEyecatch';
-        const placeholderLoc = this.page.locator(headerPlaceholder).first();
-        if (await placeholderLoc.count() > 0) {
-          await placeholderLoc.click();
-          await this.page.waitForTimeout(1000);
-          const inputAfter = this.page.locator('input[type="file"]').first();
-          if (await inputAfter.count() > 0) {
-            await inputAfter.setInputFiles(tmpFilePath);
-            await this.page.waitForTimeout(3000);
-            return { success: true };
-          }
+        // Fallback: click primary button in modal
+        const modalPrimaryBtn = this.page.locator('.ReactModal__Content button.o-button--primary, [role="dialog"] button.o-button--primary, [role="dialog"] button:has-text("保存")').first();
+        if (await modalPrimaryBtn.count() > 0 && await modalPrimaryBtn.isVisible()) {
+          await modalPrimaryBtn.click();
+          await this.page.waitForTimeout(2000);
         }
-        return { success: false, message: 'Could not find file input for eyecatch image' };
       }
+
+      // 5. Click "一時保存" to confirm/save draft state
+      const draftBtn = this.page.locator('button:has-text("一時保存"), button:has-text("下書き保存")').first();
+      if (await draftBtn.count() > 0 && await draftBtn.isVisible()) {
+        await draftBtn.click();
+        await this.page.waitForTimeout(2000);
+      }
+
+      return { success: true };
     } catch (error: unknown) {
       const errMessage = error instanceof Error ? error.message : String(error);
       return { success: false, message: errMessage };
