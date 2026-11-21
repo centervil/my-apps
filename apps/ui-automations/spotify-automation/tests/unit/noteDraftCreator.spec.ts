@@ -62,7 +62,7 @@ test.describe('Note Draft Creator Unit Tests', () => {
       spotifyShowUrl: 'https://open.spotify.com/show/12345',
     });
 
-    expect(result.title).toBe('AP 30日間学習Day11');
+    expect(result.title).toBe('AP Day11');
     expect(result.body.startsWith('この記事の内容はPodCastとしても配信しています')).toBe(true);
     expect(result.body).toContain('https://open.spotify.com/show/12345');
     expect(result.body).toContain('目次');

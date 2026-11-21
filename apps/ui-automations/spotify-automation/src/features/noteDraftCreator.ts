@@ -155,7 +155,7 @@ export function convertMarkdownToNoteBody(contentType: 'study' | 'news', rawMark
 export function buildNoteContent(options: NoteDraftOptions): { title: string; body: string } {
   let title = '';
   if (options.contentType === 'study') {
-    title = `${options.seriesName} 30日間学習Day${options.dayNumber}`;
+    title = `${options.seriesName} Day${options.dayNumber}`;
   } else {
     title = `${options.targetDate} サイバーセキュリティニュースまとめ`;
   }
