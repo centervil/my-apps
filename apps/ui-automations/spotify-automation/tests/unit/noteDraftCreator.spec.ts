@@ -1,15 +1,5 @@
 import { test, expect } from '@playwright/test';
-<<<<<<< HEAD
-import { convertMarkdownToNoteBody, buildNoteContent, performQualityCheck, derivePublishedUrl, extractKeyFromUrl, verifyMagazineAppliedFromApi } from '../../src/features/noteDraftCreator';
-=======
-import { 
-  convertMarkdownToHtml, 
-  convertMarkdownToNoteBody, 
-  buildNoteContent, 
-  performQualityCheck, 
-  derivePublishedUrl 
-} from '../../src/features/noteDraftCreator';
->>>>>>> a540d46 (feat(spotify-automation): align note CLI body conversion and quality checks with manual workflow. Closes #210)
+import { convertMarkdownToHtml, convertMarkdownToNoteBody, buildNoteContent, performQualityCheck, derivePublishedUrl, extractKeyFromUrl, verifyMagazineAppliedFromApi } from '../../src/features/noteDraftCreator';
 
 test.describe('Note Draft Creator Unit Tests', () => {
   test('convertMarkdownToHtml should handle heading mapping correctly', () => {

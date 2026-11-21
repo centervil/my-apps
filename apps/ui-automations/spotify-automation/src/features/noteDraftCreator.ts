@@ -201,6 +201,7 @@ export interface DetailedQualityCheckOptions {
   emptyParagraphCount?: number;
   hasLiteralAsterisks?: boolean;
   hasListPrefixesInLi?: boolean;
+  blockOrderValid?: boolean;
 }
 
 /**
@@ -265,13 +266,17 @@ export function performQualityCheck(
     ? options.emptyParagraphCount <= 5 
     : true;
 
+  // 8. Block order check (Spotify embed and TOC before first heading)
+  const blockOrderCheck = options.blockOrderValid !== undefined ? options.blockOrderValid : true;
+
   const passed = verbatimCheck &&
     tocPositionCheck &&
     embedPlayerCheck &&
     noLiteralAsterisksCheck &&
     noListPrefixesCheck &&
     olCheck &&
-    emptyParagraphCountCheck;
+    emptyParagraphCountCheck &&
+    blockOrderCheck;
 
   return {
     passed,
