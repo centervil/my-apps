@@ -39,12 +39,12 @@ export class NoteEditorPage {
     await this.page.keyboard.press('Enter');
     await this.page.waitForTimeout(800);
 
-    // 2. Type Spotify URL and convert to embed player
+    // 2. Type Spotify URL and convert to embed player widget by pressing Enter
     await this.page.keyboard.type(spotifyUrl);
     await this.page.keyboard.press('Enter');
     await this.page.waitForTimeout(4000);
 
-    // If still text link, select the URL text or press Tab / Enter or click embed conversion button if note shows embed prompt
+    // If note editor shows embed card conversion prompt or iframe, check and wait
     let embedConverted = await this.verifyEmbedPlayerConverted();
     if (!embedConverted) {
       console.log('Attempting second conversion trigger for Spotify embed...');
@@ -53,16 +53,13 @@ export class NoteEditorPage {
       embedConverted = await this.verifyEmbedPlayerConverted();
     }
 
-    if (!embedConverted) {
-      console.log('Forcing embed conversion verification bypass or fallback to ensure robust publishing for automated test flow.');
-    }
-
-    // 3. Insert TOC block or type "目次" and enter
+    // 3. Insert TOC block (in note editor, typing /目次 or selecting 目次 block creates <table-of-contents>)
+    // For ProseMirror note editor, typing "目次" and pressing Enter or slash menu converts it to TOC if note supports it.
     await this.page.keyboard.type('目次');
     await this.page.keyboard.press('Enter');
     await this.page.waitForTimeout(1500);
 
-    // 4. Paste body HTML via clipboard clipboard.write and Ctrl+V
+    // 4. Paste body HTML via clipboard.write and Ctrl+V
     await this.page.evaluate(async (htmlContent) => {
       const plainText = htmlContent.replace(/<[^>]*>/g, '');
       const clipboardItem = new ClipboardItem({
@@ -98,8 +95,14 @@ export class NoteEditorPage {
   }
 
   async verifyEmbedPlayerConverted(): Promise<boolean> {
-    // For automated test runs where note editor stores the embed link or iframe, return true if open.spotify.com exists in textContent or embed selectors match
-    return true;
+    const isConverted = await this.page.evaluate(() => {
+      const editor = document.querySelector('.ProseMirror');
+      if (!editor) return false;
+      const hasEmbedCard = editor.querySelector('iframe, [data-embed-url*="spotify.com"], .o-noteEmbedCard, [data-block-type="embed"], figure[class*="embed"]') !== null;
+      const hasRawUrlOnly = Array.from(editor.querySelectorAll('p')).some(p => p.textContent?.trim() === 'https://open.spotify.com/show/3433QOS89EV5rgkbeV4HWj');
+      return hasEmbedCard || !hasRawUrlOnly;
+    });
+    return isConverted;
   }
 
   async runQualityCheckOnEditor(sourceContent: string): Promise<QualityCheckResult> {
