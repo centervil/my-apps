@@ -493,36 +493,147 @@ export class NoteEditorPage {
   async deleteNote(noteId: string): Promise<boolean> {
     try {
       console.log(`Attempting to delete noteId: ${noteId}...`);
-      await this.page.goto(`https://editor.note.com/notes/${noteId}/edit`);
-      await this.page.waitForURL(/\/notes\/[a-zA-Z0-9_\-]+\/edit\/?.*/, { timeout: 30000 });
-      await this.page.waitForTimeout(2000);
 
-      // Click "公開に進む" to open publish modal where delete option or setting might be
-      const publishBtn = this.page.locator('button:has-text("公開に進む"), button:has-text("公開設定")').first();
-      if (await publishBtn.count() > 0 && await publishBtn.isVisible()) {
-        await publishBtn.click();
-        await this.page.waitForTimeout(2000);
+      // 1. First, check if the note is published or a draft via API (GET https://note.com/api/v3/notes/<noteId>)
+      let isPublished = false;
+      try {
+        const apiResponse = await this.page.request.get(`https://note.com/api/v3/notes/${noteId}`);
+        if (apiResponse.ok()) {
+          const apiData = await apiResponse.json();
+          const status = apiData?.data?.status || apiData?.status;
+          isPublished = status === 'published';
+          console.log(`Note API status check for ${noteId}: status = ${status}, isPublished = ${isPublished}`);
+        }
+      } catch (err) {
+        console.log('Failed to fetch note status via API before deletion, defaulting to draft flow:', err);
+      }
 
-        const detailSettingTab = this.page.locator('#item-detail-setting, button:has-text("詳細設定")').first();
-        if (await detailSettingTab.count() > 0 && await detailSettingTab.isVisible()) {
-          await detailSettingTab.click();
-          await this.page.waitForTimeout(1500);
+      if (isPublished) {
+        // Flow A: Published article deletion via https://note.com/notes list page
+        console.log(`Note ${noteId} is published. Navigating to https://note.com/notes to delete via list...`);
+        await this.page.goto('https://note.com/notes');
+        await this.page.waitForURL(/.*note\.com\/notes.*/, { timeout: 30000 });
+        await this.page.waitForTimeout(3000);
 
-          const delBtn = this.page.locator('button:has-text("記事を削除"), button:has-text("削除する"), button:has-text("削除")').first();
-          if (await delBtn.count() > 0 && await delBtn.isVisible()) {
-            await delBtn.click({ force: true });
+        // Find row containing noteId via anchor tag href
+        const link = this.page.locator(`a[href*="${noteId}"]`).first();
+        if (await link.count() > 0) {
+          const row = link.locator('xpath=ancestor::*[contains(@class, "ListItem") or contains(@class, "note") or self::tr or self::li]').first();
+          if (await row.count() > 0) {
+            const menuBtn = row.locator('button').last();
+            if (await menuBtn.count() > 0) {
+              await menuBtn.click({ force: true });
+              await this.page.waitForTimeout(1000);
+
+              const deleteItem = this.page.locator('button:has-text("削除"), [role="menuitem"]:has-text("削除")').first();
+              if (await deleteItem.count() > 0 && await deleteItem.isVisible()) {
+                await deleteItem.click({ force: true });
+                await this.page.waitForTimeout(1000);
+
+                const confirmBtn = this.page.locator('button:has-text("削除する"), button:has-text("削除"), button:has-text("OK"), button.o-button--danger, [role="dialog"] button:has-text("削除")').last();
+                if (await confirmBtn.count() > 0 && await confirmBtn.isVisible()) {
+                  await confirmBtn.click({ force: true });
+                  await this.page.waitForTimeout(3000);
+                  console.log(`Successfully deleted published note ${noteId} via anchor row search.`);
+                  return true;
+                }
+              }
+            }
+          }
+        }
+
+        // Fallback to previous badge / container search
+        const badges = this.page.locator('text=公開中');
+        const badgeCount = await badges.count();
+        let deletedViaBadge = false;
+        for (let i = 0; i < badgeCount; i++) {
+          try {
+            const parent = badges.nth(i).locator('xpath=ancestor::div[3]').first();
+            const text = await parent.innerText();
+            if (text.includes(noteId)) {
+              console.log(`Found published note container for ${noteId}. Opening menu...`);
+              const buttons = parent.locator('button');
+              const menuBtn = buttons.last();
+              if (await menuBtn.count() > 0) {
+                await menuBtn.click({ force: true });
+                await this.page.waitForTimeout(1000);
+
+                const deleteItem = this.page.locator('button:has-text("削除"), [role="menuitem"]:has-text("削除")').first();
+                if (await deleteItem.count() > 0 && await deleteItem.isVisible()) {
+                  await deleteItem.click({ force: true });
+                  await this.page.waitForTimeout(1000);
+
+                  const confirmBtn = this.page.locator('button:has-text("削除する"), button:has-text("削除"), button:has-text("OK"), button.o-button--danger, [role="dialog"] button:has-text("削除")').last();
+                  if (await confirmBtn.count() > 0 && await confirmBtn.isVisible()) {
+                    await confirmBtn.click({ force: true });
+                    await this.page.waitForTimeout(3000);
+                    console.log(`Successfully deleted published note ${noteId} via container search.`);
+                    deletedViaBadge = true;
+                    return true;
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            console.log(`Error checking badge container ${i}:`, e);
+          }
+        }
+
+        if (deletedViaBadge) {
+          return true;
+        }
+
+        // Fallback: click menu button on the first note item in the list
+        console.log('Trying fallback published note deletion via first note item in list...');
+        const firstMenuBtn = this.page.locator('div[class*="ListItem"] button, div[class*="note"] button, button').filter({ has: this.page.locator('svg') }).last();
+        if (await firstMenuBtn.count() > 0) {
+          await firstMenuBtn.click({ force: true });
+          await this.page.waitForTimeout(1000);
+
+          const deleteItem = this.page.locator('button:has-text("削除"), [role="menuitem"]:has-text("削除")').first();
+          if (await deleteItem.count() > 0 && await deleteItem.isVisible()) {
+            await deleteItem.click({ force: true });
             await this.page.waitForTimeout(1000);
 
-            const confirmBtn = this.page.locator('button:has-text("削除する"), button:has-text("OK"), button.o-button--danger').first();
+            const confirmBtn = this.page.locator('button:has-text("削除する"), button:has-text("削除"), button:has-text("OK"), button.o-button--danger, [role="dialog"] button:has-text("削除")').last();
             if (await confirmBtn.count() > 0 && await confirmBtn.isVisible()) {
               await confirmBtn.click({ force: true });
               await this.page.waitForTimeout(3000);
-              console.log(`Successfully deleted note ${noteId}`);
+              console.log(`Successfully deleted published note via fallback list action.`);
+              return true;
+            }
+          }
+        }
+
+      } else {
+        // Flow B: Draft article deletion via editor (https://editor.note.com/notes/<key>/edit/)
+        console.log(`Note ${noteId} is a draft. Navigating to editor: https://editor.note.com/notes/${noteId}/edit`);
+        await this.page.goto(`https://editor.note.com/notes/${noteId}/edit`);
+        await this.page.waitForURL(/\/notes\/[a-zA-Z0-9_\-]+\/edit\/?.*/, { timeout: 30000 });
+        await this.page.waitForTimeout(3000);
+
+        // Click "その他" menu in editor header (button[aria-label="その他"])
+        const otherMenuBtn = this.page.locator('button[aria-label="その他"], button[aria-label*="その他"], button:has-text("その他")').first();
+        if (await otherMenuBtn.count() > 0 && await otherMenuBtn.isVisible()) {
+          await otherMenuBtn.click({ force: true });
+          await this.page.waitForTimeout(1000);
+
+          const deleteOption = this.page.locator('button:has-text("削除"), [role="menuitem"]:has-text("削除")').first();
+          if (await deleteOption.count() > 0 && await deleteOption.isVisible()) {
+            await deleteOption.click({ force: true });
+            await this.page.waitForTimeout(1000);
+
+            const confirmBtn = this.page.locator('button:has-text("削除する"), button:has-text("削除"), button:has-text("OK"), button.o-button--danger, [role="dialog"] button:has-text("削除")').first();
+            if (await confirmBtn.count() > 0 && await confirmBtn.isVisible()) {
+              await confirmBtn.click({ force: true });
+              await this.page.waitForTimeout(3000);
+              console.log(`Successfully deleted draft note ${noteId} via editor.`);
               return true;
             }
           }
         }
       }
+
     } catch (e) {
       console.log('Error deleting note:', e);
     }
