@@ -515,28 +515,72 @@ export class NoteEditorPage {
         await this.page.waitForURL(/.*note\.com\/notes.*/, { timeout: 30000 });
         await this.page.waitForTimeout(3000);
 
-        // Find row containing noteId or title
-        const row = this.page.locator('tr, div[class*="note"], div[class*="ListItem"], div').filter({ hasText: noteId }).first();
-        if (await row.count() > 0 && await row.isVisible()) {
-          const menuBtn = row.locator('button[aria-label*="メニュー"], button[aria-label*="その他"], button').last();
-          if (await menuBtn.count() > 0) {
-            await menuBtn.click({ force: true });
-            await this.page.waitForTimeout(1000);
-
-            const deleteItem = this.page.locator('button:has-text("削除"), [role="menuitem"]:has-text("削除")').first();
-            if (await deleteItem.count() > 0 && await deleteItem.isVisible()) {
-              await deleteItem.click({ force: true });
+        // Find row containing noteId via anchor tag href
+        const link = this.page.locator(`a[href*="${noteId}"]`).first();
+        if (await link.count() > 0) {
+          const row = link.locator('xpath=ancestor::*[contains(@class, "ListItem") or contains(@class, "note") or self::tr or self::li]').first();
+          if (await row.count() > 0) {
+            const menuBtn = row.locator('button').last();
+            if (await menuBtn.count() > 0) {
+              await menuBtn.click({ force: true });
               await this.page.waitForTimeout(1000);
 
-              const confirmBtn = this.page.locator('button:has-text("削除する"), button:has-text("削除"), button:has-text("OK"), button.o-button--danger, [role="dialog"] button:has-text("削除")').last();
-              if (await confirmBtn.count() > 0 && await confirmBtn.isVisible()) {
-                await confirmBtn.click({ force: true });
-                await this.page.waitForTimeout(3000);
-                console.log(`Successfully deleted published note ${noteId} via list menu.`);
-                return true;
+              const deleteItem = this.page.locator('button:has-text("削除"), [role="menuitem"]:has-text("削除")').first();
+              if (await deleteItem.count() > 0 && await deleteItem.isVisible()) {
+                await deleteItem.click({ force: true });
+                await this.page.waitForTimeout(1000);
+
+                const confirmBtn = this.page.locator('button:has-text("削除する"), button:has-text("削除"), button:has-text("OK"), button.o-button--danger, [role="dialog"] button:has-text("削除")').last();
+                if (await confirmBtn.count() > 0 && await confirmBtn.isVisible()) {
+                  await confirmBtn.click({ force: true });
+                  await this.page.waitForTimeout(3000);
+                  console.log(`Successfully deleted published note ${noteId} via anchor row search.`);
+                  return true;
+                }
               }
             }
           }
+        }
+
+        // Fallback to previous badge / container search
+        const badges = this.page.locator('text=公開中');
+        const badgeCount = await badges.count();
+        let deletedViaBadge = false;
+        for (let i = 0; i < badgeCount; i++) {
+          try {
+            const parent = badges.nth(i).locator('xpath=ancestor::div[3]').first();
+            const text = await parent.innerText();
+            if (text.includes(noteId)) {
+              console.log(`Found published note container for ${noteId}. Opening menu...`);
+              const buttons = parent.locator('button');
+              const menuBtn = buttons.last();
+              if (await menuBtn.count() > 0) {
+                await menuBtn.click({ force: true });
+                await this.page.waitForTimeout(1000);
+
+                const deleteItem = this.page.locator('button:has-text("削除"), [role="menuitem"]:has-text("削除")').first();
+                if (await deleteItem.count() > 0 && await deleteItem.isVisible()) {
+                  await deleteItem.click({ force: true });
+                  await this.page.waitForTimeout(1000);
+
+                  const confirmBtn = this.page.locator('button:has-text("削除する"), button:has-text("削除"), button:has-text("OK"), button.o-button--danger, [role="dialog"] button:has-text("削除")').last();
+                  if (await confirmBtn.count() > 0 && await confirmBtn.isVisible()) {
+                    await confirmBtn.click({ force: true });
+                    await this.page.waitForTimeout(3000);
+                    console.log(`Successfully deleted published note ${noteId} via container search.`);
+                    deletedViaBadge = true;
+                    return true;
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            console.log(`Error checking badge container ${i}:`, e);
+          }
+        }
+
+        if (deletedViaBadge) {
+          return true;
         }
 
         // Fallback: click menu button on the first note item in the list
