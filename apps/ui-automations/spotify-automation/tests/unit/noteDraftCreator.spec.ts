@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { convertMarkdownToHtml, convertMarkdownToNoteBody, buildNoteContent, performQualityCheck, derivePublishedUrl, extractKeyFromUrl, verifyMagazineAppliedFromApi } from '../../src/features/noteDraftCreator';
+import { convertMarkdownToHtml, convertMarkdownToNoteBody, buildNoteContent, performQualityCheck, derivePublishedUrl, extractKeyFromUrl, verifyMagazineAppliedFromApi, verifyPostPublishGate } from '../../src/features/noteDraftCreator';
 
 test.describe('Note Draft Creator Unit Tests', () => {
   test('convertMarkdownToHtml should handle heading mapping correctly', () => {
@@ -170,5 +170,102 @@ https://open.spotify.com/show/12345
       data: {},
     };
     expect(verifyMagazineAppliedFromApi(apiDataMissing)).toBe(false);
+  });
+
+  test('verifyPostPublishGate should pass for normal case (embedded contents match oembed, iframe exists, title exact match)', () => {
+    const apiResponse = {
+      data: {
+        name: 'CRISC 30日間学習Day03',
+        body: '<p>intro</p><figure contenteditable="false" data-block-type="embed" embedded-service="oembed" embedded-content-key="key_spotify_123"></figure>',
+        embedded_contents: [
+          {
+            key: 'key_spotify_123',
+            url: 'https://open.spotify.com/show/3433QOS89EV5rgkbeV4HWj',
+          },
+        ],
+      },
+    };
+    const publicPageHtml = '<html><body><iframe src="https://open.spotify.com/embed/show/3433QOS89EV5rgkbeV4HWj"></iframe></body></html>';
+    const result = verifyPostPublishGate({
+      apiResponse,
+      publicPageHtml,
+      expectedTitle: 'CRISC 30日間学習Day03',
+      spotifyShowUrl: 'https://open.spotify.com/show/3433QOS89EV5rgkbeV4HWj',
+    });
+
+    expect(result.passed).toBe(true);
+    expect(result.checks.embeddedContentsEntryFound).toBe(true);
+    expect(result.checks.figureServiceAndKeyMatch).toBe(true);
+    expect(result.checks.publicPageIframeExists).toBe(true);
+    expect(result.checks.titleExactMatch).toBe(true);
+  });
+
+  test('verifyPostPublishGate should fail for Symptom A (figure exists but embedded_contents empty or null attributes)', () => {
+    const apiResponse = {
+      data: {
+        name: 'CRISC 30日間学習Day03',
+        body: '<p>intro</p><figure contenteditable="false" data-block-type="embed" embedded-service="null" embedded-content-key="null"></figure>',
+        embedded_contents: [],
+      },
+    };
+    const publicPageHtml = '<html><body></body></html>';
+    const result = verifyPostPublishGate({
+      apiResponse,
+      publicPageHtml,
+      expectedTitle: 'CRISC 30日間学習Day03',
+      spotifyShowUrl: 'https://open.spotify.com/show/3433QOS89EV5rgkbeV4HWj',
+    });
+
+    expect(result.passed).toBe(false);
+    expect(result.checks.embeddedContentsEntryFound).toBe(false);
+    expect(result.checks.figureServiceAndKeyMatch).toBe(false);
+    expect(result.checks.publicPageIframeExists).toBe(false);
+  });
+
+  test('verifyPostPublishGate should fail for Symptom B (link paragraph only, no embedded figure or embedded_contents)', () => {
+    const apiResponse = {
+      data: {
+        name: 'CRISC 30日間学習Day03',
+        body: '<p>https://open.spotify.com/show/3433QOS89EV5rgkbeV4HWj</p>',
+        embedded_contents: [],
+      },
+    };
+    const publicPageHtml = '<html><body><p>https://open.spotify.com/show/3433QOS89EV5rgkbeV4HWj</p></body></html>';
+    const result = verifyPostPublishGate({
+      apiResponse,
+      publicPageHtml,
+      expectedTitle: 'CRISC 30日間学習Day03',
+      spotifyShowUrl: 'https://open.spotify.com/show/3433QOS89EV5rgkbeV4HWj',
+    });
+
+    expect(result.passed).toBe(false);
+    expect(result.checks.embeddedContentsEntryFound).toBe(false);
+    expect(result.checks.figureServiceAndKeyMatch).toBe(false);
+    expect(result.checks.publicPageIframeExists).toBe(false);
+  });
+
+  test('verifyPostPublishGate should fail when title does not match exactly (e.g. character transposition)', () => {
+    const apiResponse = {
+      data: {
+        name: 'CRISC 30日間学習Day30', // mismatched day
+        body: '<p>intro</p><figure contenteditable="false" data-block-type="embed" embedded-service="oembed" embedded-content-key="key_spotify_123"></figure>',
+        embedded_contents: [
+          {
+            key: 'key_spotify_123',
+            url: 'https://open.spotify.com/show/3433QOS89EV5rgkbeV4HWj',
+          },
+        ],
+      },
+    };
+    const publicPageHtml = '<html><body><iframe src="https://open.spotify.com/embed/show/3433QOS89EV5rgkbeV4HWj"></iframe></body></html>';
+    const result = verifyPostPublishGate({
+      apiResponse,
+      publicPageHtml,
+      expectedTitle: 'CRISC 30日間学習Day03',
+      spotifyShowUrl: 'https://open.spotify.com/show/3433QOS89EV5rgkbeV4HWj',
+    });
+
+    expect(result.passed).toBe(false);
+    expect(result.checks.titleExactMatch).toBe(false);
   });
 });

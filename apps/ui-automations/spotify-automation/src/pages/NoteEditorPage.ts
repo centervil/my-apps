@@ -35,8 +35,8 @@ export class NoteEditorPage {
     const editor = this.page.locator(editorSelector).first();
     await editor.click();
 
-    // 1. Explicitly insert template text, Spotify embed card / iframe, and TOC block in correct order:
-    // Regular order (Defect 1 fix): intro boilerplate (templateText) -> Spotify embed -> TOC -> Body HTML (no leading empty paragraphs)
+    // 1. Explicitly insert template text, Spotify URL paragraph for native editor conversion, and TOC block in correct order:
+    // Regular order: intro boilerplate (templateText) -> Spotify URL paragraph (for note editor auto-embed conversion) -> TOC -> Body HTML (no leading empty paragraphs)
     await this.page.evaluate(({ spotifyUrl, templateText, bodyHtml }) => {
       const editor = document.querySelector('.ProseMirror');
       if (!editor) return;
@@ -49,19 +49,10 @@ export class NoteEditorPage {
       templateP.textContent = templateText;
       editor.appendChild(templateP);
 
-      // 2. Insert Spotify Embed figure second
-      const figure = document.createElement('figure');
-      figure.setAttribute('contenteditable', 'false');
-      figure.setAttribute('data-block-type', 'embed');
-      figure.setAttribute('data-embed-url', spotifyUrl);
-      const iframe = document.createElement('iframe');
-      iframe.src = spotifyUrl;
-      iframe.setAttribute('width', '100%');
-      iframe.setAttribute('height', '152');
-      iframe.setAttribute('frameborder', '0');
-      iframe.setAttribute('allow', 'encrypted-media');
-      figure.appendChild(iframe);
-      editor.appendChild(figure);
+      // 2. Insert Spotify URL paragraph second (so note editor converts it into embedded block natively)
+      const spotifyP = document.createElement('p');
+      spotifyP.textContent = spotifyUrl;
+      editor.appendChild(spotifyP);
 
       // 3. Insert TOC block (table-of-contents) third
       const tocNode = document.createElement('table-of-contents');
@@ -78,13 +69,33 @@ export class NoteEditorPage {
       }
     }, { spotifyUrl, templateText, bodyHtml });
 
-    await this.page.waitForTimeout(1500);
+    // Wait for editor native conversion of Spotify URL paragraph to embed block
+    console.log('Waiting for editor to convert Spotify URL into embedded block...');
+    let converted = false;
+    for (let attempt = 1; attempt <= 10; attempt++) {
+      await this.page.waitForTimeout(1000);
+      // Focus editor and trigger keypress to help editor conversion pipeline
+      await editor.click();
+      await this.page.keyboard.press('Space');
+      await this.page.keyboard.press('Backspace');
 
-    // Focus editor and trigger input event so ProseMirror state updates
-    await editor.click();
-    await this.page.keyboard.press('Space');
-    await this.page.keyboard.press('Backspace');
-    await this.page.waitForTimeout(1000);
+      converted = await this.page.evaluate(() => {
+        const ed = document.querySelector('.ProseMirror');
+        if (!ed) return false;
+        // Check if figure with embed-service or data-block-type="embed" or iframe exists
+        const figure = ed.querySelector('figure[data-block-type="embed"], figure.o-noteEmbedCard, figure, iframe[src*="spotify.com"]');
+        return figure !== null;
+      });
+
+      if (converted) {
+        console.log(`✅ Spotify embed block successfully detected in editor at attempt ${attempt}.`);
+        break;
+      }
+    }
+
+    if (!converted) {
+      throw new Error('Explicit Spotify embed conversion timeout: Note editor failed to convert Spotify URL paragraph into an embed block within timeout. Aborting without fallback.');
+    }
   }
 
   async verifyEmbedPlayerConverted(): Promise<boolean> {
