@@ -1,0 +1,62 @@
+# Podcast Metadata Single Source of Truth (SSOT)
+# Last updated: 2026-11-23T09:26:07+09:00
+
+version: "1.0"
+updated_at: "2026-11-23T09:26:07+09:00"
+
+study_podcast:
+  program_name: "30日間で学ぶ資格勉強"
+  program_description: "本ポッドキャストは、自分用の資格勉強を目的として、AIが毎日自動生成する解説を配信しています。"
+  theme_name: "CRISC"
+  theme_path: "security-study/CRISC/"
+  spotify_season: 19
+  progress:
+    material_day: 13
+    note_day: 15
+    spotify_day: 15
+  provenance:
+    material_day: "実測 (origin/main に Day13_study.md あり, commit 4b7d622)"
+    note_day: "実測"
+    spotify_day: "実測 (Day13 は 2026-11-16 に公開済み)"
+    spotify_season: "手順正本 my-life domains/habits/daily-podcast-runbook.md §4 の規則"
+  notes:
+    - "security-study/current_day.txt は教材生成側の先行カウンタであり配信 Day ではないこと（2026-11-15 時点で値は 13 だが配信完了は Day12）。"
+  rules:
+    spotify_episode_derivation: "エピソード番号 = Day N"
+    spotify_title_format: "<シリーズ名> Day<N>" # 例: CRISC Day11
+    spotify_summary_source: "音源タイトル（NotebookLM が付けたタイトル）をそのまま使う"
+    note_title_format: "<シリーズ名> 30日間学習Day<N>"
+    note_tags: ["#CRISC"] # シリーズ名に応じたハッシュタグ
+    note_magazine_format: "<シリーズ名> 30日間学習"
+    next_target_derivation: "学習系の対象 Day = Spotify 最新公開 Day + 1（note・NotebookLM と突き合わせ、最も遅れている工程に合わせる）"
+  templates:
+    note_intro_boilerplate: "この記事の内容はPodCastとしても配信しています。（最新記事以外は過去の配信回をご参照ください）"
+    notebooklm_focus_sentence_template: "以下のPodCastとして話して。番組名：「30日間で学ぶ資格勉強」番組内容：「本ポッドキャストは、自分用の資格勉強を目的として、AIが毎日自動生成する解説を配信しています。」"
+    daily_focus_synthesis_rule: "<その日の教材テーマ>を初心者向けに解説して。 + 上記テンプレート（貼るのは1回だけ）"
+
+news_podcast:
+  program_name: "AI CyberSecurity News Digest"
+  program_description: "本ポッドキャストは、自分用のサイバーセキュリティ関連ニュースの情報収集を目的として、AIが毎日自動生成する解説を配信しています。世界中で起きたサイバー攻撃や脆弱性情報、セキュリティ動向をAIがまとめていますが、内容には事実と異なる部分や誤りが含まれる可能性があります。そのため、参考情報としてご利用ください。"
+  spotify_season: 1
+  progress:
+    report_date: "2026-11-17"
+    note_date: "2026-11-17"
+    spotify_date: "2026-11-17"
+    spotify_last_episode: 560
+  provenance:
+    report_date: "実測 (origin/main に cybersecurity_news_2026-11-17.md あり, 日次ルーチン 2026-11-18 実行で作成)"
+    note_date: "実測"
+    spotify_date: "実測 (2026-11-16 に公開済み)"
+    spotify_last_episode: "実測 (2026-11-15 分がシーズン1 エピソード558 として 2026-11-16 に公開済み)"
+  rules:
+    spotify_episode_derivation: "前回 + 1（通算）"
+    spotify_title_format: "<対象日>サイバーセキュリティニュース" # 対象日は「2026年11月13日」形式
+    spotify_summary_source: "音源タイトル（NotebookLM が付けたタイトル）をそのまま使う"
+    note_title_format: "<対象日> サイバーセキュリティニュースまとめ"
+    note_tags: ["#ニュース", "#セキュリティ"]
+    note_magazine_format: "サイバーセキュリティーニュース"
+    next_target_derivation: "ニュース系の対象日 = 前日（JST）で、未完了の段階があればその対象日"
+  templates:
+    note_intro_boilerplate: "この記事の内容はPodCastとしても配信しています。（最新記事以外は過去の配信回をご参照ください）"
+    notebooklm_focus_sentence_template: "以下のPodCast番組として話して。番組名：「AI CyberSecurity News Digest」番組説明：「本ポッドキャストは、自分用のサイバーセキュリティ関連ニュースの情報収集を目的として、AIが毎日自動生成する解説を配信しています。世界中で起きたサイバー攻撃や脆弱性情報、セキュリティ動向をAIがまとめていますが、内容には事実と異なる部分や誤りが含まれる可能性があります。そのため、参考情報としてご利用ください。」"
+    daily_focus_synthesis_rule: "<その日の主要トピックを要約した1文> + 上記テンプレート（1回だけ）"

@@ -155,14 +155,15 @@ export function convertMarkdownToNoteBody(contentType: 'study' | 'news', rawMark
 export function buildNoteContent(options: NoteDraftOptions): { title: string; body: string } {
   let title = '';
   if (options.contentType === 'study') {
-    title = `${options.seriesName} Day${options.dayNumber}`;
+    const dayStr = options.dayNumber !== undefined ? String(options.dayNumber).padStart(2, '0') : '';
+    title = `${options.seriesName} 30日間学習Day${dayStr}`;
   } else {
     title = `${options.targetDate} サイバーセキュリティニュースまとめ`;
   }
 
   const convertedBody = convertMarkdownToHtml(options.contentType, options.sourceContent);
 
-  // Note shape: Fixed text -> Spotify Embed -> TOC -> Body
+  // Note shape: Fixed text -> Spotify Embed -> TOC -> Body (Correct block order: intro boilerplate -> Spotify embed -> TOC -> Body)
   const body = [
     TEMPLATE_TEXT,
     '',

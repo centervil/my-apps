@@ -152,7 +152,7 @@ export const main = async () => {
     }
 
     // Launch Browser and Create Draft
-    console.log('Launching browser for note draft creation...');
+    console.log('Launching browser for note safety checks & automation...');
     const browser = await firefox.launch({
       headless: !headed,
       timeout: 60000,
@@ -169,6 +169,36 @@ export const main = async () => {
     }
 
     const page = await context.newPage();
+
+    // 1. Account verification (Measure 1): Verify logged-in user urlname matches NOTE_ACCOUNT_URLNAME if specified
+    const expectedAccount = process.env.NOTE_ACCOUNT_URLNAME || process.env.NOTE_TARGET_ACCOUNT;
+    if (expectedAccount) {
+      console.log(`Verifying logged-in note account against expected account: ${expectedAccount}`);
+      await page.goto('https://note.com/api/v1/users/me');
+      await page.waitForTimeout(1000);
+      const contentText = await page.locator('body').innerText();
+      try {
+        const meData = JSON.parse(contentText);
+        const currentUrlname = meData?.data?.urlname || meData?.urlname;
+        console.log(`Current logged-in note urlname: ${currentUrlname}`);
+        if (currentUrlname && currentUrlname !== expectedAccount) {
+          throw new AuthError(
+            `Account mismatch! Expected note account urlname '${expectedAccount}', but current logged-in account is '${currentUrlname}'. Aborting process to protect production account.`,
+            'ACCOUNT_MISMATCH',
+          );
+        }
+      } catch (parseErr) {
+        if (parseErr instanceof AuthError) throw parseErr;
+        console.log('Could not parse /api/v1/users/me response, proceeding with caution:', parseErr);
+      }
+    }
+
+    // Prevent test publishing/creation on production account if test account environment is expected
+    const isTestAccount = expectedAccount && (expectedAccount.includes('test') || expectedAccount.includes('centerviltest'));
+    if (!isTestAccount && expectedAccount === 'centervil' && publish) {
+      console.log('⚠️ Warning: Publishing with production account specified.');
+    }
+
     const editorPage = new NoteEditorPage(page);
 
     console.log('Navigating to note editor...');

@@ -34,15 +34,21 @@ export class NoteEditorPage {
     const editor = this.page.locator(editorSelector).first();
     await editor.click();
 
-    // 1. Explicitly insert Spotify embed card / iframe and TOC block using ProseMirror commands or direct DOM injection
-    // In note.com editor, typing URL and pressing Enter sometimes fails to convert to embed card reliably unless explicitly constructed or triggered via slash/embed menu.
-    // Let's inject both the Spotify embed and TOC directly into the ProseMirror DOM at the very top of the editor, then insert template text and body HTML.
+    // 1. Explicitly insert template text, Spotify embed card / iframe, and TOC block in correct order:
+    // Regular order (Defect 1 fix): intro boilerplate (templateText) -> Spotify embed -> TOC -> Body HTML (no leading empty paragraphs)
     await this.page.evaluate(({ spotifyUrl, templateText, bodyHtml }) => {
       const editor = document.querySelector('.ProseMirror');
       if (!editor) return;
 
-      // Clear editor or prepare top nodes
-      // 1. Insert Spotify Embed figure
+      // Clear editor children if any residual
+      editor.innerHTML = '';
+
+      // 1. Insert template text paragraph first
+      const templateP = document.createElement('p');
+      templateP.textContent = templateText;
+      editor.appendChild(templateP);
+
+      // 2. Insert Spotify Embed figure second
       const figure = document.createElement('figure');
       figure.setAttribute('contenteditable', 'false');
       figure.setAttribute('data-block-type', 'embed');
@@ -56,19 +62,14 @@ export class NoteEditorPage {
       figure.appendChild(iframe);
       editor.appendChild(figure);
 
-      // 2. Insert TOC block (table-of-contents)
+      // 3. Insert TOC block (table-of-contents) third
       const tocNode = document.createElement('table-of-contents');
       tocNode.setAttribute('data-block-type', 'toc');
       tocNode.setAttribute('contenteditable', 'false');
       tocNode.textContent = '目次';
       editor.appendChild(tocNode);
 
-      // 3. Insert template text paragraph
-      const templateP = document.createElement('p');
-      templateP.textContent = templateText;
-      editor.appendChild(templateP);
-
-      // 4. Insert body HTML via temporary container
+      // 4. Insert body HTML via temporary container fourth
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = bodyHtml;
       while (tempDiv.firstChild) {
@@ -146,11 +147,12 @@ export class NoteEditorPage {
         }
       });
 
-      // Block order check: Spotify embed and TOC must appear before the first heading (h2 / h3)
+      // Block order check: intro boilerplate, Spotify embed, and TOC must appear before the first heading (h2 / h3), and template text should be first.
       const allChildren = Array.from(editor.children);
       let firstHeadingIndex = -1;
       let spotifyIndex = -1;
       let tocIndex = -1;
+      let templateIndex = -1;
 
       allChildren.forEach((child, index) => {
         const html = child.outerHTML || '';
@@ -167,11 +169,16 @@ export class NoteEditorPage {
         if (isToc && tocIndex === -1) {
           tocIndex = index;
         }
+        const isTemplate = txt.includes('この記事の内容はPodCastとしても配信しています');
+        if (isTemplate && templateIndex === -1) {
+          templateIndex = index;
+        }
       });
 
-      console.log('Block order debug indices:', { firstHeadingIndex, spotifyIndex, tocIndex, childrenCount: allChildren.length });
+      console.log('Block order debug indices:', { firstHeadingIndex, spotifyIndex, tocIndex, templateIndex, childrenCount: allChildren.length });
 
-      const blockOrderValid = firstHeadingIndex === -1 || ((spotifyIndex === -1 || spotifyIndex < firstHeadingIndex) && (tocIndex === -1 || tocIndex < firstHeadingIndex));
+      const blockOrderValid = (templateIndex === 0 || templateIndex === -1) &&
+        (firstHeadingIndex === -1 || ((spotifyIndex === -1 || spotifyIndex < firstHeadingIndex) && (tocIndex === -1 || tocIndex < firstHeadingIndex)));
 
       return {
         fullBody,

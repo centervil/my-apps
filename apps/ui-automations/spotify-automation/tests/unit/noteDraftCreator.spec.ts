@@ -53,16 +53,16 @@ test.describe('Note Draft Creator Unit Tests', () => {
     expect(converted).toContain('<h2>ニュース概要</h2>');
   });
 
-  test('buildNoteContent should build correct structure with template, embed, TOC, and body', () => {
+  test('buildNoteContent should build correct structure with template, embed, TOC, and body conforming to SSOT note_title_format', () => {
     const result = buildNoteContent({
       contentType: 'study',
       sourceContent: '## 📚 テーマ\n本文です',
-      seriesName: 'AP',
-      dayNumber: 11,
+      seriesName: 'CRISC',
+      dayNumber: 3,
       spotifyShowUrl: 'https://open.spotify.com/show/12345',
     });
 
-    expect(result.title).toBe('AP Day11');
+    expect(result.title).toBe('CRISC 30日間学習Day03');
     expect(result.body.startsWith('この記事の内容はPodCastとしても配信しています')).toBe(true);
     expect(result.body).toContain('https://open.spotify.com/show/12345');
     expect(result.body).toContain('目次');
