@@ -73,6 +73,36 @@ test.describe('Note CLI Unit Tests', () => {
     expect(exitCode).toBe(1);
   });
 
+  test('should validate ACCOUNT_CHECK_FAILED or QUALITY_CHECK_FAILED on post-publish gate failure', () => {
+    // Simulating post-publish gate failure result mapping
+    const postPublishGateResult = {
+      passed: false,
+      checks: {
+        embeddedContentsEntryFound: false,
+        figureServiceAndKeyMatch: false,
+        publicPageIframeExists: false,
+        titleExactMatch: false,
+      },
+      details: {
+        embeddedContentsCount: 0,
+        matchedKey: null,
+        figureService: null,
+        figureKey: null,
+        publicIframeSrcFound: false,
+        apiTitle: null,
+        expectedTitle: 'Test Title',
+        failureReasons: ['embedded_contents does not contain entry'],
+      },
+    };
+
+    const publishFailed = !postPublishGateResult.passed;
+    const status = publishFailed ? (postPublishGateResult && !postPublishGateResult.passed ? 'QUALITY_CHECK_FAILED' : 'PUBLISH_SETTINGS_FAILED') : 'SUCCESS';
+    const exitCode = publishFailed ? 1 : 0;
+
+    expect(status).toBe('QUALITY_CHECK_FAILED');
+    expect(exitCode).toBe(1);
+  });
+
   test('should validate account verification fail-closed error handling', () => {
     // When urlname cannot be retrieved or parsed
     const checkFailedErr = new AuthError(

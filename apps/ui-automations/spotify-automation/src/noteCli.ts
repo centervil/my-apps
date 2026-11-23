@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import * as dotenv from 'dotenv';
 import { firefox } from '@playwright/test';
-import { buildNoteContent, convertMarkdownToNoteBody, TEMPLATE_TEXT } from './features/noteDraftCreator';
+import { buildNoteContent, convertMarkdownToNoteBody, TEMPLATE_TEXT, verifyPostPublishGate, PostPublishGateResult } from './features/noteDraftCreator';
 import { NoteEditorPage } from './pages/NoteEditorPage';
 import { AuthManager } from './auth/authManager';
 import { AuthError } from './auth/authErrors';
@@ -268,6 +268,7 @@ export const main = async () => {
     let publishedUrl: string | undefined = undefined;
     let publishDetails: { tagsApplied: string[]; magazineApplied: string | null } | undefined = undefined;
     let publishFailed = false;
+    let postPublishGateResult: PostPublishGateResult | undefined = undefined;
     if (publish) {
       if (previousNoteId && eyecatchResult && !eyecatchResult.success) {
         console.error(`\n❌ Eyecatch setting failed: ${eyecatchResult.message}. Aborting publication due to strict eyecatch requirement.`);
@@ -299,12 +300,81 @@ export const main = async () => {
           console.error('\n❌ Requested tags or magazine could not be fully verified as applied.');
           publishFailed = true;
         }
+
+        // Post-publish gate verification (verifyPostPublishGate)
+        if (!publishFailed && noteId) {
+          console.log(`[Post-Publish Gate] Verifying published note via API and public page for noteId: ${noteId}...`);
+          try {
+            // 1. Fetch note API response (GET https://note.com/api/v3/notes/<key>)
+            const apiResp = await page.request.get(`https://note.com/api/v3/notes/${noteId}`);
+            let apiResponseData: Record<string, unknown> = {};
+            if (apiResp.ok()) {
+              apiResponseData = await apiResp.json();
+            } else {
+              console.error(`[Post-Publish Gate] Failed to fetch note API response (status: ${apiResp.status()}). Treating verification as failed.`);
+              apiResponseData = { error: `API status ${apiResp.status()}` };
+            }
+
+            // 2. Fetch public page HTML (https://note.com/<urlname>/n/<key>)
+            let publicPageHtml = '';
+            if (publishedUrl) {
+              try {
+                const htmlResp = await page.request.get(publishedUrl);
+                if (htmlResp.ok()) {
+                  publicPageHtml = await htmlResp.text();
+                } else {
+                  console.error(`[Post-Publish Gate] Failed to fetch public page HTML from ${publishedUrl} (status: ${htmlResp.status()}).`);
+                }
+              } catch (htmlErr) {
+                console.error(`[Post-Publish Gate] Error fetching public page HTML:`, htmlErr);
+              }
+            }
+
+            postPublishGateResult = verifyPostPublishGate({
+              apiResponse: apiResponseData,
+              publicPageHtml,
+              expectedTitle: title,
+              spotifyShowUrl,
+            });
+
+            console.log('[Post-Publish Gate] Verification result:', JSON.stringify(postPublishGateResult, null, 2));
+
+            if (!postPublishGateResult.passed) {
+              console.error('\n❌ Post-publish gate verification failed!');
+              publishFailed = true;
+            } else {
+              console.log('✅ [Post-Publish Gate] All post-publish gate checks passed successfully!');
+            }
+          } catch (gateErr) {
+            console.error('[Post-Publish Gate] Exception during verification:', gateErr);
+            postPublishGateResult = {
+              passed: false,
+              checks: {
+                embeddedContentsEntryFound: false,
+                figureServiceAndKeyMatch: false,
+                publicPageIframeExists: false,
+                titleExactMatch: false,
+              },
+              details: {
+                embeddedContentsCount: 0,
+                matchedKey: null,
+                figureService: null,
+                figureKey: null,
+                publicIframeSrcFound: false,
+                apiTitle: null,
+                expectedTitle: title,
+                failureReasons: [`Exception during post-publish gate verification: ${gateErr instanceof Error ? gateErr.message : String(gateErr)}`],
+              },
+            };
+            publishFailed = true;
+          }
+        }
       }
     }
 
     await browser.close();
 
-    const status: ExecutionStatus = publishFailed ? 'PUBLISH_SETTINGS_FAILED' : 'SUCCESS';
+    const status: ExecutionStatus = publishFailed ? (postPublishGateResult && !postPublishGateResult.passed ? 'QUALITY_CHECK_FAILED' : 'PUBLISH_SETTINGS_FAILED') : 'SUCCESS';
     const exitCode = publishFailed ? 1 : 0;
 
     const executionResult: ExecutionResult = {
@@ -321,6 +391,7 @@ export const main = async () => {
         eyecatchResult,
         qualityCheck: qualityResult,
         ...(publishDetails || {}),
+        ...(postPublishGateResult ? { postPublishGate: postPublishGateResult } : {}),
       },
     };
 
