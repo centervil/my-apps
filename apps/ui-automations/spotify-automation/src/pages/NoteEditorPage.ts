@@ -1,5 +1,5 @@
 import { type Page } from '@playwright/test';
-import { QualityCheckResult, performQualityCheck, derivePublishedUrl, extractKeyFromUrl, verifyMagazineAppliedFromApi } from '../features/noteDraftCreator';
+import { QualityCheckResult, performQualityCheck, derivePublishedUrl, extractKeyFromUrl, verifyMagazineAppliedFromApi, selectMagazineRowIndex } from '../features/noteDraftCreator';
 import { assertNoteDeletionAllowed } from '../utils/noteWhitelist';
 import fs from 'fs';
 import path from 'path';
@@ -428,27 +428,32 @@ export class NoteEditorPage {
           await this.page.waitForTimeout(1000);
         }
 
-        // Find magazine row containing exact or matching magazineName and centervil, then click its "追加" button
+        // Find magazine rows matching magazineName and centervil, then use selectMagazineRowIndex to pick the most specific (shortest) row
         const magazineRows = this.page.locator('div, tr, li').filter({ hasText: magazineName });
         const count = await magazineRows.count();
+        const rowTexts: string[] = [];
+        for (let i = 0; i < count; i++) {
+          const rowText = await magazineRows.nth(i).textContent() || '';
+          rowTexts.push(rowText);
+        }
+
+        const bestIndex = selectMagazineRowIndex(rowTexts, magazineName);
         let clicked = false;
         let verifiedAccent = false;
 
-        for (let i = 0; i < count; i++) {
-          const row = magazineRows.nth(i);
-          const rowText = await row.textContent() || '';
-          // Ensure we target the row specifically for magazineName (e.g. rowText contains magazineName and centervil, and does not belong to another magazine name)
-          if (rowText.includes(magazineName) && rowText.includes('centervil') && !rowText.includes('CCSP') && (rowText.includes('追加') || rowText.includes('追加済'))) {
-            const addBtn = row.locator('button, a').filter({ hasText: '追加' }).first();
-            if (await addBtn.count() > 0 && await addBtn.isVisible()) {
-              const btnText = await addBtn.textContent() || '';
-              if (btnText.includes('追加済')) {
-                console.log(`[Magazine Apply] Magazine "${magazineName}" is already added.`);
-                clicked = true;
-                verifiedAccent = true;
-                break;
-              }
-              console.log(`[Magazine Apply] Found "追加" button for "${magazineName}" at row index ${i}. Clicking with force...`);
+        if (bestIndex !== -1) {
+          const row = magazineRows.nth(bestIndex);
+          const rowText = rowTexts[bestIndex];
+          console.log(`[Magazine Apply] Selected best magazine row at index ${bestIndex} (length ${rowText.length}): "${rowText.trim()}"`);
+          const addBtn = row.locator('button, a').filter({ hasText: '追加' }).first();
+          if (await addBtn.count() > 0 && await addBtn.isVisible()) {
+            const btnText = await addBtn.textContent() || '';
+            if (btnText.includes('追加済')) {
+              console.log(`[Magazine Apply] Magazine "${magazineName}" is already added.`);
+              clicked = true;
+              verifiedAccent = true;
+            } else {
+              console.log(`[Magazine Apply] Found "追加" button for "${magazineName}" at selected row index ${bestIndex}. Clicking with force...`);
               await addBtn.click({ force: true });
               await this.page.waitForTimeout(2000);
 
@@ -469,7 +474,6 @@ export class NoteEditorPage {
               }
 
               clicked = true;
-              break;
             }
           }
         }

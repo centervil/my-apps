@@ -340,8 +340,24 @@ export function verifyPostPublishGate(options: PostPublishGateOptions): PostPubl
 }
 
 /**
-  * 品質チェックを実行する
-  */
+ * マガジン選択行の候補から最適な行インデックスを特定する純粋関数
+ */
+export function selectMagazineRowIndex(rowTexts: string[], magazineName: string): number {
+  let bestIndex = -1;
+  let minLength = Infinity;
+
+  for (let i = 0; i < rowTexts.length; i++) {
+    const rowText = rowTexts[i];
+    if (rowText.includes(magazineName) && rowText.includes('centervil') && (rowText.includes('追加') || rowText.includes('追加済'))) {
+      if (rowText.length < minLength) {
+        minLength = rowText.length;
+        bestIndex = i;
+      }
+    }
+  }
+
+  return bestIndex;
+}
 export function performQualityCheck(
   sourceContent: string,
   renderedBody: string,

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { convertMarkdownToHtml, convertMarkdownToNoteBody, buildNoteContent, performQualityCheck, derivePublishedUrl, extractKeyFromUrl, verifyMagazineAppliedFromApi, verifyPostPublishGate } from '../../src/features/noteDraftCreator';
+import { convertMarkdownToHtml, convertMarkdownToNoteBody, buildNoteContent, performQualityCheck, derivePublishedUrl, extractKeyFromUrl, verifyMagazineAppliedFromApi, verifyPostPublishGate, selectMagazineRowIndex } from '../../src/features/noteDraftCreator';
 
 test.describe('Note Draft Creator Unit Tests', () => {
   test('convertMarkdownToHtml should handle heading mapping correctly', () => {
@@ -267,5 +267,42 @@ https://open.spotify.com/show/12345
 
     expect(result.passed).toBe(false);
     expect(result.checks.titleExactMatch).toBe(false);
+  });
+
+  test('selectMagazineRowIndex should select CCSP row correctly when target is CCSP 30日間学習', () => {
+    const rowTexts = [
+      'CRISC・CCSP・CISA 全シリーズ まとめコンテナ 2026 centervil 追加',
+      'CCSP 30日間学習 / centervil / 追加',
+      'CISA 30日間学習 / centervil / 追加済',
+    ];
+    const index = selectMagazineRowIndex(rowTexts, 'CCSP 30日間学習');
+    expect(index).toBe(1);
+  });
+
+  test('selectMagazineRowIndex should prefer specific row over container row even if container comes first or is longer', () => {
+    const rowTexts = [
+      'CRISC・CCSP・CISA・CISSP 全部入りコンテナ文字列 centervil 追加',
+      'CCSP 30日間学習 / centervil / 追加',
+    ];
+    const index = selectMagazineRowIndex(rowTexts, 'CCSP 30日間学習');
+    expect(index).toBe(1);
+  });
+
+  test('selectMagazineRowIndex should not select CCSP row when target is CRISC 30日間学習', () => {
+    const rowTexts = [
+      'CCSP 30日間学習 / centervil / 追加',
+      'CRISC 30日間学習 / centervil / 追加',
+    ];
+    const index = selectMagazineRowIndex(rowTexts, 'CRISC 30日間学習');
+    expect(index).toBe(1);
+  });
+
+  test('selectMagazineRowIndex should return -1 when no matching candidate exists', () => {
+    const rowTexts = [
+      'ISACA 資格まとめ / centervil / 追加',
+      'CISSP 30日間学習 / otheruser / 追加',
+    ];
+    const index = selectMagazineRowIndex(rowTexts, 'CCSP 30日間学習');
+    expect(index).toBe(-1);
   });
 });
