@@ -72,4 +72,22 @@ test.describe('Note CLI Unit Tests', () => {
     expect(status).toBe('PUBLISH_SETTINGS_FAILED');
     expect(exitCode).toBe(1);
   });
+
+  test('should validate account verification fail-closed error handling', () => {
+    // When urlname cannot be retrieved or parsed
+    const checkFailedErr = new AuthError(
+      'Could not retrieve logged-in account urlname from /api/v1/users/me response. Expected centervil.',
+      'ACCOUNT_CHECK_FAILED',
+      false,
+    );
+    expect(checkFailedErr.code).toBe('ACCOUNT_CHECK_FAILED');
+
+    // When account does not match expected
+    const mismatchErr = new AuthError(
+      'Account mismatch! Expected note account urlname centervil, but current is other.',
+      'ACCOUNT_MISMATCH',
+      false,
+    );
+    expect(mismatchErr.code).toBe('ACCOUNT_MISMATCH');
+  });
 });

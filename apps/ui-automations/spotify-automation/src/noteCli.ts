@@ -181,15 +181,27 @@ export const main = async () => {
         const meData = JSON.parse(contentText);
         const currentUrlname = meData?.data?.urlname || meData?.urlname;
         console.log(`Current logged-in note urlname: ${currentUrlname}`);
-        if (currentUrlname && currentUrlname !== expectedAccount) {
+        if (!currentUrlname) {
+          throw new AuthError(
+            `Could not retrieve logged-in account urlname from /api/v1/users/me response. Expected '${expectedAccount}'. Aborting process (fail-closed).`,
+            'ACCOUNT_CHECK_FAILED',
+            false,
+          );
+        }
+        if (currentUrlname !== expectedAccount) {
           throw new AuthError(
             `Account mismatch! Expected note account urlname '${expectedAccount}', but current logged-in account is '${currentUrlname}'. Aborting process to protect production account.`,
             'ACCOUNT_MISMATCH',
+            false,
           );
         }
       } catch (parseErr) {
         if (parseErr instanceof AuthError) throw parseErr;
-        console.log('Could not parse /api/v1/users/me response, proceeding with caution:', parseErr);
+        throw new AuthError(
+          `Failed to parse /api/v1/users/me response: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}. Aborting process (fail-closed).`,
+          'ACCOUNT_CHECK_FAILED',
+          false,
+        );
       }
     }
 

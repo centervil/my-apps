@@ -1,5 +1,6 @@
 import { type Page } from '@playwright/test';
 import { QualityCheckResult, performQualityCheck, derivePublishedUrl, extractKeyFromUrl, verifyMagazineAppliedFromApi } from '../features/noteDraftCreator';
+import { assertNoteDeletionAllowed } from '../utils/noteWhitelist';
 import fs from 'fs';
 import path from 'path';
 
@@ -498,6 +499,9 @@ export class NoteEditorPage {
   }
 
   async deleteNote(noteId: string): Promise<boolean> {
+    // Whitelist check MUST occur before ANY page navigation or API call (fail-closed)
+    assertNoteDeletionAllowed(noteId);
+
     try {
       console.log(`Attempting to delete noteId: ${noteId}...`);
 
@@ -522,95 +526,61 @@ export class NoteEditorPage {
         await this.page.waitForURL(/.*note\.com\/notes.*/, { timeout: 30000 });
         await this.page.waitForTimeout(3000);
 
-        // Find row containing noteId via anchor tag href
-        const link = this.page.locator(`a[href*="${noteId}"]`).first();
-        if (await link.count() > 0) {
-          const row = link.locator('xpath=ancestor::*[contains(@class, "ListItem") or contains(@class, "note") or self::tr or self::li]').first();
-          if (await row.count() > 0) {
-            const menuBtn = row.locator('button').last();
-            if (await menuBtn.count() > 0) {
-              await menuBtn.click({ force: true });
-              await this.page.waitForTimeout(1000);
-
-              const deleteItem = this.page.locator('button:has-text("削除"), [role="menuitem"]:has-text("削除")').first();
-              if (await deleteItem.count() > 0 && await deleteItem.isVisible()) {
-                await deleteItem.click({ force: true });
-                await this.page.waitForTimeout(1000);
-
-                const confirmBtn = this.page.locator('button:has-text("削除する"), button:has-text("削除"), button:has-text("OK"), button.o-button--danger, [role="dialog"] button:has-text("削除")').last();
-                if (await confirmBtn.count() > 0 && await confirmBtn.isVisible()) {
-                  await confirmBtn.click({ force: true });
-                  await this.page.waitForTimeout(3000);
-                  console.log(`Successfully deleted published note ${noteId} via anchor row search.`);
-                  return true;
-                }
-              }
-            }
-          }
+        // Find row containing noteId strictly via anchor tag href
+        const link = this.page.locator(`a[href*="${noteId}"]`);
+        if (await link.count() !== 1) {
+          console.error(`Cannot uniquely identify note link for noteId ${noteId}. Found ${await link.count()} matches. Aborting deletion.`);
+          return false;
         }
 
-        // Fallback to previous badge / container search
-        const badges = this.page.locator('text=公開中');
-        const badgeCount = await badges.count();
-        let deletedViaBadge = false;
-        for (let i = 0; i < badgeCount; i++) {
-          try {
-            const parent = badges.nth(i).locator('xpath=ancestor::div[3]').first();
-            const text = await parent.innerText();
-            if (text.includes(noteId)) {
-              console.log(`Found published note container for ${noteId}. Opening menu...`);
-              const buttons = parent.locator('button');
-              const menuBtn = buttons.last();
-              if (await menuBtn.count() > 0) {
-                await menuBtn.click({ force: true });
-                await this.page.waitForTimeout(1000);
-
-                const deleteItem = this.page.locator('button:has-text("削除"), [role="menuitem"]:has-text("削除")').first();
-                if (await deleteItem.count() > 0 && await deleteItem.isVisible()) {
-                  await deleteItem.click({ force: true });
-                  await this.page.waitForTimeout(1000);
-
-                  const confirmBtn = this.page.locator('button:has-text("削除する"), button:has-text("削除"), button:has-text("OK"), button.o-button--danger, [role="dialog"] button:has-text("削除")').last();
-                  if (await confirmBtn.count() > 0 && await confirmBtn.isVisible()) {
-                    await confirmBtn.click({ force: true });
-                    await this.page.waitForTimeout(3000);
-                    console.log(`Successfully deleted published note ${noteId} via container search.`);
-                    deletedViaBadge = true;
-                    return true;
-                  }
-                }
-              }
-            }
-          } catch (e) {
-            console.log(`Error checking badge container ${i}:`, e);
-          }
+        const row = link.locator('xpath=ancestor::*[contains(@class, "ListItem") or contains(@class, "note") or self::tr or self::li]').first();
+        if (await row.count() === 0) {
+          console.error(`Cannot find ancestor row for noteId ${noteId}. Aborting deletion.`);
+          return false;
         }
 
-        if (deletedViaBadge) {
-          return true;
+        const menuBtn = row.locator('button').last();
+        if (await menuBtn.count() === 0) {
+          console.error(`Cannot find menu button inside row for noteId ${noteId}. Aborting deletion.`);
+          return false;
         }
 
-        // Fallback: click menu button on the first note item in the list
-        console.log('Trying fallback published note deletion via first note item in list...');
-        const firstMenuBtn = this.page.locator('div[class*="ListItem"] button, div[class*="note"] button, button').filter({ has: this.page.locator('svg') }).last();
-        if (await firstMenuBtn.count() > 0) {
-          await firstMenuBtn.click({ force: true });
-          await this.page.waitForTimeout(1000);
+        await menuBtn.click({ force: true });
+        await this.page.waitForTimeout(1000);
 
-          const deleteItem = this.page.locator('button:has-text("削除"), [role="menuitem"]:has-text("削除")').first();
-          if (await deleteItem.count() > 0 && await deleteItem.isVisible()) {
-            await deleteItem.click({ force: true });
-            await this.page.waitForTimeout(1000);
-
-            const confirmBtn = this.page.locator('button:has-text("削除する"), button:has-text("削除"), button:has-text("OK"), button.o-button--danger, [role="dialog"] button:has-text("削除")').last();
-            if (await confirmBtn.count() > 0 && await confirmBtn.isVisible()) {
-              await confirmBtn.click({ force: true });
-              await this.page.waitForTimeout(3000);
-              console.log(`Successfully deleted published note via fallback list action.`);
-              return true;
-            }
-          }
+        // Scope deletion item specifically to displayed menu
+        const menuContainer = this.page.locator('[role="menu"], [data-radix-popper-content-wrapper], .o-dropdownMenu, [class*="menu"]').filter({ hasText: '削除' });
+        if (await menuContainer.count() === 0) {
+          console.error('Menu container with "削除" option was not found after clicking menu button. Aborting deletion.');
+          return false;
         }
+
+        const deleteItem = menuContainer.locator('button, [role="menuitem"]').filter({ hasText: '削除' });
+        if (await deleteItem.count() !== 1 || !await deleteItem.isVisible()) {
+          console.error(`Cannot uniquely identify visible delete item in menu. Found ${await deleteItem.count()} items. Aborting deletion.`);
+          return false;
+        }
+
+        await deleteItem.click({ force: true });
+        await this.page.waitForTimeout(1000);
+
+        // Scope confirmation button specifically to displayed dialog
+        const dialogContainer = this.page.locator('[role="dialog"], [role="alertdialog"], .o-modal, [class*="dialog"]').filter({ hasText: '削除' });
+        if (await dialogContainer.count() === 0) {
+          console.error('Confirmation dialog with "削除" was not found. Aborting deletion.');
+          return false;
+        }
+
+        const confirmBtn = dialogContainer.locator('button').filter({ hasText: /削除する|削除/ });
+        if (await confirmBtn.count() !== 1 || !await confirmBtn.isVisible()) {
+          console.error(`Cannot uniquely identify confirm button in dialog. Found ${await confirmBtn.count()} buttons. Aborting deletion.`);
+          return false;
+        }
+
+        await confirmBtn.click({ force: true });
+        await this.page.waitForTimeout(3000);
+        console.log(`Successfully deleted published note ${noteId} via scoped anchor row.`);
+        return true;
 
       } else {
         // Flow B: Draft article deletion via editor (https://editor.note.com/notes/<key>/edit/)
@@ -621,27 +591,51 @@ export class NoteEditorPage {
 
         // Click "その他" menu in editor header (button[aria-label="その他"])
         const otherMenuBtn = this.page.locator('button[aria-label="その他"], button[aria-label*="その他"], button:has-text("その他")').first();
-        if (await otherMenuBtn.count() > 0 && await otherMenuBtn.isVisible()) {
-          await otherMenuBtn.click({ force: true });
-          await this.page.waitForTimeout(1000);
-
-          const deleteOption = this.page.locator('button:has-text("削除"), [role="menuitem"]:has-text("削除")').first();
-          if (await deleteOption.count() > 0 && await deleteOption.isVisible()) {
-            await deleteOption.click({ force: true });
-            await this.page.waitForTimeout(1000);
-
-            const confirmBtn = this.page.locator('button:has-text("削除する"), button:has-text("削除"), button:has-text("OK"), button.o-button--danger, [role="dialog"] button:has-text("削除")').first();
-            if (await confirmBtn.count() > 0 && await confirmBtn.isVisible()) {
-              await confirmBtn.click({ force: true });
-              await this.page.waitForTimeout(3000);
-              console.log(`Successfully deleted draft note ${noteId} via editor.`);
-              return true;
-            }
-          }
+        if (await otherMenuBtn.count() === 0 || !await otherMenuBtn.isVisible()) {
+          console.error('Editor header "その他" menu button not found. Aborting deletion.');
+          return false;
         }
+
+        await otherMenuBtn.click({ force: true });
+        await this.page.waitForTimeout(1000);
+
+        const editorMenu = this.page.locator('[role="menu"], [data-radix-popper-content-wrapper], .o-dropdownMenu, [class*="menu"]').filter({ hasText: '削除' });
+        if (await editorMenu.count() === 0) {
+          console.error('Editor dropdown menu containing "削除" not found. Aborting deletion.');
+          return false;
+        }
+
+        const deleteOption = editorMenu.locator('button, [role="menuitem"]').filter({ hasText: '削除' });
+        if (await deleteOption.count() !== 1 || !await deleteOption.isVisible()) {
+          console.error(`Cannot uniquely identify delete option in editor menu. Found ${await deleteOption.count()} options. Aborting deletion.`);
+          return false;
+        }
+
+        await deleteOption.click({ force: true });
+        await this.page.waitForTimeout(1000);
+
+        const dialogContainer = this.page.locator('[role="dialog"], [role="alertdialog"], .o-modal, [class*="dialog"]').filter({ hasText: '削除' });
+        if (await dialogContainer.count() === 0) {
+          console.error('Confirmation dialog with "削除" was not found in editor. Aborting deletion.');
+          return false;
+        }
+
+        const confirmBtn = dialogContainer.locator('button').filter({ hasText: /削除する|削除/ });
+        if (await confirmBtn.count() !== 1 || !await confirmBtn.isVisible()) {
+          console.error(`Cannot uniquely identify confirm button in editor dialog. Found ${await confirmBtn.count()} buttons. Aborting deletion.`);
+          return false;
+        }
+
+        await confirmBtn.click({ force: true });
+        await this.page.waitForTimeout(3000);
+        console.log(`Successfully deleted draft note ${noteId} via editor.`);
+        return true;
       }
 
     } catch (e) {
+      if (e instanceof Error && 'code' in e && (e as { code: unknown }).code === 'DELETE_NOT_ALLOWED') {
+        throw e;
+      }
       console.log('Error deleting note:', e);
     }
     return false;

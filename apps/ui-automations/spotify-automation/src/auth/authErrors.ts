@@ -4,7 +4,10 @@ export type AuthErrorCode =
   | 'EXPIRED_AUTH'
   | 'NETWORK_ERROR'
   | 'PERMISSION_DENIED'
-  | 'AUTH_EXPIRED';
+  | 'AUTH_EXPIRED'
+  | 'ACCOUNT_MISMATCH'
+  | 'ACCOUNT_CHECK_FAILED'
+  | 'DELETE_NOT_ALLOWED';
 
 export class AuthError extends Error {
   constructor(
