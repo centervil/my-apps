@@ -35,56 +35,34 @@ export class NoteEditorPage {
     const editor = this.page.locator(editorSelector).first();
     await editor.click();
 
-    // 1. Explicitly insert template text, Spotify URL paragraph for native editor conversion, and TOC block in correct order:
-    // Regular order: intro boilerplate (templateText) -> Spotify URL paragraph (for note editor auto-embed conversion) -> TOC -> Body HTML (no leading empty paragraphs)
-    await this.page.evaluate(({ spotifyUrl, templateText, bodyHtml }) => {
-      const editor = document.querySelector('.ProseMirror');
-      if (!editor) return;
+    // 2. Clear any residual content: keep editor.innerHTML = '' ONLY
+    await this.page.evaluate(() => {
+      const ed = document.querySelector('.ProseMirror');
+      if (!ed) return;
+      ed.innerHTML = '';
+    });
+    // After clearing, click the editor again so the cursor is in the (single empty) first paragraph
+    await editor.click();
 
-      // Clear editor children if any residual
-      editor.innerHTML = '';
+    // 3. Type the template (intro) text with the keyboard, then press Enter once
+    await this.page.keyboard.type(templateText);
+    await this.page.keyboard.press('Enter');
 
-      // 1. Insert template text paragraph first
-      const templateP = document.createElement('p');
-      templateP.textContent = templateText;
-      editor.appendChild(templateP);
+    // 4. Type the Spotify URL with the keyboard, then press Enter once. This must trigger the editor's native conversion.
+    await this.page.keyboard.type(spotifyUrl, { delay: 20 });
+    await this.page.keyboard.press('Enter');
 
-      // 2. Insert Spotify URL paragraph second (so note editor converts it into embedded block natively)
-      const spotifyP = document.createElement('p');
-      spotifyP.textContent = spotifyUrl;
-      editor.appendChild(spotifyP);
-
-      // 3. Insert TOC block (table-of-contents) third
-      const tocNode = document.createElement('table-of-contents');
-      tocNode.setAttribute('data-block-type', 'toc');
-      tocNode.setAttribute('contenteditable', 'false');
-      tocNode.textContent = '目次';
-      editor.appendChild(tocNode);
-
-      // 4. Insert body HTML via temporary container fourth
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = bodyHtml;
-      while (tempDiv.firstChild) {
-        editor.appendChild(tempDiv.firstChild);
-      }
-    }, { spotifyUrl, templateText, bodyHtml });
-
-    // Wait for editor native conversion of Spotify URL paragraph to embed block
+    // 5. Wait for the conversion: poll up to 15 times, 1s apart
     console.log('Waiting for editor to convert Spotify URL into embedded block...');
     let converted = false;
-    for (let attempt = 1; attempt <= 10; attempt++) {
+    for (let attempt = 1; attempt <= 15; attempt++) {
       await this.page.waitForTimeout(1000);
-      // Focus editor and trigger keypress to help editor conversion pipeline
-      await editor.click();
-      await this.page.keyboard.press('Space');
-      await this.page.keyboard.press('Backspace');
 
       converted = await this.page.evaluate(() => {
         const ed = document.querySelector('.ProseMirror');
         if (!ed) return false;
-        // Check if figure with embed-service or data-block-type="embed" or iframe exists
-        const figure = ed.querySelector('figure[data-block-type="embed"], figure.o-noteEmbedCard, figure, iframe[src*="spotify.com"]');
-        return figure !== null;
+        const embedElement = ed.querySelector('figure[data-block-type="embed"], iframe[src*="spotify.com"], [data-embed-url*="spotify.com"]');
+        return embedElement !== null;
       });
 
       if (converted) {
@@ -96,6 +74,32 @@ export class NoteEditorPage {
     if (!converted) {
       throw new Error('Explicit Spotify embed conversion timeout: Note editor failed to convert Spotify URL paragraph into an embed block within timeout. Aborting without fallback.');
     }
+
+    // 6. After the embed exists, insert the TOC element and the body HTML via page.evaluate DOM appends
+    await this.page.evaluate(({ bodyHtml }) => {
+      const ed = document.querySelector('.ProseMirror');
+      if (!ed) return;
+
+      // First remove the trailing empty paragraph if the editor's last child is a <p> with no text content
+      const lastChild = ed.lastElementChild;
+      if (lastChild && lastChild.tagName.toLowerCase() === 'p' && !lastChild.textContent?.trim()) {
+        ed.removeChild(lastChild);
+      }
+
+      // Append the <table-of-contents> element (same attributes as current code)
+      const tocNode = document.createElement('table-of-contents');
+      tocNode.setAttribute('data-block-type', 'toc');
+      tocNode.setAttribute('contenteditable', 'false');
+      tocNode.textContent = '目次';
+      ed.appendChild(tocNode);
+
+      // Append body HTML nodes (same temporary-container approach as current code)
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = bodyHtml;
+      while (tempDiv.firstChild) {
+        ed.appendChild(tempDiv.firstChild);
+      }
+    }, { bodyHtml });
   }
 
   async verifyEmbedPlayerConverted(): Promise<boolean> {
