@@ -65,6 +65,7 @@ export const main = async () => {
     .option('episode', {
       type: 'number',
       description: 'Episode number',
+      demandOption: true,
     })
     .option('dryRun', {
       type: 'boolean',

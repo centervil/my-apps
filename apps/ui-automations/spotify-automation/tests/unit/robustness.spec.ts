@@ -3,6 +3,7 @@ import { withRetry } from '../../src/utils/retry';
 import { TransientError, AuthExpiredError } from '../../src/utils/errors';
 import { mapErrorToExecutionResult } from '../../src/utils/resultReporter';
 import { AuthManager, AuthState } from '../../src/auth/authManager';
+import { findEpisodeStatus } from '../../src/features/spotifyUploader';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
@@ -106,5 +107,41 @@ test.describe('Robustness Unit Tests', () => {
       }
     }
     expect(threwAuthError).toBe(true);
+  });
+
+  test.describe('findEpisodeStatus Unit Tests', () => {
+    test('should return Published when row contains title and Published status', () => {
+      const rows = ['Other Episode Draft 11/24/26', 'My Title Published 11/25/26 Audio 00:03'];
+      expect(findEpisodeStatus(rows, 'My Title')).toBe('Published');
+    });
+
+    test('should return Draft when row contains title and Draft status', () => {
+      const rows = ['My Title Draft 11/25/26 Audio 00:03'];
+      expect(findEpisodeStatus(rows, 'My Title')).toBe('Draft');
+    });
+
+    test('should return Scheduled when row contains title and Scheduled status', () => {
+      const rows = ['My Title Scheduled 11/25/26 Audio 00:03'];
+      expect(findEpisodeStatus(rows, 'My Title')).toBe('Scheduled');
+    });
+
+    test('should return null when title is absent', () => {
+      const rows = ['Another Title Published 11/25/26'];
+      expect(findEpisodeStatus(rows, 'My Title')).toBeNull();
+    });
+
+    test('should return first row status when multiple rows contain the same title', () => {
+      const rows = [
+        'My Title Draft 11/24/26',
+        'My Title Published 11/25/26',
+      ];
+      expect(findEpisodeStatus(rows, 'My Title')).toBe('Draft');
+    });
+
+    test('should work correctly via containment when title is a substring of a longer title', () => {
+      // e.g. title "Episode" is contained in "Episode 1: Intro"
+      const rows = ['Episode 1: Intro Published 11/25/26'];
+      expect(findEpisodeStatus(rows, 'Episode')).toBe('Published');
+    });
   });
 });

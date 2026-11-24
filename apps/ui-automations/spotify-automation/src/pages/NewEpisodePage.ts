@@ -10,6 +10,7 @@ export class NewEpisodePage {
   private readonly privacyBannerCloseButton: Locator;
   private readonly nextButton: Locator;
   private readonly publishNowOption: Locator;
+  private readonly publishNowLabel: Locator;
   private readonly publishButton: Locator;
   private readonly doneButton: Locator;
   private readonly inAppMessageCloseButton: Locator;
@@ -31,6 +32,7 @@ export class NewEpisodePage {
       .getByTestId('dialog-footer')
       .getByRole('button', { name: /next/i });
     this.publishNowOption = page.locator('#publish-date-now');
+    this.publishNowLabel = page.locator('label[for="publish-date-now"]');
     this.publishButton = page
       .getByTestId('dialog-footer')
       .getByRole('button', { name: /publish/i });
@@ -153,11 +155,12 @@ export class NewEpisodePage {
     // Proceed to the next step in the wizard with retry logic
     await expect(async () => {
       await this.nextButton.click({ force: true });
-      await this.publishNowOption.waitFor({ state: 'visible', timeout: 5000 });
+      await this.publishNowLabel.waitFor({ state: 'visible', timeout: 5000 });
     }).toPass({ timeout: 30000 });
 
-    // On the next screen, select to publish immediately
-    await this.publishNowOption.click({ force: true });
+    // On the next screen, select to publish immediately via label
+    await this.publishNowLabel.click();
+    await expect(this.publishNowOption).toBeChecked({ timeout: 5000 });
 
     // Click the final publish button
     await this.publishButton.waitFor({ state: 'visible', timeout: 10000 });
