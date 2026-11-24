@@ -1,3 +1,50 @@
+/**
+ * note のクリエイターページ等の href から urlname を抽出する純粋関数
+ */
+export function extractUrlnameFromCreatorPageHref(href: string | null | undefined): string | null {
+  if (!href || typeof href !== 'string') {
+    return null;
+  }
+
+  let pathname = href;
+  if (href.startsWith('http://') || href.startsWith('https://')) {
+    try {
+      const parsed = new URL(href);
+      if (parsed.hostname !== 'note.com') {
+        return null;
+      }
+      if (parsed.search || parsed.hash) {
+        return null;
+      }
+      pathname = parsed.pathname;
+    } catch {
+      return null;
+    }
+  } else {
+    // Relative path check
+    if (href.includes('?') || href.includes('#')) {
+      return null;
+    }
+  }
+
+  // Must start with '/'
+  if (!pathname.startsWith('/')) {
+    return null;
+  }
+
+  const segments = pathname.split('/').filter(Boolean);
+  if (segments.length !== 1) {
+    return null;
+  }
+
+  const segment = segments[0];
+  if (!/^[A-Za-z0-9_]+$/.test(segment)) {
+    return null;
+  }
+
+  return segment;
+}
+
 export interface NoteDraftOptions {
   contentType: 'study' | 'news';
   sourceContent: string;
@@ -155,14 +202,15 @@ export function convertMarkdownToNoteBody(contentType: 'study' | 'news', rawMark
 export function buildNoteContent(options: NoteDraftOptions): { title: string; body: string } {
   let title = '';
   if (options.contentType === 'study') {
-    title = `${options.seriesName} Day${options.dayNumber}`;
+    const dayStr = options.dayNumber !== undefined ? String(options.dayNumber).padStart(2, '0') : '';
+    title = `${options.seriesName} 30日間学習Day${dayStr}`;
   } else {
     title = `${options.targetDate} サイバーセキュリティニュースまとめ`;
   }
 
   const convertedBody = convertMarkdownToHtml(options.contentType, options.sourceContent);
 
-  // Note shape: Fixed text -> Spotify Embed -> TOC -> Body
+  // Note shape: Fixed text -> Spotify Embed -> TOC -> Body (Correct block order: intro boilerplate -> Spotify embed -> TOC -> Body)
   const body = [
     TEMPLATE_TEXT,
     '',
@@ -225,9 +273,198 @@ export function verifyMagazineAppliedFromApi(apiData: Record<string, unknown>): 
   }
 }
 
+export interface DraftSavedResult {
+  passed: boolean;
+  checks: {
+    statusIsDraft: boolean;
+    titleMatches: boolean;
+    bodyPresent: boolean;
+    embedRegistered: boolean;
+  };
+  details: string;
+}
+
 /**
-  * 品質チェックを実行する
-  */
+ * 下書き保存後の note API (GET /api/v3/notes/<key>?draft=true) 応答に対する検証（純粋関数）
+ */
+export function verifyDraftSaved(
+  apiResponse: unknown,
+  expected: { title: string; spotifyShowUrl: string }
+): DraftSavedResult {
+  const data = ((apiResponse as Record<string, unknown>)?.data ?? apiResponse) as Record<string, unknown> | undefined;
+
+  const statusIsDraft = data?.status === 'draft';
+  const titleMatches = data?.name === expected.title;
+  const bodyPresent = typeof data?.body === 'string' && data.body.length > 0;
+  const embedRegistered = !expected.spotifyShowUrl || (
+    Array.isArray(data?.embedded_contents) &&
+    data.embedded_contents.some((e: unknown) => JSON.stringify(e).includes(expected.spotifyShowUrl))
+  );
+
+  const passed = statusIsDraft && titleMatches && bodyPresent && embedRegistered;
+
+  const failureReasons: string[] = [];
+  if (!statusIsDraft) {
+    failureReasons.push(`status is '${String(data?.status)}' (expected 'draft')`);
+  }
+  if (!titleMatches) {
+    failureReasons.push(`title '${String(data?.name)}' does not match expected '${expected.title}'`);
+  }
+  if (!bodyPresent) {
+    failureReasons.push('body is empty or not a string');
+  }
+  if (!embedRegistered) {
+    failureReasons.push(`embedded_contents does not contain '${expected.spotifyShowUrl}'`);
+  }
+
+  const details = passed
+    ? 'All draft verification checks passed.'
+    : `Draft verification failed: ${failureReasons.join('; ')}`;
+
+  return {
+    passed,
+    checks: {
+      statusIsDraft,
+      titleMatches,
+      bodyPresent,
+      embedRegistered,
+    },
+    details,
+  };
+}
+
+export interface PostPublishGateOptions {
+  apiResponse: Record<string, unknown>;
+  publicPageHtml: string;
+  expectedTitle: string;
+  spotifyShowUrl: string;
+}
+
+export interface PostPublishGateResult {
+  passed: boolean;
+  checks: {
+    embeddedContentsEntryFound: boolean;
+    figureServiceAndKeyMatch: boolean;
+    publicPageIframeExists: boolean;
+    titleExactMatch: boolean;
+  };
+  details: {
+    embeddedContentsCount: number;
+    matchedKey: string | null;
+    figureService: string | null;
+    figureKey: string | null;
+    publicIframeSrcFound: boolean;
+    apiTitle: string | null;
+    expectedTitle: string;
+    failureReasons: string[];
+  };
+}
+
+/**
+ * 公開後の note API 応答および公開ページ HTML に対する公開ゲート検査（純粋関数）
+ */
+export function verifyPostPublishGate(options: PostPublishGateOptions): PostPublishGateResult {
+  const { apiResponse, publicPageHtml, expectedTitle, spotifyShowUrl } = options;
+  const failureReasons: string[] = [];
+
+  const dataObj = (apiResponse?.data ?? apiResponse) as Record<string, unknown> | undefined;
+
+  // a. 応答の embedded_contents に、引数で渡された show URL（spotifyShowUrl）を含むエントリが存在する
+  const embeddedContents = (dataObj?.embedded_contents ?? apiResponse?.embedded_contents) as Array<Record<string, unknown>> | undefined;
+  const embeddedContentsList = Array.isArray(embeddedContents) ? embeddedContents : [];
+  const embeddedContentsCount = embeddedContentsList.length;
+
+  const matchedEntry = embeddedContentsList.find(entry => {
+    const url = (entry?.url ?? entry?.embed_url ?? entry?.source_url) as string | undefined;
+    return typeof url === 'string' && url.includes(spotifyShowUrl);
+  });
+
+  const embeddedContentsEntryFound = matchedEntry !== undefined;
+  const matchedKey = (matchedEntry?.key as string | undefined) ?? null;
+
+  if (!embeddedContentsEntryFound) {
+    failureReasons.push(`embedded_contents does not contain entry with url containing '${spotifyShowUrl}' (total entries: ${embeddedContentsCount})`);
+  }
+
+  // b. 応答の本文 HTML 内の埋め込み figure が embedded-service="oembed" を持ち、その embedded-content-key が a のエントリの key と一致する
+  const bodyHtml = ((dataObj?.body ?? dataObj?.html ?? apiResponse?.body) as string | undefined) ?? '';
+  // Match <figure ... embedded-service="..." ... embedded-content-key="..." ...> or similar variations
+  const figureServiceMatch = bodyHtml.match(/embedded-service=["']([^"']+)["']/i);
+  const figureKeyMatch = bodyHtml.match(/embedded-content-key=["']([^"']+)["']/i);
+
+  const figureService = figureServiceMatch ? figureServiceMatch[1] : null;
+  const figureKey = figureKeyMatch ? figureKeyMatch[1] : null;
+
+  const isOembed = figureService === 'oembed';
+  const keyMatches = matchedKey !== null && figureKey === matchedKey;
+  const figureServiceAndKeyMatch = isOembed && keyMatches;
+
+  if (!isOembed) {
+    failureReasons.push(`body figure embedded-service is '${figureService}' (expected 'oembed')`);
+  }
+  if (!keyMatches) {
+    failureReasons.push(`body figure embedded-content-key '${figureKey}' does not match embedded_contents key '${matchedKey}'`);
+  }
+
+  // c. 公開ページの HTML に open.spotify.com/embed の iframe が存在する
+  // Check for iframe with src containing open.spotify.com/embed
+  const iframeRegex = /<iframe[^>]+src=["'][^"']*open\.spotify\.com\/embed[^"']*["'][^>]*>/i;
+  const publicPageIframeExists = iframeRegex.test(publicPageHtml);
+
+  if (!publicPageIframeExists) {
+    failureReasons.push("public page HTML does not contain iframe with src containing 'open.spotify.com/embed'");
+  }
+
+  // d. 応答のタイトルが、期待タイトル（SSOT 形式で生成した文字列）と完全一致する
+  const apiTitle = ((dataObj?.name ?? dataObj?.title ?? apiResponse?.name ?? apiResponse?.title) as string | undefined) ?? null;
+  const titleExactMatch = apiTitle === expectedTitle;
+
+  if (!titleExactMatch) {
+    failureReasons.push(`API title '${apiTitle}' does not exactly match expected title '${expectedTitle}'`);
+  }
+
+  const passed = embeddedContentsEntryFound && figureServiceAndKeyMatch && publicPageIframeExists && titleExactMatch;
+
+  return {
+    passed,
+    checks: {
+      embeddedContentsEntryFound,
+      figureServiceAndKeyMatch,
+      publicPageIframeExists,
+      titleExactMatch,
+    },
+    details: {
+      embeddedContentsCount,
+      matchedKey,
+      figureService,
+      figureKey,
+      publicIframeSrcFound: publicPageIframeExists,
+      apiTitle,
+      expectedTitle,
+      failureReasons,
+    },
+  };
+}
+
+/**
+ * マガジン選択行の候補から最適な行インデックスを特定する純粋関数
+ */
+export function selectMagazineRowIndex(rowTexts: string[], magazineName: string): number {
+  let bestIndex = -1;
+  let minLength = Infinity;
+
+  for (let i = 0; i < rowTexts.length; i++) {
+    const rowText = rowTexts[i];
+    if (rowText.includes(magazineName) && rowText.includes('centervil') && (rowText.includes('追加') || rowText.includes('追加済'))) {
+      if (rowText.length < minLength) {
+        minLength = rowText.length;
+        bestIndex = i;
+      }
+    }
+  }
+
+  return bestIndex;
+}
 export function performQualityCheck(
   sourceContent: string,
   renderedBody: string,

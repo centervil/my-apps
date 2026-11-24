@@ -1,5 +1,6 @@
 import { type Page } from '@playwright/test';
-import { QualityCheckResult, performQualityCheck, derivePublishedUrl, extractKeyFromUrl, verifyMagazineAppliedFromApi } from '../features/noteDraftCreator';
+import { QualityCheckResult, performQualityCheck, derivePublishedUrl, extractKeyFromUrl, verifyMagazineAppliedFromApi, selectMagazineRowIndex } from '../features/noteDraftCreator';
+import { assertNoteDeletionAllowed } from '../utils/noteWhitelist';
 import fs from 'fs';
 import path from 'path';
 
@@ -34,55 +35,71 @@ export class NoteEditorPage {
     const editor = this.page.locator(editorSelector).first();
     await editor.click();
 
-    // 1. Explicitly insert Spotify embed card / iframe and TOC block using ProseMirror commands or direct DOM injection
-    // In note.com editor, typing URL and pressing Enter sometimes fails to convert to embed card reliably unless explicitly constructed or triggered via slash/embed menu.
-    // Let's inject both the Spotify embed and TOC directly into the ProseMirror DOM at the very top of the editor, then insert template text and body HTML.
-    await this.page.evaluate(({ spotifyUrl, templateText, bodyHtml }) => {
-      const editor = document.querySelector('.ProseMirror');
-      if (!editor) return;
+    // 2. Clear any residual content: keep editor.innerHTML = '' ONLY
+    await this.page.evaluate(() => {
+      const ed = document.querySelector('.ProseMirror');
+      if (!ed) return;
+      ed.innerHTML = '';
+    });
+    // After clearing, click the editor again so the cursor is in the (single empty) first paragraph
+    await editor.click();
 
-      // Clear editor or prepare top nodes
-      // 1. Insert Spotify Embed figure
-      const figure = document.createElement('figure');
-      figure.setAttribute('contenteditable', 'false');
-      figure.setAttribute('data-block-type', 'embed');
-      figure.setAttribute('data-embed-url', spotifyUrl);
-      const iframe = document.createElement('iframe');
-      iframe.src = spotifyUrl;
-      iframe.setAttribute('width', '100%');
-      iframe.setAttribute('height', '152');
-      iframe.setAttribute('frameborder', '0');
-      iframe.setAttribute('allow', 'encrypted-media');
-      figure.appendChild(iframe);
-      editor.appendChild(figure);
+    // 3. Type the template (intro) text with the keyboard, then press Enter once
+    await this.page.keyboard.type(templateText);
+    await this.page.keyboard.press('Enter');
 
-      // 2. Insert TOC block (table-of-contents)
+    // 4. Type the Spotify URL with the keyboard, then press Enter once. This must trigger the editor's native conversion.
+    await this.page.keyboard.type(spotifyUrl, { delay: 20 });
+    await this.page.keyboard.press('Enter');
+
+    // 5. Wait for the conversion: poll up to 15 times, 1s apart
+    console.log('Waiting for editor to convert Spotify URL into embedded block...');
+    let converted = false;
+    for (let attempt = 1; attempt <= 15; attempt++) {
+      await this.page.waitForTimeout(1000);
+
+      converted = await this.page.evaluate(() => {
+        const ed = document.querySelector('.ProseMirror');
+        if (!ed) return false;
+        const embedElement = ed.querySelector('figure[data-block-type="embed"], iframe[src*="spotify.com"], [data-embed-url*="spotify.com"]');
+        return embedElement !== null;
+      });
+
+      if (converted) {
+        console.log(`✅ Spotify embed block successfully detected in editor at attempt ${attempt}.`);
+        break;
+      }
+    }
+
+    if (!converted) {
+      throw new Error('Explicit Spotify embed conversion timeout: Note editor failed to convert Spotify URL paragraph into an embed block within timeout. Aborting without fallback.');
+    }
+
+    // 6. After the embed exists, insert the TOC element and the body HTML via page.evaluate DOM appends
+    await this.page.evaluate(({ bodyHtml }) => {
+      const ed = document.querySelector('.ProseMirror');
+      if (!ed) return;
+
+      // First remove the trailing empty paragraph if the editor's last child is a <p> with no text content
+      const lastChild = ed.lastElementChild;
+      if (lastChild && lastChild.tagName.toLowerCase() === 'p' && !lastChild.textContent?.trim()) {
+        ed.removeChild(lastChild);
+      }
+
+      // Append the <table-of-contents> element (same attributes as current code)
       const tocNode = document.createElement('table-of-contents');
       tocNode.setAttribute('data-block-type', 'toc');
       tocNode.setAttribute('contenteditable', 'false');
       tocNode.textContent = '目次';
-      editor.appendChild(tocNode);
+      ed.appendChild(tocNode);
 
-      // 3. Insert template text paragraph
-      const templateP = document.createElement('p');
-      templateP.textContent = templateText;
-      editor.appendChild(templateP);
-
-      // 4. Insert body HTML via temporary container
+      // Append body HTML nodes (same temporary-container approach as current code)
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = bodyHtml;
       while (tempDiv.firstChild) {
-        editor.appendChild(tempDiv.firstChild);
+        ed.appendChild(tempDiv.firstChild);
       }
-    }, { spotifyUrl, templateText, bodyHtml });
-
-    await this.page.waitForTimeout(1500);
-
-    // Focus editor and trigger input event so ProseMirror state updates
-    await editor.click();
-    await this.page.keyboard.press('Space');
-    await this.page.keyboard.press('Backspace');
-    await this.page.waitForTimeout(1000);
+    }, { bodyHtml });
   }
 
   async verifyEmbedPlayerConverted(): Promise<boolean> {
@@ -146,11 +163,12 @@ export class NoteEditorPage {
         }
       });
 
-      // Block order check: Spotify embed and TOC must appear before the first heading (h2 / h3)
+      // Block order check: intro boilerplate, Spotify embed, and TOC must appear before the first heading (h2 / h3), and template text should be first.
       const allChildren = Array.from(editor.children);
       let firstHeadingIndex = -1;
       let spotifyIndex = -1;
       let tocIndex = -1;
+      let templateIndex = -1;
 
       allChildren.forEach((child, index) => {
         const html = child.outerHTML || '';
@@ -167,11 +185,16 @@ export class NoteEditorPage {
         if (isToc && tocIndex === -1) {
           tocIndex = index;
         }
+        const isTemplate = txt.includes('この記事の内容はPodCastとしても配信しています');
+        if (isTemplate && templateIndex === -1) {
+          templateIndex = index;
+        }
       });
 
-      console.log('Block order debug indices:', { firstHeadingIndex, spotifyIndex, tocIndex, childrenCount: allChildren.length });
+      console.log('Block order debug indices:', { firstHeadingIndex, spotifyIndex, tocIndex, templateIndex, childrenCount: allChildren.length });
 
-      const blockOrderValid = firstHeadingIndex === -1 || ((spotifyIndex === -1 || spotifyIndex < firstHeadingIndex) && (tocIndex === -1 || tocIndex < firstHeadingIndex));
+      const blockOrderValid = (templateIndex === 0 || templateIndex === -1) &&
+        (firstHeadingIndex === -1 || ((spotifyIndex === -1 || spotifyIndex < firstHeadingIndex) && (tocIndex === -1 || tocIndex < firstHeadingIndex)));
 
       return {
         fullBody,
@@ -409,27 +432,32 @@ export class NoteEditorPage {
           await this.page.waitForTimeout(1000);
         }
 
-        // Find magazine row containing exact or matching magazineName and centervil, then click its "追加" button
+        // Find magazine rows matching magazineName and centervil, then use selectMagazineRowIndex to pick the most specific (shortest) row
         const magazineRows = this.page.locator('div, tr, li').filter({ hasText: magazineName });
         const count = await magazineRows.count();
+        const rowTexts: string[] = [];
+        for (let i = 0; i < count; i++) {
+          const rowText = await magazineRows.nth(i).textContent() || '';
+          rowTexts.push(rowText);
+        }
+
+        const bestIndex = selectMagazineRowIndex(rowTexts, magazineName);
         let clicked = false;
         let verifiedAccent = false;
 
-        for (let i = 0; i < count; i++) {
-          const row = magazineRows.nth(i);
-          const rowText = await row.textContent() || '';
-          // Ensure we target the row specifically for magazineName (e.g. rowText contains magazineName and centervil, and does not belong to another magazine name)
-          if (rowText.includes(magazineName) && rowText.includes('centervil') && !rowText.includes('CCSP') && (rowText.includes('追加') || rowText.includes('追加済'))) {
-            const addBtn = row.locator('button, a').filter({ hasText: '追加' }).first();
-            if (await addBtn.count() > 0 && await addBtn.isVisible()) {
-              const btnText = await addBtn.textContent() || '';
-              if (btnText.includes('追加済')) {
-                console.log(`[Magazine Apply] Magazine "${magazineName}" is already added.`);
-                clicked = true;
-                verifiedAccent = true;
-                break;
-              }
-              console.log(`[Magazine Apply] Found "追加" button for "${magazineName}" at row index ${i}. Clicking with force...`);
+        if (bestIndex !== -1) {
+          const row = magazineRows.nth(bestIndex);
+          const rowText = rowTexts[bestIndex];
+          console.log(`[Magazine Apply] Selected best magazine row at index ${bestIndex} (length ${rowText.length}): "${rowText.trim()}"`);
+          const addBtn = row.locator('button, a').filter({ hasText: '追加' }).first();
+          if (await addBtn.count() > 0 && await addBtn.isVisible()) {
+            const btnText = await addBtn.textContent() || '';
+            if (btnText.includes('追加済')) {
+              console.log(`[Magazine Apply] Magazine "${magazineName}" is already added.`);
+              clicked = true;
+              verifiedAccent = true;
+            } else {
+              console.log(`[Magazine Apply] Found "追加" button for "${magazineName}" at selected row index ${bestIndex}. Clicking with force...`);
               await addBtn.click({ force: true });
               await this.page.waitForTimeout(2000);
 
@@ -450,7 +478,6 @@ export class NoteEditorPage {
               }
 
               clicked = true;
-              break;
             }
           }
         }
@@ -491,6 +518,9 @@ export class NoteEditorPage {
   }
 
   async deleteNote(noteId: string): Promise<boolean> {
+    // Whitelist check MUST occur before ANY page navigation or API call (fail-closed)
+    assertNoteDeletionAllowed(noteId);
+
     try {
       console.log(`Attempting to delete noteId: ${noteId}...`);
 
@@ -515,95 +545,61 @@ export class NoteEditorPage {
         await this.page.waitForURL(/.*note\.com\/notes.*/, { timeout: 30000 });
         await this.page.waitForTimeout(3000);
 
-        // Find row containing noteId via anchor tag href
-        const link = this.page.locator(`a[href*="${noteId}"]`).first();
-        if (await link.count() > 0) {
-          const row = link.locator('xpath=ancestor::*[contains(@class, "ListItem") or contains(@class, "note") or self::tr or self::li]').first();
-          if (await row.count() > 0) {
-            const menuBtn = row.locator('button').last();
-            if (await menuBtn.count() > 0) {
-              await menuBtn.click({ force: true });
-              await this.page.waitForTimeout(1000);
-
-              const deleteItem = this.page.locator('button:has-text("削除"), [role="menuitem"]:has-text("削除")').first();
-              if (await deleteItem.count() > 0 && await deleteItem.isVisible()) {
-                await deleteItem.click({ force: true });
-                await this.page.waitForTimeout(1000);
-
-                const confirmBtn = this.page.locator('button:has-text("削除する"), button:has-text("削除"), button:has-text("OK"), button.o-button--danger, [role="dialog"] button:has-text("削除")').last();
-                if (await confirmBtn.count() > 0 && await confirmBtn.isVisible()) {
-                  await confirmBtn.click({ force: true });
-                  await this.page.waitForTimeout(3000);
-                  console.log(`Successfully deleted published note ${noteId} via anchor row search.`);
-                  return true;
-                }
-              }
-            }
-          }
+        // Find row containing noteId strictly via anchor tag href
+        const link = this.page.locator(`a[href*="${noteId}"]`);
+        if (await link.count() !== 1) {
+          console.error(`Cannot uniquely identify note link for noteId ${noteId}. Found ${await link.count()} matches. Aborting deletion.`);
+          return false;
         }
 
-        // Fallback to previous badge / container search
-        const badges = this.page.locator('text=公開中');
-        const badgeCount = await badges.count();
-        let deletedViaBadge = false;
-        for (let i = 0; i < badgeCount; i++) {
-          try {
-            const parent = badges.nth(i).locator('xpath=ancestor::div[3]').first();
-            const text = await parent.innerText();
-            if (text.includes(noteId)) {
-              console.log(`Found published note container for ${noteId}. Opening menu...`);
-              const buttons = parent.locator('button');
-              const menuBtn = buttons.last();
-              if (await menuBtn.count() > 0) {
-                await menuBtn.click({ force: true });
-                await this.page.waitForTimeout(1000);
-
-                const deleteItem = this.page.locator('button:has-text("削除"), [role="menuitem"]:has-text("削除")').first();
-                if (await deleteItem.count() > 0 && await deleteItem.isVisible()) {
-                  await deleteItem.click({ force: true });
-                  await this.page.waitForTimeout(1000);
-
-                  const confirmBtn = this.page.locator('button:has-text("削除する"), button:has-text("削除"), button:has-text("OK"), button.o-button--danger, [role="dialog"] button:has-text("削除")').last();
-                  if (await confirmBtn.count() > 0 && await confirmBtn.isVisible()) {
-                    await confirmBtn.click({ force: true });
-                    await this.page.waitForTimeout(3000);
-                    console.log(`Successfully deleted published note ${noteId} via container search.`);
-                    deletedViaBadge = true;
-                    return true;
-                  }
-                }
-              }
-            }
-          } catch (e) {
-            console.log(`Error checking badge container ${i}:`, e);
-          }
+        const row = link.locator('xpath=ancestor::*[contains(@class, "ListItem") or contains(@class, "note") or self::tr or self::li]').first();
+        if (await row.count() === 0) {
+          console.error(`Cannot find ancestor row for noteId ${noteId}. Aborting deletion.`);
+          return false;
         }
 
-        if (deletedViaBadge) {
-          return true;
+        const menuBtn = row.locator('button').last();
+        if (await menuBtn.count() === 0) {
+          console.error(`Cannot find menu button inside row for noteId ${noteId}. Aborting deletion.`);
+          return false;
         }
 
-        // Fallback: click menu button on the first note item in the list
-        console.log('Trying fallback published note deletion via first note item in list...');
-        const firstMenuBtn = this.page.locator('div[class*="ListItem"] button, div[class*="note"] button, button').filter({ has: this.page.locator('svg') }).last();
-        if (await firstMenuBtn.count() > 0) {
-          await firstMenuBtn.click({ force: true });
-          await this.page.waitForTimeout(1000);
+        await menuBtn.click({ force: true });
+        await this.page.waitForTimeout(1000);
 
-          const deleteItem = this.page.locator('button:has-text("削除"), [role="menuitem"]:has-text("削除")').first();
-          if (await deleteItem.count() > 0 && await deleteItem.isVisible()) {
-            await deleteItem.click({ force: true });
-            await this.page.waitForTimeout(1000);
-
-            const confirmBtn = this.page.locator('button:has-text("削除する"), button:has-text("削除"), button:has-text("OK"), button.o-button--danger, [role="dialog"] button:has-text("削除")').last();
-            if (await confirmBtn.count() > 0 && await confirmBtn.isVisible()) {
-              await confirmBtn.click({ force: true });
-              await this.page.waitForTimeout(3000);
-              console.log(`Successfully deleted published note via fallback list action.`);
-              return true;
-            }
-          }
+        // Scope deletion item specifically to displayed menu
+        const menuContainer = this.page.locator('[role="menu"], [data-radix-popper-content-wrapper], .o-dropdownMenu, [class*="menu"]').filter({ hasText: '削除' });
+        if (await menuContainer.count() === 0) {
+          console.error('Menu container with "削除" option was not found after clicking menu button. Aborting deletion.');
+          return false;
         }
+
+        const deleteItem = menuContainer.locator('button, [role="menuitem"]').filter({ hasText: '削除' });
+        if (await deleteItem.count() !== 1 || !await deleteItem.isVisible()) {
+          console.error(`Cannot uniquely identify visible delete item in menu. Found ${await deleteItem.count()} items. Aborting deletion.`);
+          return false;
+        }
+
+        await deleteItem.click({ force: true });
+        await this.page.waitForTimeout(1000);
+
+        // Scope confirmation button specifically to displayed dialog
+        const dialogContainer = this.page.locator('[role="dialog"], [role="alertdialog"], .o-modal, [class*="dialog"]').filter({ hasText: '削除' });
+        if (await dialogContainer.count() === 0) {
+          console.error('Confirmation dialog with "削除" was not found. Aborting deletion.');
+          return false;
+        }
+
+        const confirmBtn = dialogContainer.locator('button').filter({ hasText: /削除する|削除/ });
+        if (await confirmBtn.count() !== 1 || !await confirmBtn.isVisible()) {
+          console.error(`Cannot uniquely identify confirm button in dialog. Found ${await confirmBtn.count()} buttons. Aborting deletion.`);
+          return false;
+        }
+
+        await confirmBtn.click({ force: true });
+        await this.page.waitForTimeout(3000);
+        console.log(`Successfully deleted published note ${noteId} via scoped anchor row.`);
+        return true;
 
       } else {
         // Flow B: Draft article deletion via editor (https://editor.note.com/notes/<key>/edit/)
@@ -614,27 +610,54 @@ export class NoteEditorPage {
 
         // Click "その他" menu in editor header (button[aria-label="その他"])
         const otherMenuBtn = this.page.locator('button[aria-label="その他"], button[aria-label*="その他"], button:has-text("その他")').first();
-        if (await otherMenuBtn.count() > 0 && await otherMenuBtn.isVisible()) {
-          await otherMenuBtn.click({ force: true });
-          await this.page.waitForTimeout(1000);
-
-          const deleteOption = this.page.locator('button:has-text("削除"), [role="menuitem"]:has-text("削除")').first();
-          if (await deleteOption.count() > 0 && await deleteOption.isVisible()) {
-            await deleteOption.click({ force: true });
-            await this.page.waitForTimeout(1000);
-
-            const confirmBtn = this.page.locator('button:has-text("削除する"), button:has-text("削除"), button:has-text("OK"), button.o-button--danger, [role="dialog"] button:has-text("削除")').first();
-            if (await confirmBtn.count() > 0 && await confirmBtn.isVisible()) {
-              await confirmBtn.click({ force: true });
-              await this.page.waitForTimeout(3000);
-              console.log(`Successfully deleted draft note ${noteId} via editor.`);
-              return true;
-            }
-          }
+        if (await otherMenuBtn.count() === 0 || !await otherMenuBtn.isVisible()) {
+          console.error('Editor header "その他" menu button not found. Aborting deletion.');
+          return false;
         }
+
+        await otherMenuBtn.click();
+        await this.page.waitForTimeout(1000);
+
+        const deleteOption = this.page.locator('header ul li > button').filter({ hasText: '削除' });
+        try {
+          await deleteOption.first().waitFor({ state: 'attached', timeout: 10000 });
+        } catch {
+          console.error('Editor dropdown menu containing "削除" not found. Aborting deletion.');
+          return false;
+        }
+
+        const count = await deleteOption.count();
+        const textContent = await deleteOption.first().textContent();
+        if (count !== 1 || (textContent ?? '').trim() !== '削除') {
+          console.error('Editor dropdown menu containing "削除" not found. Aborting deletion.');
+          return false;
+        }
+
+        await deleteOption.click();
+        await this.page.waitForTimeout(1000);
+
+        const dialogContainer = this.page.locator('[role="dialog"], [role="alertdialog"], .o-modal, [class*="dialog"]').filter({ hasText: '削除' });
+        if (await dialogContainer.count() === 0) {
+          console.error('Confirmation dialog with "削除" was not found in editor. Aborting deletion.');
+          return false;
+        }
+
+        const confirmBtn = dialogContainer.locator('button').filter({ hasText: /削除する|削除/ });
+        if (await confirmBtn.count() !== 1 || !await confirmBtn.isVisible()) {
+          console.error(`Cannot uniquely identify confirm button in editor dialog. Found ${await confirmBtn.count()} buttons. Aborting deletion.`);
+          return false;
+        }
+
+        await confirmBtn.click({ force: true });
+        await this.page.waitForTimeout(3000);
+        console.log(`Successfully deleted draft note ${noteId} via editor.`);
+        return true;
       }
 
     } catch (e) {
+      if (e instanceof Error && 'code' in e && (e as { code: unknown }).code === 'DELETE_NOT_ALLOWED') {
+        throw e;
+      }
       console.log('Error deleting note:', e);
     }
     return false;

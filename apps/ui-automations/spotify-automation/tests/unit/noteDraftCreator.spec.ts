@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { convertMarkdownToHtml, convertMarkdownToNoteBody, buildNoteContent, performQualityCheck, derivePublishedUrl, extractKeyFromUrl, verifyMagazineAppliedFromApi } from '../../src/features/noteDraftCreator';
+import { convertMarkdownToHtml, convertMarkdownToNoteBody, buildNoteContent, performQualityCheck, derivePublishedUrl, extractKeyFromUrl, verifyMagazineAppliedFromApi, verifyPostPublishGate, verifyDraftSaved, selectMagazineRowIndex, extractUrlnameFromCreatorPageHref } from '../../src/features/noteDraftCreator';
 
 test.describe('Note Draft Creator Unit Tests', () => {
   test('convertMarkdownToHtml should handle heading mapping correctly', () => {
@@ -53,16 +53,16 @@ test.describe('Note Draft Creator Unit Tests', () => {
     expect(converted).toContain('<h2>ニュース概要</h2>');
   });
 
-  test('buildNoteContent should build correct structure with template, embed, TOC, and body', () => {
+  test('buildNoteContent should build correct structure with template, embed, TOC, and body conforming to SSOT note_title_format', () => {
     const result = buildNoteContent({
       contentType: 'study',
       sourceContent: '## 📚 テーマ\n本文です',
-      seriesName: 'AP',
-      dayNumber: 11,
+      seriesName: 'CRISC',
+      dayNumber: 3,
       spotifyShowUrl: 'https://open.spotify.com/show/12345',
     });
 
-    expect(result.title).toBe('AP Day11');
+    expect(result.title).toBe('CRISC 30日間学習Day03');
     expect(result.body.startsWith('この記事の内容はPodCastとしても配信しています')).toBe(true);
     expect(result.body).toContain('https://open.spotify.com/show/12345');
     expect(result.body).toContain('目次');
@@ -170,5 +170,299 @@ https://open.spotify.com/show/12345
       data: {},
     };
     expect(verifyMagazineAppliedFromApi(apiDataMissing)).toBe(false);
+  });
+
+  test('verifyPostPublishGate should pass for normal case (embedded contents match oembed, iframe exists, title exact match)', () => {
+    const apiResponse = {
+      data: {
+        name: 'CRISC 30日間学習Day03',
+        body: '<p>intro</p><figure contenteditable="false" data-block-type="embed" embedded-service="oembed" embedded-content-key="key_spotify_123"></figure>',
+        embedded_contents: [
+          {
+            key: 'key_spotify_123',
+            url: 'https://open.spotify.com/show/3433QOS89EV5rgkbeV4HWj',
+          },
+        ],
+      },
+    };
+    const publicPageHtml = '<html><body><iframe src="https://open.spotify.com/embed/show/3433QOS89EV5rgkbeV4HWj"></iframe></body></html>';
+    const result = verifyPostPublishGate({
+      apiResponse,
+      publicPageHtml,
+      expectedTitle: 'CRISC 30日間学習Day03',
+      spotifyShowUrl: 'https://open.spotify.com/show/3433QOS89EV5rgkbeV4HWj',
+    });
+
+    expect(result.passed).toBe(true);
+    expect(result.checks.embeddedContentsEntryFound).toBe(true);
+    expect(result.checks.figureServiceAndKeyMatch).toBe(true);
+    expect(result.checks.publicPageIframeExists).toBe(true);
+    expect(result.checks.titleExactMatch).toBe(true);
+  });
+
+  test('verifyPostPublishGate should fail for Symptom A (figure exists but embedded_contents empty or null attributes)', () => {
+    const apiResponse = {
+      data: {
+        name: 'CRISC 30日間学習Day03',
+        body: '<p>intro</p><figure contenteditable="false" data-block-type="embed" embedded-service="null" embedded-content-key="null"></figure>',
+        embedded_contents: [],
+      },
+    };
+    const publicPageHtml = '<html><body></body></html>';
+    const result = verifyPostPublishGate({
+      apiResponse,
+      publicPageHtml,
+      expectedTitle: 'CRISC 30日間学習Day03',
+      spotifyShowUrl: 'https://open.spotify.com/show/3433QOS89EV5rgkbeV4HWj',
+    });
+
+    expect(result.passed).toBe(false);
+    expect(result.checks.embeddedContentsEntryFound).toBe(false);
+    expect(result.checks.figureServiceAndKeyMatch).toBe(false);
+    expect(result.checks.publicPageIframeExists).toBe(false);
+  });
+
+  test('verifyPostPublishGate should fail for Symptom B (link paragraph only, no embedded figure or embedded_contents)', () => {
+    const apiResponse = {
+      data: {
+        name: 'CRISC 30日間学習Day03',
+        body: '<p>https://open.spotify.com/show/3433QOS89EV5rgkbeV4HWj</p>',
+        embedded_contents: [],
+      },
+    };
+    const publicPageHtml = '<html><body><p>https://open.spotify.com/show/3433QOS89EV5rgkbeV4HWj</p></body></html>';
+    const result = verifyPostPublishGate({
+      apiResponse,
+      publicPageHtml,
+      expectedTitle: 'CRISC 30日間学習Day03',
+      spotifyShowUrl: 'https://open.spotify.com/show/3433QOS89EV5rgkbeV4HWj',
+    });
+
+    expect(result.passed).toBe(false);
+    expect(result.checks.embeddedContentsEntryFound).toBe(false);
+    expect(result.checks.figureServiceAndKeyMatch).toBe(false);
+    expect(result.checks.publicPageIframeExists).toBe(false);
+  });
+
+  test('verifyPostPublishGate should fail when title does not match exactly (e.g. character transposition)', () => {
+    const apiResponse = {
+      data: {
+        name: 'CRISC 30日間学習Day30', // mismatched day
+        body: '<p>intro</p><figure contenteditable="false" data-block-type="embed" embedded-service="oembed" embedded-content-key="key_spotify_123"></figure>',
+        embedded_contents: [
+          {
+            key: 'key_spotify_123',
+            url: 'https://open.spotify.com/show/3433QOS89EV5rgkbeV4HWj',
+          },
+        ],
+      },
+    };
+    const publicPageHtml = '<html><body><iframe src="https://open.spotify.com/embed/show/3433QOS89EV5rgkbeV4HWj"></iframe></body></html>';
+    const result = verifyPostPublishGate({
+      apiResponse,
+      publicPageHtml,
+      expectedTitle: 'CRISC 30日間学習Day03',
+      spotifyShowUrl: 'https://open.spotify.com/show/3433QOS89EV5rgkbeV4HWj',
+    });
+
+    expect(result.passed).toBe(false);
+    expect(result.checks.titleExactMatch).toBe(false);
+  });
+
+  test('selectMagazineRowIndex should select CCSP row correctly when target is CCSP 30日間学習', () => {
+    const rowTexts = [
+      'CRISC・CCSP・CISA 全シリーズ まとめコンテナ 2026 centervil 追加',
+      'CCSP 30日間学習 / centervil / 追加',
+      'CISA 30日間学習 / centervil / 追加済',
+    ];
+    const index = selectMagazineRowIndex(rowTexts, 'CCSP 30日間学習');
+    expect(index).toBe(1);
+  });
+
+  test('selectMagazineRowIndex should prefer specific row over container row even if container comes first or is longer', () => {
+    const rowTexts = [
+      'CRISC・CCSP・CISA・CISSP 全部入りコンテナ文字列 centervil 追加',
+      'CCSP 30日間学習 / centervil / 追加',
+    ];
+    const index = selectMagazineRowIndex(rowTexts, 'CCSP 30日間学習');
+    expect(index).toBe(1);
+  });
+
+  test('selectMagazineRowIndex should not select CCSP row when target is CRISC 30日間学習', () => {
+    const rowTexts = [
+      'CCSP 30日間学習 / centervil / 追加',
+      'CRISC 30日間学習 / centervil / 追加',
+    ];
+    const index = selectMagazineRowIndex(rowTexts, 'CRISC 30日間学習');
+    expect(index).toBe(1);
+  });
+
+  test('selectMagazineRowIndex should return -1 when no matching candidate exists', () => {
+    const rowTexts = [
+      'ISACA 資格まとめ / centervil / 追加',
+      'CISSP 30日間学習 / otheruser / 追加',
+    ];
+    const index = selectMagazineRowIndex(rowTexts, 'CCSP 30日間学習');
+    expect(index).toBe(-1);
+  });
+
+  test('extractUrlnameFromCreatorPageHref should correctly extract and validate urlname', () => {
+    expect(extractUrlnameFromCreatorPageHref('/centerviltest2')).toBe('centerviltest2');
+    expect(extractUrlnameFromCreatorPageHref('https://note.com/centerviltest2')).toBe('centerviltest2');
+    expect(extractUrlnameFromCreatorPageHref(null)).toBeNull();
+    expect(extractUrlnameFromCreatorPageHref(undefined)).toBeNull();
+    expect(extractUrlnameFromCreatorPageHref('')).toBeNull();
+    expect(extractUrlnameFromCreatorPageHref('/')).toBeNull();
+    expect(extractUrlnameFromCreatorPageHref('/notes/new')).toBeNull();
+    expect(extractUrlnameFromCreatorPageHref('https://example.com/centerviltest2')).toBeNull();
+    expect(extractUrlnameFromCreatorPageHref('/centerviltest2?query=1')).toBeNull();
+    expect(extractUrlnameFromCreatorPageHref('/centerviltest2#hash')).toBeNull();
+    expect(extractUrlnameFromCreatorPageHref('/invalid-segment!')).toBeNull();
+  });
+
+  test.describe('verifyDraftSaved', () => {
+    const validExpected = {
+      title: 'CRISC 30日間学習Day03',
+      spotifyShowUrl: 'https://open.spotify.com/show/3433QOS89EV5rgkbeV4HWj',
+    };
+
+    const validApiResponse = {
+      data: {
+        status: 'draft',
+        name: 'CRISC 30日間学習Day03',
+        body: '<p>draft body content</p>',
+        embedded_contents: [
+          {
+            key: 'key_spotify_123',
+            url: 'https://open.spotify.com/show/3433QOS89EV5rgkbeV4HWj',
+          },
+        ],
+      },
+    };
+
+    test('should pass for valid draft response with matching title, body, and embed', () => {
+      const result = verifyDraftSaved(validApiResponse, validExpected);
+      expect(result.passed).toBe(true);
+      expect(result.checks.statusIsDraft).toBe(true);
+      expect(result.checks.titleMatches).toBe(true);
+      expect(result.checks.bodyPresent).toBe(true);
+      expect(result.checks.embedRegistered).toBe(true);
+      expect(result.details).toContain('passed');
+    });
+
+    test('should pass without wrapped data property (direct object)', () => {
+      const directResponse = {
+        status: 'draft',
+        name: 'CRISC 30日間学習Day03',
+        body: '<p>draft body content</p>',
+        embedded_contents: [
+          {
+            key: 'key_spotify_123',
+            url: 'https://open.spotify.com/show/3433QOS89EV5rgkbeV4HWj',
+          },
+        ],
+      };
+      const result = verifyDraftSaved(directResponse, validExpected);
+      expect(result.passed).toBe(true);
+      expect(result.checks.statusIsDraft).toBe(true);
+    });
+
+    test('should pass when spotifyShowUrl is empty (embedRegistered treated as true)', () => {
+      const responseWithoutEmbed = {
+        data: {
+          status: 'draft',
+          name: 'CRISC 30日間学習Day03',
+          body: '<p>draft body content</p>',
+          embedded_contents: [],
+        },
+      };
+      const result = verifyDraftSaved(responseWithoutEmbed, { title: 'CRISC 30日間学習Day03', spotifyShowUrl: '' });
+      expect(result.passed).toBe(true);
+      expect(result.checks.embedRegistered).toBe(true);
+    });
+
+    test('should fail when status is not draft', () => {
+      const response = {
+        data: {
+          ...validApiResponse.data,
+          status: 'published',
+        },
+      };
+      const result = verifyDraftSaved(response, validExpected);
+      expect(result.passed).toBe(false);
+      expect(result.checks.statusIsDraft).toBe(false);
+      expect(result.details).toContain("status is 'published'");
+    });
+
+    test('should fail when title does not match', () => {
+      const response = {
+        data: {
+          ...validApiResponse.data,
+          name: 'Wrong Title',
+        },
+      };
+      const result = verifyDraftSaved(response, validExpected);
+      expect(result.passed).toBe(false);
+      expect(result.checks.titleMatches).toBe(false);
+      expect(result.details).toContain("title 'Wrong Title' does not match expected");
+    });
+
+    test('should fail when body is empty or missing', () => {
+      const responseEmptyBody = {
+        data: {
+          ...validApiResponse.data,
+          body: '',
+        },
+      };
+      const result = verifyDraftSaved(responseEmptyBody, validExpected);
+      expect(result.passed).toBe(false);
+      expect(result.checks.bodyPresent).toBe(false);
+      expect(result.details).toContain('body is empty or not a string');
+
+      const responseNoBody = {
+        data: {
+          ...validApiResponse.data,
+          body: undefined,
+        },
+      };
+      const resultNoBody = verifyDraftSaved(responseNoBody, validExpected);
+      expect(resultNoBody.passed).toBe(false);
+      expect(resultNoBody.checks.bodyPresent).toBe(false);
+    });
+
+    test('should fail when embed is missing or does not match spotifyShowUrl', () => {
+      const responseMissingEmbed = {
+        data: {
+          ...validApiResponse.data,
+          embedded_contents: [],
+        },
+      };
+      const result = verifyDraftSaved(responseMissingEmbed, validExpected);
+      expect(result.passed).toBe(false);
+      expect(result.checks.embedRegistered).toBe(false);
+      expect(result.details).toContain('embedded_contents does not contain');
+    });
+
+    test('should fail safely and not throw for null/undefined/garbage responses', () => {
+      expect(() => verifyDraftSaved(null, validExpected)).not.toThrow();
+      const nullResult = verifyDraftSaved(null, validExpected);
+      expect(nullResult.passed).toBe(false);
+      expect(nullResult.checks.statusIsDraft).toBe(false);
+      expect(nullResult.checks.titleMatches).toBe(false);
+      expect(nullResult.checks.bodyPresent).toBe(false);
+      expect(nullResult.checks.embedRegistered).toBe(false);
+
+      expect(() => verifyDraftSaved(undefined, validExpected)).not.toThrow();
+      const undefinedResult = verifyDraftSaved(undefined, validExpected);
+      expect(undefinedResult.passed).toBe(false);
+
+      expect(() => verifyDraftSaved('garbage string', validExpected)).not.toThrow();
+      const stringResult = verifyDraftSaved('garbage string', validExpected);
+      expect(stringResult.passed).toBe(false);
+
+      expect(() => verifyDraftSaved({ data: null }, validExpected)).not.toThrow();
+      const dataNullResult = verifyDraftSaved({ data: null }, validExpected);
+      expect(dataNullResult.passed).toBe(false);
+    });
   });
 });
