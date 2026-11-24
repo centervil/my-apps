@@ -1,3 +1,50 @@
+/**
+ * note のクリエイターページ等の href から urlname を抽出する純粋関数
+ */
+export function extractUrlnameFromCreatorPageHref(href: string | null | undefined): string | null {
+  if (!href || typeof href !== 'string') {
+    return null;
+  }
+
+  let pathname = href;
+  if (href.startsWith('http://') || href.startsWith('https://')) {
+    try {
+      const parsed = new URL(href);
+      if (parsed.hostname !== 'note.com') {
+        return null;
+      }
+      if (parsed.search || parsed.hash) {
+        return null;
+      }
+      pathname = parsed.pathname;
+    } catch {
+      return null;
+    }
+  } else {
+    // Relative path check
+    if (href.includes('?') || href.includes('#')) {
+      return null;
+    }
+  }
+
+  // Must start with '/'
+  if (!pathname.startsWith('/')) {
+    return null;
+  }
+
+  const segments = pathname.split('/').filter(Boolean);
+  if (segments.length !== 1) {
+    return null;
+  }
+
+  const segment = segments[0];
+  if (!/^[A-Za-z0-9_]+$/.test(segment)) {
+    return null;
+  }
+
+  return segment;
+}
+
 export interface NoteDraftOptions {
   contentType: 'study' | 'news';
   sourceContent: string;

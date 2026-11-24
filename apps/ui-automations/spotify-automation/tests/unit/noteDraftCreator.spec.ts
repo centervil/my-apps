@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { convertMarkdownToHtml, convertMarkdownToNoteBody, buildNoteContent, performQualityCheck, derivePublishedUrl, extractKeyFromUrl, verifyMagazineAppliedFromApi, verifyPostPublishGate, selectMagazineRowIndex } from '../../src/features/noteDraftCreator';
+import { convertMarkdownToHtml, convertMarkdownToNoteBody, buildNoteContent, performQualityCheck, derivePublishedUrl, extractKeyFromUrl, verifyMagazineAppliedFromApi, verifyPostPublishGate, selectMagazineRowIndex, extractUrlnameFromCreatorPageHref } from '../../src/features/noteDraftCreator';
 
 test.describe('Note Draft Creator Unit Tests', () => {
   test('convertMarkdownToHtml should handle heading mapping correctly', () => {
@@ -304,5 +304,19 @@ https://open.spotify.com/show/12345
     ];
     const index = selectMagazineRowIndex(rowTexts, 'CCSP 30日間学習');
     expect(index).toBe(-1);
+  });
+
+  test('extractUrlnameFromCreatorPageHref should correctly extract and validate urlname', () => {
+    expect(extractUrlnameFromCreatorPageHref('/centerviltest2')).toBe('centerviltest2');
+    expect(extractUrlnameFromCreatorPageHref('https://note.com/centerviltest2')).toBe('centerviltest2');
+    expect(extractUrlnameFromCreatorPageHref(null)).toBeNull();
+    expect(extractUrlnameFromCreatorPageHref(undefined)).toBeNull();
+    expect(extractUrlnameFromCreatorPageHref('')).toBeNull();
+    expect(extractUrlnameFromCreatorPageHref('/')).toBeNull();
+    expect(extractUrlnameFromCreatorPageHref('/notes/new')).toBeNull();
+    expect(extractUrlnameFromCreatorPageHref('https://example.com/centerviltest2')).toBeNull();
+    expect(extractUrlnameFromCreatorPageHref('/centerviltest2?query=1')).toBeNull();
+    expect(extractUrlnameFromCreatorPageHref('/centerviltest2#hash')).toBeNull();
+    expect(extractUrlnameFromCreatorPageHref('/invalid-segment!')).toBeNull();
   });
 });

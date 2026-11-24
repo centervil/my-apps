@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import * as dotenv from 'dotenv';
 import { firefox } from '@playwright/test';
-import { buildNoteContent, convertMarkdownToNoteBody, TEMPLATE_TEXT, verifyPostPublishGate, PostPublishGateResult } from './features/noteDraftCreator';
+import { buildNoteContent, convertMarkdownToNoteBody, TEMPLATE_TEXT, verifyPostPublishGate, PostPublishGateResult, extractUrlnameFromCreatorPageHref } from './features/noteDraftCreator';
 import { NoteEditorPage } from './pages/NoteEditorPage';
 import { AuthManager } from './auth/authManager';
 import { AuthError } from './auth/authErrors';
@@ -174,32 +174,55 @@ export const main = async () => {
     const expectedAccount = process.env.NOTE_ACCOUNT_URLNAME || process.env.NOTE_TARGET_ACCOUNT;
     if (expectedAccount) {
       console.log(`Verifying logged-in note account against expected account: ${expectedAccount}`);
-      await page.goto('https://note.com/api/v1/users/me');
-      await page.waitForTimeout(1000);
-      const contentText = await page.locator('body').innerText();
+      await page.goto('https://note.com/');
+      const userMenuButton = page.locator('button[aria-controls="userMenu"]');
       try {
-        const meData = JSON.parse(contentText);
-        const currentUrlname = meData?.data?.urlname || meData?.urlname;
-        console.log(`Current logged-in note urlname: ${currentUrlname}`);
-        if (!currentUrlname) {
-          throw new AuthError(
-            `Could not retrieve logged-in account urlname from /api/v1/users/me response. Expected '${expectedAccount}'. Aborting process (fail-closed).`,
-            'ACCOUNT_CHECK_FAILED',
-            false,
-          );
-        }
-        if (currentUrlname !== expectedAccount) {
-          throw new AuthError(
-            `Account mismatch! Expected note account urlname '${expectedAccount}', but current logged-in account is '${currentUrlname}'. Aborting process to protect production account.`,
-            'ACCOUNT_MISMATCH',
-            false,
-          );
-        }
-      } catch (parseErr) {
-        if (parseErr instanceof AuthError) throw parseErr;
+        await userMenuButton.waitFor({ state: 'visible', timeout: 15000 });
+      } catch {
         throw new AuthError(
-          `Failed to parse /api/v1/users/me response: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}. Aborting process (fail-closed).`,
+          `User menu button 'button[aria-controls="userMenu"]' did not appear within 15000ms. Aborting process (fail-closed).`,
           'ACCOUNT_CHECK_FAILED',
+          false,
+        );
+      }
+
+      await userMenuButton.click();
+      const userMenu = page.locator('#userMenu');
+      try {
+        await userMenu.waitFor({ state: 'visible', timeout: 5000 });
+      } catch {
+        throw new AuthError(
+          `User menu '#userMenu' did not appear after clicking user menu button. Aborting process (fail-closed).`,
+          'ACCOUNT_CHECK_FAILED',
+          false,
+        );
+      }
+
+      const creatorPageLinks = userMenu.locator('a', { hasText: 'クリエイターページ' });
+      const linkCount = await creatorPageLinks.count();
+      if (linkCount !== 1) {
+        throw new AuthError(
+          `Expected exactly one anchor with text 'クリエイターページ' in user menu, but found ${linkCount}. Aborting process (fail-closed).`,
+          'ACCOUNT_CHECK_FAILED',
+          false,
+        );
+      }
+
+      const href = await creatorPageLinks.first().getAttribute('href');
+      const currentUrlname = extractUrlnameFromCreatorPageHref(href);
+      if (!currentUrlname) {
+        throw new AuthError(
+          `Could not extract valid urlname from creator page href '${href}'. Aborting process (fail-closed).`,
+          'ACCOUNT_CHECK_FAILED',
+          false,
+        );
+      }
+
+      console.log(`Current logged-in note urlname: ${currentUrlname}`);
+      if (currentUrlname !== expectedAccount) {
+        throw new AuthError(
+          `Account mismatch! Expected note account urlname '${expectedAccount}', but current logged-in account is '${currentUrlname}'. Aborting process to protect production account.`,
+          'ACCOUNT_MISMATCH',
           false,
         );
       }
