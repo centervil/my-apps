@@ -175,6 +175,13 @@ ${JSON.stringify(
 
         let verifiedStatus: string | null = null;
         for (let attemptNum = 1; attemptNum <= 6; attemptNum++) {
+          try {
+            await page.getByText('Published', { exact: true }).first().click();
+          } catch {
+            // ignore if tab not found/clickable yet
+          }
+          await page.waitForTimeout(2500);
+
           const rows = await page.locator('tr').allTextContents();
           verifiedStatus = findEpisodeStatus(rows, title);
           console.log(`Verification attempt ${attemptNum}/6: status found = ${verifiedStatus}`);
@@ -189,7 +196,7 @@ ${JSON.stringify(
         }
 
         if (verifiedStatus !== 'Published') {
-          throw new PermanentError(`Episode publish verification failed: episode '${title}' status is '${verifiedStatus ?? 'not found'}' (expected 'Published'). The upload may remain a draft.`, 'PUBLISH_NOT_VERIFIED');
+          throw new PermanentError(`Episode publish verification failed: episode '${title}' was not found in the Published list (last found status: ${verifiedStatus ?? 'not found'}). The upload may remain a draft.`, 'PUBLISH_NOT_VERIFIED');
         }
 
         console.log(`✅ Episode uploaded and published successfully! Verified status: ${verifiedStatus}`);
