@@ -175,6 +175,8 @@ export const main = async () => {
     if (expectedAccount) {
       console.log(`Verifying logged-in note account against expected account: ${expectedAccount}`);
       await page.goto('https://note.com/');
+      await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => { /* fall through to the fixed wait */ });
+      await page.waitForTimeout(2000);
       const userMenuButton = page.locator('button[aria-controls="userMenu"]');
       try {
         await userMenuButton.waitFor({ state: 'visible', timeout: 15000 });
@@ -188,14 +190,31 @@ export const main = async () => {
 
       await userMenuButton.click();
       const userMenu = page.locator('#userMenu');
+      let menuOpenSuccess = true;
       try {
-        await userMenu.waitFor({ state: 'visible', timeout: 5000 });
+        await Promise.all([
+          userMenu.waitFor({ state: 'attached', timeout: 5000 }),
+          userMenuButton.waitFor({ state: 'attached', timeout: 5000 }), // dummy or check aria-expanded
+          page.waitForFunction(() => document.querySelector('button[aria-controls="userMenu"]')?.getAttribute('aria-expanded') === 'true', { timeout: 5000 })
+        ]);
       } catch {
-        throw new AuthError(
-          `User menu '#userMenu' did not appear after clicking user menu button. Aborting process (fail-closed).`,
-          'ACCOUNT_CHECK_FAILED',
-          false,
-        );
+        menuOpenSuccess = false;
+      }
+
+      if (!menuOpenSuccess) {
+        await userMenuButton.click();
+        try {
+          await Promise.all([
+            userMenu.waitFor({ state: 'attached', timeout: 5000 }),
+            page.waitForFunction(() => document.querySelector('button[aria-controls="userMenu"]')?.getAttribute('aria-expanded') === 'true', { timeout: 5000 })
+          ]);
+        } catch {
+          throw new AuthError(
+            `User menu '#userMenu' did not open or aria-expanded did not become true after clicking user menu button twice. Aborting process (fail-closed).`,
+            'ACCOUNT_CHECK_FAILED',
+            false,
+          );
+        }
       }
 
       const creatorPageLinks = userMenu.locator('a', { hasText: 'クリエイターページ' });
