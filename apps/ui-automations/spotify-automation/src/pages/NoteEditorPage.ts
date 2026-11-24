@@ -615,22 +615,25 @@ export class NoteEditorPage {
           return false;
         }
 
-        await otherMenuBtn.click({ force: true });
+        await otherMenuBtn.click();
         await this.page.waitForTimeout(1000);
 
-        const editorMenu = this.page.locator('[role="menu"], [data-radix-popper-content-wrapper], .o-dropdownMenu, [class*="menu"]').filter({ hasText: '削除' });
-        if (await editorMenu.count() === 0) {
+        const deleteOption = this.page.locator('header ul li > button').filter({ hasText: '削除' });
+        try {
+          await deleteOption.first().waitFor({ state: 'attached', timeout: 10000 });
+        } catch {
           console.error('Editor dropdown menu containing "削除" not found. Aborting deletion.');
           return false;
         }
 
-        const deleteOption = editorMenu.locator('button, [role="menuitem"]').filter({ hasText: '削除' });
-        if (await deleteOption.count() !== 1 || !await deleteOption.isVisible()) {
-          console.error(`Cannot uniquely identify delete option in editor menu. Found ${await deleteOption.count()} options. Aborting deletion.`);
+        const count = await deleteOption.count();
+        const textContent = await deleteOption.first().textContent();
+        if (count !== 1 || (textContent ?? '').trim() !== '削除') {
+          console.error('Editor dropdown menu containing "削除" not found. Aborting deletion.');
           return false;
         }
 
-        await deleteOption.click({ force: true });
+        await deleteOption.click();
         await this.page.waitForTimeout(1000);
 
         const dialogContainer = this.page.locator('[role="dialog"], [role="alertdialog"], .o-modal, [class*="dialog"]').filter({ hasText: '削除' });
