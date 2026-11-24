@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import * as dotenv from 'dotenv';
 import { firefox } from '@playwright/test';
-import { buildNoteContent, convertMarkdownToNoteBody, TEMPLATE_TEXT, verifyPostPublishGate, PostPublishGateResult, extractUrlnameFromCreatorPageHref } from './features/noteDraftCreator';
+import { buildNoteContent, convertMarkdownToNoteBody, TEMPLATE_TEXT, verifyPostPublishGate, PostPublishGateResult, verifyDraftSaved, DraftSavedResult, extractUrlnameFromCreatorPageHref } from './features/noteDraftCreator';
 import { NoteEditorPage } from './pages/NoteEditorPage';
 import { AuthManager } from './auth/authManager';
 import { AuthError } from './auth/authErrors';
@@ -320,6 +320,91 @@ export const main = async () => {
     let publishDetails: { tagsApplied: string[]; magazineApplied: string | null } | undefined = undefined;
     let publishFailed = false;
     let postPublishGateResult: PostPublishGateResult | undefined = undefined;
+    let draftSavedResult: DraftSavedResult | undefined = undefined;
+
+    if (!publish) {
+      if (!noteId) {
+        const executionResult: ExecutionResult = {
+          success: false,
+          status: 'QUALITY_CHECK_FAILED',
+          exitCode: 1,
+          errorCode: 'DRAFT_SAVE_NOT_VERIFIED',
+          timestamp: new Date().toISOString(),
+          durationMs: Date.now() - startTime,
+          details: {
+            title,
+            draftUrl: draftUrl || undefined,
+            eyecatchResult,
+            qualityCheck: qualityResult,
+            error: 'noteId could not be extracted for draft verification',
+          },
+        };
+        await saveExecutionResult(executionResult, resultOutputPath);
+        console.error('\n❌ Draft save verification failed: noteId is null.');
+        await browser.close();
+        process.exit(1);
+      }
+
+      console.log('Quality checks passed. Proceeding to save and verify draft...');
+      const draftSaveButton = page.locator('button:has-text("下書き保存"), button:has-text("一時保存")').first();
+      const buttonCount = await draftSaveButton.count();
+      if (buttonCount === 0) {
+        const error = new Error('Draft save button not found on editor page');
+        (error as Record<string, unknown>).code = 'DRAFT_SAVE_FAILED';
+        throw error;
+      }
+
+      try {
+        const saveResponsePromise = page.waitForResponse(
+          (resp) => resp.url().includes('/api/v1/text_notes/draft_save') && resp.ok(),
+          { timeout: 15000 }
+        );
+        await draftSaveButton.click();
+        await saveResponsePromise;
+      } catch (saveErr) {
+        const error = new Error(`Draft save failed: ${saveErr instanceof Error ? saveErr.message : String(saveErr)}`);
+        (error as Record<string, unknown>).code = 'DRAFT_SAVE_FAILED';
+        throw error;
+      }
+
+      console.log(`[Draft Verification] Fetching note API for draft verification (noteId: ${noteId})...`);
+      const apiResp = await page.request.get(`https://note.com/api/v3/notes/${noteId}?draft=true`);
+      let apiResponseData: unknown = {};
+      if (apiResp.ok()) {
+        apiResponseData = await apiResp.json();
+      } else {
+        console.error(`[Draft Verification] Failed to fetch draft API (status: ${apiResp.status()}).`);
+      }
+
+      draftSavedResult = verifyDraftSaved(apiResponseData, { title, spotifyShowUrl });
+      console.log('[Draft Verification] Verification result:', JSON.stringify(draftSavedResult, null, 2));
+
+      if (!draftSavedResult.passed) {
+        const executionResult: ExecutionResult = {
+          success: false,
+          status: 'QUALITY_CHECK_FAILED',
+          exitCode: 1,
+          errorCode: 'DRAFT_SAVE_NOT_VERIFIED',
+          timestamp: new Date().toISOString(),
+          durationMs: Date.now() - startTime,
+          details: {
+            title,
+            noteId: noteId || undefined,
+            draftUrl: draftUrl || undefined,
+            eyecatchResult,
+            qualityCheck: qualityResult,
+            draftVerification: draftSavedResult,
+          },
+        };
+        await saveExecutionResult(executionResult, resultOutputPath);
+        console.error('\n❌ Draft save server-side verification failed.');
+        await browser.close();
+        process.exit(1);
+      }
+
+      console.log('✅ [Draft Verification] Draft saved and verified server-side successfully!');
+    }
+
     if (publish) {
       if (previousNoteId && eyecatchResult && !eyecatchResult.success) {
         console.error(`\n❌ Eyecatch setting failed: ${eyecatchResult.message}. Aborting publication due to strict eyecatch requirement.`);
@@ -443,6 +528,7 @@ export const main = async () => {
         qualityCheck: qualityResult,
         ...(publishDetails || {}),
         ...(postPublishGateResult ? { postPublishGate: postPublishGateResult } : {}),
+        ...(draftSavedResult ? { draftVerification: draftSavedResult } : {}),
       },
     };
 

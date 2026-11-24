@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { convertMarkdownToHtml, convertMarkdownToNoteBody, buildNoteContent, performQualityCheck, derivePublishedUrl, extractKeyFromUrl, verifyMagazineAppliedFromApi, verifyPostPublishGate, selectMagazineRowIndex, extractUrlnameFromCreatorPageHref } from '../../src/features/noteDraftCreator';
+import { convertMarkdownToHtml, convertMarkdownToNoteBody, buildNoteContent, performQualityCheck, derivePublishedUrl, extractKeyFromUrl, verifyMagazineAppliedFromApi, verifyPostPublishGate, verifyDraftSaved, selectMagazineRowIndex, extractUrlnameFromCreatorPageHref } from '../../src/features/noteDraftCreator';
 
 test.describe('Note Draft Creator Unit Tests', () => {
   test('convertMarkdownToHtml should handle heading mapping correctly', () => {
@@ -318,5 +318,151 @@ https://open.spotify.com/show/12345
     expect(extractUrlnameFromCreatorPageHref('/centerviltest2?query=1')).toBeNull();
     expect(extractUrlnameFromCreatorPageHref('/centerviltest2#hash')).toBeNull();
     expect(extractUrlnameFromCreatorPageHref('/invalid-segment!')).toBeNull();
+  });
+
+  test.describe('verifyDraftSaved', () => {
+    const validExpected = {
+      title: 'CRISC 30日間学習Day03',
+      spotifyShowUrl: 'https://open.spotify.com/show/3433QOS89EV5rgkbeV4HWj',
+    };
+
+    const validApiResponse = {
+      data: {
+        status: 'draft',
+        name: 'CRISC 30日間学習Day03',
+        body: '<p>draft body content</p>',
+        embedded_contents: [
+          {
+            key: 'key_spotify_123',
+            url: 'https://open.spotify.com/show/3433QOS89EV5rgkbeV4HWj',
+          },
+        ],
+      },
+    };
+
+    test('should pass for valid draft response with matching title, body, and embed', () => {
+      const result = verifyDraftSaved(validApiResponse, validExpected);
+      expect(result.passed).toBe(true);
+      expect(result.checks.statusIsDraft).toBe(true);
+      expect(result.checks.titleMatches).toBe(true);
+      expect(result.checks.bodyPresent).toBe(true);
+      expect(result.checks.embedRegistered).toBe(true);
+      expect(result.details).toContain('passed');
+    });
+
+    test('should pass without wrapped data property (direct object)', () => {
+      const directResponse = {
+        status: 'draft',
+        name: 'CRISC 30日間学習Day03',
+        body: '<p>draft body content</p>',
+        embedded_contents: [
+          {
+            key: 'key_spotify_123',
+            url: 'https://open.spotify.com/show/3433QOS89EV5rgkbeV4HWj',
+          },
+        ],
+      };
+      const result = verifyDraftSaved(directResponse, validExpected);
+      expect(result.passed).toBe(true);
+      expect(result.checks.statusIsDraft).toBe(true);
+    });
+
+    test('should pass when spotifyShowUrl is empty (embedRegistered treated as true)', () => {
+      const responseWithoutEmbed = {
+        data: {
+          status: 'draft',
+          name: 'CRISC 30日間学習Day03',
+          body: '<p>draft body content</p>',
+          embedded_contents: [],
+        },
+      };
+      const result = verifyDraftSaved(responseWithoutEmbed, { title: 'CRISC 30日間学習Day03', spotifyShowUrl: '' });
+      expect(result.passed).toBe(true);
+      expect(result.checks.embedRegistered).toBe(true);
+    });
+
+    test('should fail when status is not draft', () => {
+      const response = {
+        data: {
+          ...validApiResponse.data,
+          status: 'published',
+        },
+      };
+      const result = verifyDraftSaved(response, validExpected);
+      expect(result.passed).toBe(false);
+      expect(result.checks.statusIsDraft).toBe(false);
+      expect(result.details).toContain("status is 'published'");
+    });
+
+    test('should fail when title does not match', () => {
+      const response = {
+        data: {
+          ...validApiResponse.data,
+          name: 'Wrong Title',
+        },
+      };
+      const result = verifyDraftSaved(response, validExpected);
+      expect(result.passed).toBe(false);
+      expect(result.checks.titleMatches).toBe(false);
+      expect(result.details).toContain("title 'Wrong Title' does not match expected");
+    });
+
+    test('should fail when body is empty or missing', () => {
+      const responseEmptyBody = {
+        data: {
+          ...validApiResponse.data,
+          body: '',
+        },
+      };
+      const result = verifyDraftSaved(responseEmptyBody, validExpected);
+      expect(result.passed).toBe(false);
+      expect(result.checks.bodyPresent).toBe(false);
+      expect(result.details).toContain('body is empty or not a string');
+
+      const responseNoBody = {
+        data: {
+          ...validApiResponse.data,
+          body: undefined,
+        },
+      };
+      const resultNoBody = verifyDraftSaved(responseNoBody, validExpected);
+      expect(resultNoBody.passed).toBe(false);
+      expect(resultNoBody.checks.bodyPresent).toBe(false);
+    });
+
+    test('should fail when embed is missing or does not match spotifyShowUrl', () => {
+      const responseMissingEmbed = {
+        data: {
+          ...validApiResponse.data,
+          embedded_contents: [],
+        },
+      };
+      const result = verifyDraftSaved(responseMissingEmbed, validExpected);
+      expect(result.passed).toBe(false);
+      expect(result.checks.embedRegistered).toBe(false);
+      expect(result.details).toContain('embedded_contents does not contain');
+    });
+
+    test('should fail safely and not throw for null/undefined/garbage responses', () => {
+      expect(() => verifyDraftSaved(null, validExpected)).not.toThrow();
+      const nullResult = verifyDraftSaved(null, validExpected);
+      expect(nullResult.passed).toBe(false);
+      expect(nullResult.checks.statusIsDraft).toBe(false);
+      expect(nullResult.checks.titleMatches).toBe(false);
+      expect(nullResult.checks.bodyPresent).toBe(false);
+      expect(nullResult.checks.embedRegistered).toBe(false);
+
+      expect(() => verifyDraftSaved(undefined, validExpected)).not.toThrow();
+      const undefinedResult = verifyDraftSaved(undefined, validExpected);
+      expect(undefinedResult.passed).toBe(false);
+
+      expect(() => verifyDraftSaved('garbage string', validExpected)).not.toThrow();
+      const stringResult = verifyDraftSaved('garbage string', validExpected);
+      expect(stringResult.passed).toBe(false);
+
+      expect(() => verifyDraftSaved({ data: null }, validExpected)).not.toThrow();
+      const dataNullResult = verifyDraftSaved({ data: null }, validExpected);
+      expect(dataNullResult.passed).toBe(false);
+    });
   });
 });

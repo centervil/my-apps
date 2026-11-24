@@ -273,6 +273,66 @@ export function verifyMagazineAppliedFromApi(apiData: Record<string, unknown>): 
   }
 }
 
+export interface DraftSavedResult {
+  passed: boolean;
+  checks: {
+    statusIsDraft: boolean;
+    titleMatches: boolean;
+    bodyPresent: boolean;
+    embedRegistered: boolean;
+  };
+  details: string;
+}
+
+/**
+ * 下書き保存後の note API (GET /api/v3/notes/<key>?draft=true) 応答に対する検証（純粋関数）
+ */
+export function verifyDraftSaved(
+  apiResponse: unknown,
+  expected: { title: string; spotifyShowUrl: string }
+): DraftSavedResult {
+  const data = ((apiResponse as Record<string, unknown>)?.data ?? apiResponse) as Record<string, unknown> | undefined;
+
+  const statusIsDraft = data?.status === 'draft';
+  const titleMatches = data?.name === expected.title;
+  const bodyPresent = typeof data?.body === 'string' && data.body.length > 0;
+  const embedRegistered = !expected.spotifyShowUrl || (
+    Array.isArray(data?.embedded_contents) &&
+    data.embedded_contents.some((e: unknown) => JSON.stringify(e).includes(expected.spotifyShowUrl))
+  );
+
+  const passed = statusIsDraft && titleMatches && bodyPresent && embedRegistered;
+
+  const failureReasons: string[] = [];
+  if (!statusIsDraft) {
+    failureReasons.push(`status is '${String(data?.status)}' (expected 'draft')`);
+  }
+  if (!titleMatches) {
+    failureReasons.push(`title '${String(data?.name)}' does not match expected '${expected.title}'`);
+  }
+  if (!bodyPresent) {
+    failureReasons.push('body is empty or not a string');
+  }
+  if (!embedRegistered) {
+    failureReasons.push(`embedded_contents does not contain '${expected.spotifyShowUrl}'`);
+  }
+
+  const details = passed
+    ? 'All draft verification checks passed.'
+    : `Draft verification failed: ${failureReasons.join('; ')}`;
+
+  return {
+    passed,
+    checks: {
+      statusIsDraft,
+      titleMatches,
+      bodyPresent,
+      embedRegistered,
+    },
+    details,
+  };
+}
+
 export interface PostPublishGateOptions {
   apiResponse: Record<string, unknown>;
   publicPageHtml: string;
