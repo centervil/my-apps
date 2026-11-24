@@ -218,6 +218,15 @@ export const main = async () => {
       }
 
       const creatorPageLinks = userMenu.locator('a', { hasText: 'クリエイターページ' });
+      try {
+        await creatorPageLinks.first().waitFor({ state: 'attached', timeout: 10000 });
+      } catch {
+        throw new AuthError(
+          `Anchor with text 'クリエイターページ' did not appear in user menu within 10000ms. Aborting process (fail-closed).`,
+          'ACCOUNT_CHECK_FAILED',
+          false,
+        );
+      }
       const linkCount = await creatorPageLinks.count();
       if (linkCount !== 1) {
         throw new AuthError(
